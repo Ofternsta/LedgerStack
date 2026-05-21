@@ -1,4 +1,4 @@
-import { describeFile } from '@/lib/extract-text'
+import { describeFile } from '@/lib/file-meta'
 
 export function summarizeFile(
   file: File,

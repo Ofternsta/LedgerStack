@@ -6,6 +6,7 @@ import { AppHeader } from '@/components/app-header'
 import { EvidenceUpload } from '@/components/evidence-upload'
 import { EVIDENCE_TYPES } from '@/lib/evidence-types'
 import { supabase } from '@/lib/supabase'
+import { uploadEvidenceClient } from '@/lib/upload-evidence-client'
 import { validateUploadSize } from '@/lib/upload-limits'
 
 type Claim = {
@@ -99,42 +100,16 @@ export default function ProjectPageClient() {
     setConfigError(null)
 
     try {
-      // Upload directly to Supabase from the phone (avoids Vercel 4.5 MB body limit)
-      const filePath = `${id}/${selectedClaim.id}/${Date.now()}-${file.name}`
-      const { error: storageError } = await supabase.storage
-        .from('project-files')
-        .upload(filePath, file)
-
-      if (storageError) {
-        setUploadMessage(storageError.message)
-        setUploading(false)
-        return
-      }
-
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          project_id: id,
-          claim_id: selectedClaim.id,
-          file_path: filePath,
-          file_name: file.name,
-          file_type: file.type,
-        }),
-      })
-
-      const payload = await res.json().catch(() => ({}))
-
-      if (!res.ok) {
-        await supabase.storage.from('project-files').remove([filePath])
-        setUploadMessage(payload.error || 'Upload failed')
-        setUploading(false)
-        return
-      }
+      const evidence = await uploadEvidenceClient(
+        id,
+        selectedClaim.id,
+        file
+      )
 
       await fetchEvidence(selectedClaim.id)
-      const category = payload.evidence?.evidence_type || 'Other'
-      setUploadMessage(`Uploaded ${file.name} — categorized as ${category}`)
+      setUploadMessage(
+        `Uploaded ${file.name} — categorized as ${evidence.evidence_type}`
+      )
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Upload failed'
       setUploadMessage(message)

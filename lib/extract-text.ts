@@ -1,6 +1,4 @@
 import 'server-only'
-import mammoth from 'mammoth'
-import { PDFParse } from 'pdf-parse'
 
 const TEXT_EXTENSIONS = new Set([
   '.txt',
@@ -29,6 +27,7 @@ function isTextLike(file: File) {
 }
 
 async function extractPdfText(buffer: Buffer): Promise<string> {
+  const { PDFParse } = await import('pdf-parse')
   const parser = new PDFParse({ data: buffer })
   const result = await parser.getText()
   return result.text?.trim() || ''
@@ -40,6 +39,7 @@ export async function extractTextFromFile(file: File): Promise<string> {
 
   if (ext === '.docx' || file.type.includes('wordprocessingml')) {
     try {
+      const mammoth = await import('mammoth')
       const result = await mammoth.extractRawText({ buffer })
       return truncate(result.value || '')
     } catch {
@@ -74,8 +74,4 @@ function truncate(text: string) {
   return trimmed.slice(0, MAX_EXTRACT_CHARS)
 }
 
-export function describeFile(file: File) {
-  const sizeKb = Math.max(1, Math.round(file.size / 1024))
-  const type = file.type || 'unknown type'
-  return `${file.name} (${sizeKb} KB, ${type})`
-}
+export { describeFile } from '@/lib/file-meta'

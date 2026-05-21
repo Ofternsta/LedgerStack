@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { AppHeader } from '@/components/app-header'
 import { deleteProject } from '@/lib/delete-project'
-import { isDemoProject } from '@/lib/demo-projects'
 import { supabase } from '@/lib/supabase'
 
 type Project = {
@@ -23,11 +22,13 @@ export default function Home() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   async function fetchProjects() {
-    const { data } = await supabase.from('projects').select('*')
-    const rows = ((data || []) as Project[]).filter(
-      (p) => !isDemoProject(p.customer_name)
-    )
-    setProjects(rows)
+    const { data, error } = await supabase.from('projects').select('*')
+    if (error) {
+      console.error(error)
+      setProjects([])
+      return
+    }
+    setProjects((data || []) as Project[])
   }
 
   async function createProject() {
