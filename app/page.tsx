@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { AppHeader } from '@/components/app-header'
+import { deleteProject } from '@/lib/delete-project'
+import { isDemoProject } from '@/lib/demo-projects'
 import { supabase } from '@/lib/supabase'
 
 type Project = {
@@ -18,10 +20,14 @@ export default function Home() {
   const [notes, setNotes] = useState('')
   const [projects, setProjects] = useState<Project[]>([])
   const [creating, setCreating] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   async function fetchProjects() {
     const { data } = await supabase.from('projects').select('*')
-    setProjects((data || []) as Project[])
+    const rows = ((data || []) as Project[]).filter(
+      (p) => !isDemoProject(p.customer_name)
+    )
+    setProjects(rows)
   }
 
   async function createProject() {
@@ -49,21 +55,31 @@ export default function Home() {
     const project = data?.[0]
 
     if (project?.id) {
-      const { error: claimError } = await supabase.from('claims').insert([
-        {
-          project_id: project.id,
-          client_name: customerName,
-          property_address: projectAddress,
-          loss_type: 'Inspection',
-          insurance_company: 'Unknown',
-          claim_number: `AUTO-${Date.now()}`,
-          status: 'Inspection',
-          notes: 'Auto claim',
-        },
-      ])
+      const { data: claimRows, error: claimError } = await supabase
+        .from('claims')
+        .insert([
+          {
+            project_id: project.id,
+            client_name: customerName,
+            property_address: projectAddress,
+            loss_type: 'Inspection',
+            insurance_company: 'Unknown',
+            claim_number: `AUTO-${Date.now()}`,
+            status: 'Inspection',
+            notes: 'Auto claim',
+          },
+        ])
+        .select('id')
 
-      if (claimError) {
-        alert(`Project created but claim failed: ${claimError.message}`)
+      if (claimError || !claimRows?.length) {
+        await supabase.from('projects').delete().eq('id', project.id)
+        alert(
+          claimError?.message?.includes('permission denied')
+            ? 'Could not create project: database needs claim permissions. In Supabase SQL Editor, run supabase/anon-app-permissions.sql, then try again.'
+            : `Could not create project: ${claimError?.message || 'claim was not saved'}`
+        )
+        setCreating(false)
+        return
       }
     }
 
@@ -72,6 +88,22 @@ export default function Home() {
     setNotes('')
     await fetchProjects()
     setCreating(false)
+  }
+
+  async function removeProject(project: Project) {
+    const ok = window.confirm(
+      `Delete "${project.customer_name}" and all claims and uploaded files? This cannot be undone.`
+    )
+    if (!ok) return
+
+    setDeletingId(project.id)
+    const err = await deleteProject(project.id)
+    if (err) {
+      alert(err)
+    } else {
+      await fetchProjects()
+    }
+    setDeletingId(null)
   }
 
   useEffect(() => {
@@ -131,14 +163,26 @@ export default function Home() {
 
           <ul className="space-y-3">
             {projects.map((p) => (
-              <li key={p.id}>
+              <li
+                key={p.id}
+                className="border border-gray-200 rounded-xl bg-white shadow-sm overflow-hidden"
+              >
                 <Link
                   href={`/project/${p.id}`}
-                  className="block border border-gray-200 rounded-xl p-4 bg-white shadow-sm active:bg-gray-50 min-h-[64px]"
+                  className="block p-4 active:bg-gray-50 min-h-[64px]"
                 >
                   <p className="font-bold text-lg">{p.customer_name}</p>
                   <p className="text-sm text-gray-600 mt-1">{p.project_address}</p>
                 </Link>
+                <button
+                  type="button"
+                  onClick={() => removeProject(p)}
+                  disabled={deletingId === p.id}
+                  className="w-full border-t border-red-100 py-3 text-red-700 text-sm font-semibold disabled:opacity-50 min-h-[48px] active:bg-red-50"
+                  aria-label={`Delete ${p.customer_name}`}
+                >
+                  {deletingId === p.id ? 'Deleting…' : 'Delete project'}
+                </button>
               </li>
             ))}
           </ul>
