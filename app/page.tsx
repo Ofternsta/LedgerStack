@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation'
 import { AdminTeamPanel } from '@/components/admin-team-panel'
 import { AppHeader } from '@/components/app-header'
 import { AppNav } from '@/components/app-nav'
-import { BecomeAdminPanel } from '@/components/become-admin-panel'
 import { linkClientAccessByEmail } from '@/lib/auth-signup'
 import { deleteProject } from '@/lib/delete-project'
 import { loadUserAccess } from '@/lib/load-access'
@@ -213,9 +212,6 @@ export default function Home() {
             can view or add to projects. Ask them to open the app and tap
             Approve on your request.
           </p>
-          <BecomeAdminPanel
-            onSuccess={() => refreshAccess().then(() => fetchProjects())}
-          />
           <button
             type="button"
             onClick={() => refreshAccess().then(() => fetchProjects())}
@@ -236,9 +232,6 @@ export default function Home() {
           <p className="text-gray-600">
             Sign up again with a valid organization invite code from your admin.
           </p>
-          <BecomeAdminPanel
-            onSuccess={() => refreshAccess().then(() => fetchProjects())}
-          />
         </main>
       </div>
     )
@@ -296,14 +289,9 @@ export default function Home() {
         )}
 
         {access.role === 'client' && (
-          <div className="space-y-3">
-            <p className="text-sm text-gray-600 bg-blue-50 border border-blue-100 rounded-xl p-3">
-              You can only open projects your contractor has granted to your email.
-            </p>
-            <BecomeAdminPanel
-              onSuccess={() => refreshAccess().then(() => fetchProjects())}
-            />
-          </div>
+          <p className="text-sm text-gray-600 bg-blue-50 border border-blue-100 rounded-xl p-3">
+            You can only open projects your contractor has granted to your email.
+          </p>
         )}
 
         <section>

@@ -21,11 +21,10 @@
 - Admin can **Generate new code** on the home page (Team panel).
 - Run `account-role-fix.sql` so the database enforces the code format.
 
-### Wrong role at signup (worker → admin)
+### Wrong role at signup
 
-- **Self-service:** On the “Awaiting approval” screen, use **I should be the company admin**.
-- **Transfer to someone else:** Admin → Team → approved worker → **Make organization admin**.
-- **Manual (Supabase SQL):** update `profiles.role` to `admin`, create row in `organizations`, delete `organization_members` for that user.
+- Delete the account (platform **Accounts** page or Supabase → Authentication → Users) and sign up again with the correct type.
+- **Transfer admin:** existing admin → Team → approved worker → **Make organization admin**.
 
 Remove or do not apply `anon-app-permissions.sql` / wide-open storage policies in production.
 
