@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { AdminTeamPanel } from '@/components/admin-team-panel'
 import { AppHeader } from '@/components/app-header'
 import { AppNav } from '@/components/app-nav'
+import { BecomeAdminPanel } from '@/components/become-admin-panel'
 import { linkClientAccessByEmail } from '@/lib/auth-signup'
 import { deleteProject } from '@/lib/delete-project'
 import { loadUserAccess } from '@/lib/load-access'
@@ -191,6 +192,9 @@ export default function Home() {
             can view or add to projects. Ask them to open the app and tap
             Approve on your request.
           </p>
+          <BecomeAdminPanel
+            onSuccess={() => refreshAccess().then(() => fetchProjects())}
+          />
           <button
             type="button"
             onClick={() => refreshAccess().then(() => fetchProjects())}
@@ -207,10 +211,13 @@ export default function Home() {
     return (
       <div className="min-h-dvh flex flex-col">
         <AppHeader title="No organization" onSignOut={signOut} signingOut={signingOut} />
-        <main className="flex-1 safe-x px-4 py-8 max-w-lg mx-auto text-center">
+        <main className="flex-1 safe-x px-4 py-8 max-w-lg mx-auto text-center space-y-4">
           <p className="text-gray-600">
             Sign up again with a valid organization invite code from your admin.
           </p>
+          <BecomeAdminPanel
+            onSuccess={() => refreshAccess().then(() => fetchProjects())}
+          />
         </main>
       </div>
     )

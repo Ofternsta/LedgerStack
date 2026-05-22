@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { transferOrgAdmin } from '@/lib/transfer-org-admin'
 import { requireAuth } from '@/lib/require-auth'
 
 /** GET pending workers for admin's organization */
@@ -48,7 +49,37 @@ export async function GET() {
     full_name: names[p.user_id] ?? null,
   }))
 
-  return NextResponse.json({ organization: org, pending: enriched })
+  const { data: approved } = await supabase
+    .from('organization_members')
+    .select('id, user_id, status, created_at')
+    .eq('organization_id', org.id)
+    .eq('status', 'approved')
+    .order('created_at', { ascending: true })
+
+  const approvedIds = (approved || []).map((p) => p.user_id)
+  let approvedNames: Record<string, string | null> = {}
+
+  if (approvedIds.length) {
+    const { data: approvedProfiles } = await supabase
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', approvedIds)
+
+    approvedNames = Object.fromEntries(
+      (approvedProfiles || []).map((p) => [p.id, p.full_name])
+    )
+  }
+
+  const enrichedApproved = (approved || []).map((p) => ({
+    ...p,
+    full_name: approvedNames[p.user_id] ?? null,
+  }))
+
+  return NextResponse.json({
+    organization: org,
+    pending: enriched,
+    approved: enrichedApproved,
+  })
 }
 
 /** POST approve or reject a worker { member_id, action: 'approve' | 'reject' } */
@@ -61,6 +92,18 @@ export async function POST(req: Request) {
   const body = await req.json()
   const memberId = body.member_id as string
   const action = body.action as string
+
+  if (action === 'promote_admin') {
+    if (!memberId) {
+      return NextResponse.json({ error: 'member_id required' }, { status: 400 })
+    }
+
+    const result = await transferOrgAdmin(supabase, user.id, memberId)
+    if (result.error) {
+      return NextResponse.json({ error: result.error }, { status: 400 })
+    }
+    return NextResponse.json({ ok: true })
+  }
 
   if (!memberId || !['approve', 'reject'].includes(action)) {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 })

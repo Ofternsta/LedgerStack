@@ -12,6 +12,20 @@
 
 1. `supabase/roles-and-orgs.sql` — profiles, organizations, RLS on projects/claims
 2. `supabase/platform-security.sql` — storage RLS, subscriptions, invoices, timelines, claim updates
+3. `supabase/account-role-fix.sql` — lets workers convert to admin (wrong signup)
+
+### Worker signup (company invite code)
+
+- Each **admin** company gets an **auto-generated 8-character** code (not chosen by hand).
+- Workers must enter that code at signup; the app validates it against `organizations.invite_code`.
+- Admin can **Generate new code** on the home page (Team panel).
+- Run `account-role-fix.sql` so the database enforces the code format.
+
+### Wrong role at signup (worker → admin)
+
+- **Self-service:** On the “Awaiting approval” screen, use **I should be the company admin**.
+- **Transfer to someone else:** Admin → Team → approved worker → **Make organization admin**.
+- **Manual (Supabase SQL):** update `profiles.role` to `admin`, create row in `organizations`, delete `organization_members` for that user.
 
 Remove or do not apply `anon-app-permissions.sql` / wide-open storage policies in production.
 
@@ -22,6 +36,8 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 GROQ_API_KEY=              # AI summaries, OCR (vision), categorization
 NEXT_PUBLIC_APP_URL=       # Billing redirects: localhost locally, Vercel URL in production
+PLATFORM_OWNER_EMAIL=      # Your login email — only you can delete accounts at /settings/users
+SUPABASE_SERVICE_ROLE_KEY= # Required for account deletion (Supabase → Settings → API → service_role)
 
 # Optional — Stripe subscriptions
 STRIPE_SECRET_KEY=

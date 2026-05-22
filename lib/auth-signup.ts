@@ -1,6 +1,7 @@
-import { generateInviteCode } from '@/lib/invite-code'
+import { generateInviteCode, isProceduralInviteFormat } from '@/lib/invite-code'
 import type { AppRole } from '@/lib/roles'
 import { supabase } from '@/lib/supabase'
+import { lookupOrganizationByInvite } from '@/lib/validate-invite'
 
 export async function completeSignupProfile(input: {
   userId: string
@@ -20,7 +21,11 @@ export async function completeSignupProfile(input: {
   }
 
   if (input.role === 'admin') {
-    const code = generateInviteCode()
+    let code = generateInviteCode()
+    for (let i = 0; i < 5 && !isProceduralInviteFormat(code); i++) {
+      code = generateInviteCode()
+    }
+
     const { error: orgError } = await supabase.from('organizations').insert({
       admin_user_id: input.userId,
       name: input.organizationName?.trim() || 'My Company',
@@ -32,25 +37,19 @@ export async function completeSignupProfile(input: {
   }
 
   if (input.role === 'worker') {
-    const code = input.inviteCode?.trim().toUpperCase()
-    if (!code) {
-      return 'Organization invite code is required for worker accounts.'
-    }
+    const lookup = await lookupOrganizationByInvite(
+      supabase,
+      input.inviteCode || ''
+    )
 
-    const { data: org, error: orgLookupError } = await supabase
-      .from('organizations')
-      .select('id')
-      .eq('invite_code', code)
-      .maybeSingle()
-
-    if (orgLookupError || !org) {
-      return 'Invalid organization invite code. Ask your admin for the correct code.'
+    if (!lookup.ok) {
+      return lookup.error
     }
 
     const { error: memberError } = await supabase
       .from('organization_members')
       .insert({
-        organization_id: org.id,
+        organization_id: lookup.organizationId,
         user_id: input.userId,
         status: 'pending',
       })

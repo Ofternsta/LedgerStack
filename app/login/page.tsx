@@ -1,8 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { completeSignupProfile, linkClientAccessByEmail } from '@/lib/auth-signup'
+import {
+  INVITE_CODE_LENGTH,
+  isProceduralInviteFormat,
+  normalizeInviteCode,
+} from '@/lib/invite-code'
 import type { AppRole } from '@/lib/roles'
 import { supabase } from '@/lib/supabase'
 
@@ -16,8 +21,41 @@ export default function LoginPage() {
   const [fullName, setFullName] = useState('')
   const [organizationName, setOrganizationName] = useState('')
   const [inviteCode, setInviteCode] = useState('')
+  const [inviteCompany, setInviteCompany] = useState<string | null>(null)
+  const [inviteValid, setInviteValid] = useState(false)
+  const [inviteChecking, setInviteChecking] = useState(false)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+
+  const verifyInvite = useCallback(async (raw: string) => {
+    const code = normalizeInviteCode(raw)
+    setInviteCode(code)
+    setInviteCompany(null)
+    setInviteValid(false)
+
+    if (code.length < INVITE_CODE_LENGTH) return
+
+    if (!isProceduralInviteFormat(code)) {
+      setMessage(
+        'Invite code must be 8 characters (letters and numbers) from your company admin.'
+      )
+      return
+    }
+
+    setInviteChecking(true)
+    setMessage(null)
+    const res = await fetch(`/api/invite/validate?code=${encodeURIComponent(code)}`)
+    const payload = await res.json().catch(() => ({}))
+    setInviteChecking(false)
+
+    if (!res.ok || !payload.valid) {
+      setMessage(payload.error || 'Invalid company invite code.')
+      return
+    }
+
+    setInviteCompany(payload.organization_name)
+    setInviteValid(true)
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -35,6 +73,30 @@ export default function LoginPage() {
         setMessage('Password must be at least 6 characters.')
         setLoading(false)
         return
+      }
+
+      if (role === 'worker') {
+        const code = normalizeInviteCode(inviteCode)
+        if (!isProceduralInviteFormat(code)) {
+          setMessage(
+            'Enter the 8-character company invite code from your admin.'
+          )
+          setLoading(false)
+          return
+        }
+
+        const res = await fetch(
+          `/api/invite/validate?code=${encodeURIComponent(code)}`
+        )
+        const payload = await res.json().catch(() => ({}))
+        if (!res.ok || !payload.valid) {
+          setMessage(
+            payload.error ||
+              'Invalid company invite code. Workers must join with an admin-issued code.'
+          )
+          setLoading(false)
+          return
+        }
       }
 
       const { data, error } = await supabase.auth.signUp({
@@ -160,8 +222,8 @@ export default function LoginPage() {
                 <div className="grid grid-cols-1 gap-2">
                   {(
                     [
-                      ['admin', 'Admin', 'Full control — create/delete projects, edit summaries, approve team'],
-                      ['worker', 'Worker', 'Needs one-time admin approval, then can view & add to projects'],
+                      ['admin', 'Admin', 'Company owner — billing, team, all projects (choose if you run the business)'],
+                      ['worker', 'Worker', 'Join your employer — you need their 8-character company code'],
                       ['client', 'Client', 'View-only — admin grants access per project (by email)'],
                     ] as const
                   ).map(([value, label, hint]) => (
@@ -227,24 +289,43 @@ export default function LoginPage() {
               )}
 
               {role === 'worker' && (
-                <div>
+                <div className="space-y-2">
                   <label
                     htmlFor="inviteCode"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    Organization invite code
+                    Company invite code (from your admin)
                   </label>
                   <input
                     id="inviteCode"
                     type="text"
                     required
+                    minLength={INVITE_CODE_LENGTH}
+                    maxLength={INVITE_CODE_LENGTH}
                     value={inviteCode}
-                    onChange={(e) =>
-                      setInviteCode(e.target.value.toUpperCase())
-                    }
-                    className="border border-gray-300 rounded-xl p-3 w-full bg-white uppercase tracking-widest"
-                    placeholder="From your admin"
+                    onChange={(e) => {
+                      const code = normalizeInviteCode(e.target.value)
+                      setInviteCode(code)
+                      setInviteValid(false)
+                      setInviteCompany(null)
+                    }}
+                    onBlur={() => verifyInvite(inviteCode)}
+                    className="border border-gray-300 rounded-xl p-3 w-full bg-white uppercase tracking-[0.2em] font-mono text-center"
+                    placeholder="8 characters"
+                    autoComplete="off"
                   />
+                  {inviteChecking && (
+                    <p className="text-sm text-gray-500">Checking code…</p>
+                  )}
+                  {inviteValid && inviteCompany && (
+                    <p className="text-sm text-green-800 bg-green-50 border border-green-100 rounded-lg p-2">
+                      Joining <strong>{inviteCompany}</strong>
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-500">
+                    Codes are auto-generated when a company signs up as admin. You
+                    cannot join without a valid code.
+                  </p>
                 </div>
               )}
             </>
@@ -331,7 +412,8 @@ export default function LoginPage() {
               loading ||
               !email.trim() ||
               !password ||
-              (mode === 'signup' && !confirmPassword)
+              (mode === 'signup' && !confirmPassword) ||
+              (mode === 'signup' && role === 'worker' && !inviteValid)
             }
             className="w-full bg-black text-white py-4 rounded-xl font-medium disabled:opacity-50 min-h-[52px]"
           >
