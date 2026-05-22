@@ -13,13 +13,13 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Contractor Paperwork Assistant',
+  title: 'LedgerStack',
   description: 'Manage restoration projects, claims, and evidence in the field',
-  applicationName: 'Contractor Paperwork',
+  applicationName: 'LedgerStack',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Paperwork',
+    title: 'LedgerStack',
   },
   formatDetection: {
     telephone: false,

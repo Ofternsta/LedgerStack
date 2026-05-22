@@ -240,7 +240,7 @@ export default function Home() {
   return (
     <div className="min-h-dvh flex flex-col">
       <AppHeader
-        title="Contractor Paperwork"
+        title="LedgerStack"
         subtitle={`${roleLabel}${access.organizationName ? ` · ${access.organizationName}` : ''}`}
         onSignOut={signOut}
         signingOut={signingOut}

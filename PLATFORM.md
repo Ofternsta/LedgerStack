@@ -1,4 +1,4 @@
-# Contractor Paperwork — Platform Guide
+# LedgerStack — Platform Guide
 
 ## Account types
 

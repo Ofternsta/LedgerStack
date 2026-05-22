@@ -2,8 +2,8 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Contractor Paperwork Assistant',
-    short_name: 'Paperwork',
+    name: 'LedgerStack',
+    short_name: 'LedgerStack',
     description: 'Manage restoration projects, claims, and evidence in the field',
     start_url: '/',
     display: 'standalone',

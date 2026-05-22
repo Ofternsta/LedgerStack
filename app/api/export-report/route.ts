@@ -41,7 +41,7 @@ th,td{border:1px solid #ccc;padding:8px;text-align:left}th{background:#f5f5f5}
 <h2>Evidence (${evidence.length})</h2>
 <table><thead><tr><th>Type</th><th>File</th><th>Summary</th></tr></thead>
 <tbody>${evidenceRows}</tbody></table>
-<p><em>Generated ${new Date().toLocaleString()} — Contractor Paperwork. Use Print → Save as PDF.</em></p>
+<p><em>Generated ${new Date().toLocaleString()} — LedgerStack. Use Print → Save as PDF.</em></p>
 </body></html>`
 }
 
@@ -96,7 +96,7 @@ async function buildPdfReport(
     }
 
     addLine('')
-    addLine(`Generated ${new Date().toLocaleString()} — Contractor Paperwork`)
+    addLine(`Generated ${new Date().toLocaleString()} — LedgerStack`)
 
     return doc.output('arraybuffer')
   } catch {

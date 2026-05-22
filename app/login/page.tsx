@@ -206,7 +206,7 @@ export default function LoginPage() {
           <p className="text-4xl mb-3" aria-hidden>
             📋
           </p>
-          <h1 className="text-2xl font-bold">Contractor Paperwork</h1>
+          <h1 className="text-2xl font-bold">LedgerStack</h1>
           <p className="text-gray-600 mt-2 text-sm">
             Sign in to manage projects and claim evidence
           </p>

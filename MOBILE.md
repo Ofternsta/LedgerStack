@@ -109,7 +109,7 @@ No Mac or Android Studio required.
 → `CAPACITOR_SERVER_URL` is missing or wrong. Run `npm run mobile:check` and `npm run cap:sync`.
 
 **Camera permission denied**  
-→ Enable Camera in iOS Settings / Android app permissions for Contractor Paperwork.
+→ Enable Camera in iOS Settings / Android app permissions for LedgerStack.
 
 **Upload fails in the app**  
 → Confirm the Vercel deployment has the same Supabase env vars and that the site works in mobile Safari first.

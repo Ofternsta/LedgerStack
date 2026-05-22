@@ -8,7 +8,7 @@ const serverUrl = process.env.CAPACITOR_SERVER_URL?.trim()
 
 const config: CapacitorConfig = {
   appId: 'com.contractor.paperwork',
-  appName: 'Contractor Paperwork',
+  appName: 'LedgerStack',
   webDir: 'public/capacitor',
   server: serverUrl
     ? {
