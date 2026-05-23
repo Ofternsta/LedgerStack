@@ -91,8 +91,16 @@ export function MarketingHome() {
                 'radial-gradient(ellipse 80% 60% at 50% -20%, var(--brand-glow), transparent), radial-gradient(ellipse 50% 40% at 80% 50%, rgba(34,197,94,0.08), transparent)',
             }}
           />
-          <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-20 lg:py-24">
-            <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
+          <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-20 lg:py-28">
+            <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-12 xl:gap-16">
+              <div className="lg:hidden flex justify-center w-full">
+                <BrandLogo
+                  href="/"
+                  size="hero-xl"
+                  className="drop-shadow-[0_0_48px_var(--brand-glow)] max-w-[min(100vw-2rem,360px)]"
+                />
+              </div>
+
               <div className="flex-1 text-center lg:text-left">
                 <p className="text-sm font-semibold text-brand-bright mb-4">
                   Built for restoration &amp; insurance contractors
@@ -125,8 +133,12 @@ export function MarketingHome() {
                   {BILLING_PLANS.starter.price}/mo
                 </p>
               </div>
-              <div className="shrink-0 flex justify-center">
-                <BrandLogo href="/" size="hero" className="drop-shadow-[0_0_40px_var(--brand-glow)]" />
+              <div className="hidden lg:flex shrink-0 justify-center items-center order-2">
+                <BrandLogo
+                  href="/"
+                  size="hero-xl"
+                  className="drop-shadow-[0_0_56px_var(--brand-glow)]"
+                />
               </div>
             </div>
           </div>

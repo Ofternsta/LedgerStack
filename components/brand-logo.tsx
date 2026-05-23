@@ -2,12 +2,13 @@ import Link from 'next/link'
 
 type BrandLogoProps = {
   href?: string
-  size?: 'sm' | 'md' | 'lg' | 'hero'
+  size?: 'sm' | 'md' | 'lg' | 'hero' | 'hero-xl'
   showWordmark?: boolean
   className?: string
 }
 
-const heights = { sm: 32, md: 40, lg: 56, hero: 120 } as const
+/** hero-xl = 3× default hero (120 → 360) for marketing headline */
+const heights = { sm: 32, md: 40, lg: 56, hero: 120, 'hero-xl': 360 } as const
 
 export function BrandLogo({
   href = '/',
@@ -26,7 +27,9 @@ export function BrandLogo({
       className={`object-contain ${className}`}
       style={{ height: h, width: 'auto', maxWidth: '100%' }}
       decoding="async"
-      fetchPriority={size === 'hero' || size === 'lg' ? 'high' : undefined}
+      fetchPriority={
+        size === 'hero' || size === 'hero-xl' || size === 'lg' ? 'high' : undefined
+      }
     />
   )
 
