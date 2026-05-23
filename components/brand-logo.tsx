@@ -1,4 +1,3 @@
-import Image from 'next/image'
 import Link from 'next/link'
 
 type BrandLogoProps = {
@@ -18,13 +17,16 @@ export function BrandLogo({
 }: BrandLogoProps) {
   const h = heights[size]
   const img = (
-    <Image
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
       src="/logo.png"
       alt="LedgerStack"
       width={Math.round(h * 1.1)}
       height={h}
       className={`object-contain ${className}`}
-      priority={size === 'hero' || size === 'lg'}
+      style={{ height: h, width: 'auto', maxWidth: '100%' }}
+      decoding="async"
+      fetchPriority={size === 'hero' || size === 'lg' ? 'high' : undefined}
     />
   )
 
