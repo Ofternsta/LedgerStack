@@ -364,23 +364,20 @@ export default function ProjectPageClient() {
               />
             )}
 
-            <MessagePanel
-              channel="project"
-              projectId={id}
-              currentUserId={userId}
-              title="Project messages"
-              subtitle={
-                access.role === 'client'
-                  ? 'Message your contractor team about this project.'
-                  : 'Chat with clients and your team on this project.'
-              }
-              canSend={
-                access.role === 'admin' ||
-                (access.role === 'worker' &&
-                  access.workerStatus === 'approved') ||
-                access.role === 'client'
-              }
-            />
+            {access.role !== 'client' && (
+              <MessagePanel
+                channel="project"
+                projectId={id}
+                currentUserId={userId}
+                title="Project messages"
+                subtitle="Internal chat for your team on this project (clients cannot see this)."
+                canSend={
+                  access.role === 'admin' ||
+                  (access.role === 'worker' &&
+                    access.workerStatus === 'approved')
+                }
+              />
+            )}
 
             {access.canUploadEvidence && (
               <EvidenceUpload

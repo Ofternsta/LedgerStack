@@ -28,6 +28,7 @@ CREATE POLICY "org admin manage subscription"
   WITH CHECK (public.is_org_admin(organization_id));
 
 GRANT SELECT, INSERT, UPDATE ON public.subscriptions TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.subscriptions TO service_role;
 
 -- Client-visible invoices (contractor uploads; clients read only)
 CREATE TABLE IF NOT EXISTS public.project_invoices (

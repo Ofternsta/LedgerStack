@@ -66,7 +66,8 @@ export function ProjectClientPanel({ projectId }: { projectId: string }) {
       <h2 className="font-bold text-lg">Client access</h2>
       <p className="text-sm text-gray-600 leading-relaxed">
         Clients must sign up as <strong>Client</strong> and use this email. You
-        grant <strong>one-time view access</strong> to this project only.
+        grant <strong>one-time view access</strong> to this project only (evidence
+        and invoices — not internal team messages).
       </p>
 
       <form onSubmit={grantAccess} className="flex flex-col sm:flex-row gap-2">

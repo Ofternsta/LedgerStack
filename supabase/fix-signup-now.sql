@@ -9,10 +9,14 @@ CREATE INDEX IF NOT EXISTS pending_admin_signups_session_idx
   ON public.pending_admin_signups (stripe_session_id)
   WHERE stripe_session_id IS NOT NULL;
 
--- 2) Permissions (fixes "permission denied for table pending_admin_signups")
+-- 2) Permissions (pending signups + profile/org creation after Stripe)
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.pending_admin_signups TO service_role;
 GRANT SELECT, INSERT ON public.email_trial_registry TO service_role;
 GRANT SELECT, INSERT ON public.trial_payment_fingerprints TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.organizations TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.organization_members TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.subscriptions TO service_role;
 GRANT EXECUTE ON FUNCTION public.get_auth_user_id_by_email(text) TO service_role;
 
 -- 3) Diagnostics for ofternsta@gmail.com (read-only)

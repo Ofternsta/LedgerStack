@@ -28,17 +28,51 @@ export async function canAccessOrgTeamMessages(
   return Boolean(member)
 }
 
+/** Project messages are internal (admin + approved workers only). */
 export async function canAccessProjectMessages(
   supabase: SupabaseClient,
-  projectId: string
+  projectId: string,
+  userId: string
 ): Promise<boolean> {
-  const { data: project, error } = await supabase
-    .from('projects')
-    .select('id')
-    .eq('id', projectId)
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', userId)
     .maybeSingle()
 
-  return !error && Boolean(project)
+  const role = profile?.role as AppRole | undefined
+  if (!role || role === 'client') return false
+
+  if (role === 'admin') {
+    const { data: project, error } = await supabase
+      .from('projects')
+      .select('id')
+      .eq('id', projectId)
+      .maybeSingle()
+    return !error && Boolean(project)
+  }
+
+  if (role === 'worker') {
+    const { data: membership } = await supabase
+      .from('organization_members')
+      .select('status')
+      .eq('user_id', userId)
+      .eq('status', 'approved')
+      .limit(1)
+      .maybeSingle()
+
+    if (!membership) return false
+
+    const { data: project, error } = await supabase
+      .from('projects')
+      .select('id')
+      .eq('id', projectId)
+      .maybeSingle()
+
+    return !error && Boolean(project)
+  }
+
+  return false
 }
 
 export function canSendOrgTeamMessages(
@@ -50,7 +84,6 @@ export function canSendOrgTeamMessages(
 
 export function canSendProjectMessages(role: AppRole, workerStatus: string) {
   if (role === 'admin') return true
-  if (role === 'client') return true
   if (role === 'worker' && workerStatus === 'approved') return true
   return false
 }

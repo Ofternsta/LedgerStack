@@ -87,7 +87,11 @@ export async function GET(req: Request) {
       return NextResponse.json({ messages })
     }
 
-    const allowed = await canAccessProjectMessages(supabase, projectId!)
+    const allowed = await canAccessProjectMessages(
+      supabase,
+      projectId!,
+      user.id
+    )
     if (!allowed) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
@@ -209,6 +213,11 @@ export async function POST(req: Request) {
     }
 
     if (!canSendProjectMessages(role, workerStatus)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const canRead = await canAccessProjectMessages(supabase, projectId, user.id)
+    if (!canRead) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

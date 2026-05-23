@@ -36,7 +36,7 @@ export function MessagePanel({
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const bottomRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
 
   const load = useCallback(async () => {
     const params = new URLSearchParams({ channel })
@@ -69,10 +69,6 @@ export function MessagePanel({
     return () => clearInterval(interval)
   }, [load])
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
-
   async function send() {
     if (!draft.trim() || !canSend) return
 
@@ -99,6 +95,8 @@ export function MessagePanel({
 
     setDraft('')
     await load()
+    const list = listRef.current
+    if (list) list.scrollTop = list.scrollHeight
     setSending(false)
   }
 
@@ -116,6 +114,7 @@ export function MessagePanel({
       )}
 
       <div
+        ref={listRef}
         className="border border-gray-100 rounded-xl bg-gray-50 p-3 max-h-[280px] overflow-y-auto space-y-3 min-h-[120px]"
         aria-live="polite"
       >
@@ -164,7 +163,6 @@ export function MessagePanel({
             </div>
           )
         })}
-        <div ref={bottomRef} />
       </div>
 
       {canSend ? (
