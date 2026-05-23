@@ -1,4 +1,9 @@
+import Image from 'next/image'
 import Link from 'next/link'
+
+/** Native pixels of public/logo.png — keep in sync if the asset is replaced. */
+const LOGO_WIDTH = 1254
+const LOGO_HEIGHT = 1254
 
 type BrandLogoProps = {
   href?: string
@@ -17,19 +22,19 @@ export function BrandLogo({
   className = '',
 }: BrandLogoProps) {
   const h = heights[size]
+  const isPriority = size === 'hero' || size === 'hero-xl' || size === 'lg'
+
   const img = (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
+    <Image
       src="/logo.png"
       alt="LedgerStack"
-      width={Math.round(h * 1.1)}
-      height={h}
-      className={`object-contain ${className}`}
-      style={{ height: h, width: 'auto', maxWidth: '100%' }}
-      decoding="async"
-      fetchPriority={
-        size === 'hero' || size === 'hero-xl' || size === 'lg' ? 'high' : undefined
-      }
+      width={LOGO_WIDTH}
+      height={LOGO_HEIGHT}
+      quality={95}
+      priority={isPriority}
+      sizes={`${h}px`}
+      className={`h-auto w-auto max-w-full object-contain ${className}`}
+      style={{ height: h, width: 'auto' }}
     />
   )
 
