@@ -23,6 +23,7 @@ type BillingData = {
 }
 
 function BillingContent() {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const [data, setData] = useState<BillingData | null>(null)
   const [loading, setLoading] = useState<string | null>(null)
@@ -31,7 +32,13 @@ function BillingContent() {
   useEffect(() => {
     fetch('/api/billing')
       .then((r) => r.json())
-      .then(setData)
+      .then((payload) => {
+        if (payload.needsPlanSelection) {
+          router.replace('/onboarding/subscription')
+          return
+        }
+        setData(payload)
+      })
 
     if (searchParams.get('success')) {
       setMessage('Subscription updated successfully.')

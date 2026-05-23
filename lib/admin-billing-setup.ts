@@ -2,6 +2,7 @@ import 'server-only'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
+import { emailHasUsedTrial } from '@/lib/trial-eligibility'
 import {
   BILLING_PLANS,
   type BillingPlanId,
@@ -24,24 +25,20 @@ export async function setupAdminSubscription(
     plan: BillingPlanId
     successPath?: string
     cancelPath?: string
+    allowTrial?: boolean
   }
 ): Promise<{ checkoutUrl?: string | null; error?: string | null }> {
   const { organizationId, email, plan } = input
   const appUrl = billingAppUrl()
-  const successPath = input.successPath ?? '/settings/billing?success=1'
-  const cancelPath = input.cancelPath ?? '/settings/billing?canceled=1&setup=1'
+  const successPath = input.successPath ?? '/?welcome=1'
+  const cancelPath =
+    input.cancelPath ?? '/onboarding/subscription?canceled=1'
 
   if (plan === 'trial') {
-    const { error } = await supabase.from('subscriptions').upsert(
-      {
-        organization_id: organizationId,
-        plan: 'trial',
-        status: 'active',
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'organization_id' }
-    )
-    return { error: error?.message ?? null }
+    return {
+      error:
+        'Free trial requires a payment method on file. Use the subscription page during signup.',
+    }
   }
 
   if (!isStripeConfigured()) {

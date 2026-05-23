@@ -1,6 +1,7 @@
 import 'server-only'
 
-import type Stripe from 'stripe'
+import Stripe from 'stripe'
+import type { Stripe as StripeTypes } from 'stripe'
 import { createServiceClient } from '@/lib/supabase/service'
 import {
   type BillingPlanId,
@@ -14,7 +15,7 @@ type SubscriptionStatus =
   | 'past_due'
   | 'canceled'
 
-function mapStripeStatus(status: Stripe.Subscription.Status): SubscriptionStatus {
+function mapStripeStatus(status: StripeTypes.Subscription.Status): SubscriptionStatus {
   if (status === 'active') return 'active'
   if (status === 'trialing') return 'trialing'
   if (status === 'past_due' || status === 'unpaid') return 'past_due'
@@ -47,7 +48,7 @@ export async function upsertSubscriptionFromStripe(input: {
   if (error) throw new Error(error.message)
 }
 
-export async function syncStripeSubscription(subscription: Stripe.Subscription) {
+export async function syncStripeSubscription(subscription: StripeTypes.Subscription) {
   const customerId =
     typeof subscription.customer === 'string'
       ? subscription.customer
@@ -96,8 +97,34 @@ export async function syncStripeSubscription(subscription: Stripe.Subscription) 
 }
 
 export async function handleCheckoutSessionCompleted(
-  session: Stripe.Checkout.Session
+  session: StripeTypes.Checkout.Session
 ) {
+  const pendingSignupId = session.metadata?.pending_signup_id
+
+  if (pendingSignupId) {
+    const stripeKey = process.env.STRIPE_SECRET_KEY
+    const stripe = stripeKey ? new Stripe(stripeKey) : null
+    const { getCheckoutPaymentFingerprint } = await import(
+      '@/lib/stripe-payment-fingerprint'
+    )
+    const { fulfillPendingAdminSignup } = await import('@/lib/register-admin')
+
+    const fingerprint = stripe
+      ? await getCheckoutPaymentFingerprint(stripe, session)
+      : null
+
+    const customerId =
+      typeof session.customer === 'string'
+        ? session.customer
+        : session.customer?.id ?? null
+
+    await fulfillPendingAdminSignup(pendingSignupId, {
+      paymentMethodFingerprint: fingerprint,
+      stripeCustomerId: customerId,
+    })
+    return
+  }
+
   const organizationId = session.metadata?.organization_id
   const plan = session.metadata?.plan as BillingPlanId | undefined
 

@@ -57,7 +57,7 @@ Full Stripe Dashboard steps: **`STRIPE.md`**
 - **AI**: Claim summary, timeline (`/api/claim-summary`, `/api/claim-timeline`), evidence categorization
 - **Export**: PDF via jsPDF (`npm install`), HTML fallback for print-to-PDF
 - **Dashboard**: `/dashboard` (admin) — project/claim/evidence stats
-- **Billing**: Admins **choose a plan at signup** (trial/starter/pro/enterprise); paid plans use Stripe Checkout + webhook; no automatic trial
+- **Billing**: New admins pick a plan on **`/onboarding/subscription`** before the account exists; **7-day trial** requires Stripe card verification (one trial per email + per card fingerprint); paid plans use Stripe Checkout + webhook
 
 ## Install dependencies
 

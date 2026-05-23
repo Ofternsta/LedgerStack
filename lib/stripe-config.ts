@@ -1,5 +1,13 @@
+export const TRIAL_DAYS = 7
+
+export function trialEndsAtFromNow() {
+  return new Date(
+    Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000
+  ).toISOString()
+}
+
 export const BILLING_PLANS = {
-  trial: { name: 'Trial', price: 0, projects: 3 },
+  trial: { name: 'Trial', price: 0, projects: 3, days: TRIAL_DAYS },
   starter: { name: 'Starter', price: 20, projects: 25 },
   professional: { name: 'Professional', price: 70, projects: 100 },
   enterprise: { name: 'Enterprise', price: 150, projects: -1 },

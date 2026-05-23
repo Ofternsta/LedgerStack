@@ -32,9 +32,14 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   const isAuthRoute =
     pathname.startsWith('/login') || pathname.startsWith('/auth')
-  const isPublicApi = pathname.startsWith('/api/billing/webhook')
+  const isPublicApi =
+    pathname.startsWith('/api/billing/webhook') ||
+    pathname.startsWith('/api/auth/register-admin') ||
+    pathname.startsWith('/api/auth/trial-eligibility')
+  const isPublicOnboarding =
+    pathname.startsWith('/onboarding/subscription')
 
-  if (!user && !isAuthRoute && !isPublicApi) {
+  if (!user && !isAuthRoute && !isPublicApi && !isPublicOnboarding) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)

@@ -70,7 +70,7 @@ export default function Home() {
         (billing.needsPlanSelection ||
           billing.subscription?.status === 'pending')
       ) {
-        router.push('/settings/billing?setup=1')
+        router.push('/onboarding/subscription?renew=1')
         setAccessLoading(false)
         return null
       }

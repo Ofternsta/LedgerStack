@@ -3,6 +3,8 @@ import {
   parseBillingPlan,
   setupAdminSubscription,
 } from '@/lib/admin-billing-setup'
+import { adminNeedsSubscription } from '@/lib/admin-subscription-status'
+import { emailHasUsedTrial } from '@/lib/trial-eligibility'
 import { requireAuth } from '@/lib/require-auth'
 import {
   BILLING_PLANS,
@@ -48,13 +50,16 @@ export async function GET() {
       .select('*', { count: 'exact', head: true })
       .eq('organization_id', org.id)
 
-    const needsPlanSelection =
-      !sub || (sub.status === 'pending' && sub.plan !== 'trial')
+    const needsPlanSelection = await adminNeedsSubscription(supabase, user.id)
+    const trialAvailable = user.email
+      ? !(await emailHasUsedTrial(user.email))
+      : false
 
     return NextResponse.json({
       plans: BILLING_PLANS,
       subscription: sub,
       needsPlanSelection,
+      trialAvailable,
       projectCount: projectCount ?? 0,
       stripeConfigured: isStripeConfigured(),
     })
@@ -81,8 +86,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Admin only' }, { status: 403 })
     }
 
-    const { plan: planRaw } = await req.json()
-    const planId = parseBillingPlan(planRaw)
+    const body = await req.json()
+    const planId = parseBillingPlan(body.plan)
 
     if (!planId) {
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })
@@ -98,10 +103,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'No organization' }, { status: 404 })
     }
 
+    const trialAvailable = user.email
+      ? !(await emailHasUsedTrial(user.email))
+      : false
+
     const billing = await setupAdminSubscription(supabase, {
       organizationId: org.id,
       email: user.email,
       plan: planId,
+      allowTrial: trialAvailable,
+      successPath:
+        typeof body.success_path === 'string' ? body.success_path : undefined,
+      cancelPath:
+        typeof body.cancel_path === 'string' ? body.cancel_path : undefined,
     })
 
     if (billing.error) {

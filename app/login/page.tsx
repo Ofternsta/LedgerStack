@@ -1,15 +1,15 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { linkClientAccessByEmail } from '@/lib/auth-signup'
+import { saveAdminSignupDraft } from '@/lib/signup-draft'
 import {
   INVITE_CODE_LENGTH,
   isProceduralInviteFormat,
   normalizeInviteCode,
 } from '@/lib/invite-code'
 import type { AppRole } from '@/lib/roles'
-import { BILLING_PLANS, type BillingPlanId } from '@/lib/stripe-config'
 import { supabase } from '@/lib/supabase'
 
 export default function LoginPage() {
@@ -21,13 +21,30 @@ export default function LoginPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [fullName, setFullName] = useState('')
   const [organizationName, setOrganizationName] = useState('')
-  const [billingPlan, setBillingPlan] = useState<BillingPlanId | null>(null)
   const [inviteCode, setInviteCode] = useState('')
   const [inviteCompany, setInviteCompany] = useState<string | null>(null)
   const [inviteValid, setInviteValid] = useState(false)
   const [inviteChecking, setInviteChecking] = useState(false)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('registered') === '1') {
+      setMessage(
+        params.get('trial') === '1'
+          ? 'Card verified and account created. Sign in with your email and password.'
+          : 'Payment complete. Sign in with your email and password.'
+      )
+      setMode('signin')
+    }
+    if (params.get('signup') === 'admin') {
+      setMessage('Enter your details on sign up, then choose a subscription plan.')
+      setMode('signup')
+      setRole('admin')
+    }
+  }, [])
 
   const verifyInvite = useCallback(async (raw: string) => {
     const code = normalizeInviteCode(raw)
@@ -77,12 +94,6 @@ export default function LoginPage() {
         return
       }
 
-      if (role === 'admin' && !billingPlan) {
-        setMessage('Select a subscription plan for your company.')
-        setLoading(false)
-        return
-      }
-
       if (role === 'worker') {
         const code = normalizeInviteCode(inviteCode)
         if (!isProceduralInviteFormat(code)) {
@@ -107,6 +118,18 @@ export default function LoginPage() {
         }
       }
 
+      if (role === 'admin') {
+        saveAdminSignupDraft({
+          email: email.trim(),
+          password,
+          fullName: fullName.trim(),
+          organizationName: organizationName.trim() || 'My Company',
+        })
+        router.push('/onboarding/subscription?register=1')
+        setLoading(false)
+        return
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
@@ -114,9 +137,7 @@ export default function LoginPage() {
           data: {
             role,
             full_name: fullName.trim() || null,
-            organization_name:
-              role === 'admin' ? organizationName.trim() || null : null,
-            billing_plan: role === 'admin' ? billingPlan : null,
+            organization_name: null,
             invite_code:
               role === 'worker' ? normalizeInviteCode(inviteCode) : null,
           },
@@ -147,7 +168,6 @@ export default function LoginPage() {
           role,
           full_name: fullName,
           organization_name: organizationName,
-          billing_plan: role === 'admin' ? billingPlan : undefined,
           invite_code: normalizeInviteCode(inviteCode),
         }),
       })
@@ -159,11 +179,6 @@ export default function LoginPage() {
         return
       }
 
-      if (setupPayload.checkoutUrl) {
-        window.location.href = setupPayload.checkoutUrl as string
-        return
-      }
-
       if (role === 'worker') {
         setMessage(
           'Worker account created. Your admin must approve you once before you can view projects.'
@@ -172,12 +187,6 @@ export default function LoginPage() {
         setMessage(
           'Client account created. Your contractor admin must grant you access to each project (by your email).'
         )
-      } else if (role === 'admin') {
-        await linkClientAccessByEmail()
-        router.push('/')
-        router.refresh()
-        setLoading(false)
-        return
       }
 
       setMode('signin')
@@ -212,8 +221,10 @@ export default function LoginPage() {
       return
     }
 
-    if (setupPayload.checkoutUrl) {
-      window.location.href = setupPayload.checkoutUrl as string
+    if (setupPayload.needsSubscription) {
+      router.push('/onboarding/subscription?renew=1')
+      router.refresh()
+      setLoading(false)
       return
     }
 
@@ -288,10 +299,7 @@ export default function LoginPage() {
                         name="role"
                         value={value}
                         checked={role === value}
-                        onChange={() => {
-                          setRole(value)
-                          if (value !== 'admin') setBillingPlan(null)
-                        }}
+                        onChange={() => setRole(value)}
                         className="mt-1"
                       />
                       <span>
@@ -321,72 +329,26 @@ export default function LoginPage() {
               </div>
 
               {role === 'admin' && (
-                <>
-                  <div>
-                    <label
-                      htmlFor="orgName"
-                      className="block text-sm font-medium text-gray-700 mb-1"
-                    >
-                      Company / organization name
-                    </label>
-                    <input
-                      id="orgName"
-                      type="text"
-                      value={organizationName}
-                      onChange={(e) => setOrganizationName(e.target.value)}
-                      className="border border-gray-300 rounded-xl p-3 w-full bg-white"
-                      placeholder="Acme Restoration"
-                    />
-                  </div>
-
-                  <div>
-                    <span className="block text-sm font-medium text-gray-700 mb-2">
-                      Subscription plan (required)
-                    </span>
-                    <div className="grid grid-cols-1 gap-2">
-                      {(
-                        Object.entries(BILLING_PLANS) as [
-                          BillingPlanId,
-                          (typeof BILLING_PLANS)[BillingPlanId],
-                        ][]
-                      ).map(([key, plan]) => (
-                        <label
-                          key={key}
-                          className={`flex gap-3 p-3 rounded-xl border cursor-pointer ${
-                            billingPlan === key
-                              ? 'border-black bg-white'
-                              : 'border-gray-200 bg-white'
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="billingPlan"
-                            value={key}
-                            checked={billingPlan === key}
-                            onChange={() => setBillingPlan(key)}
-                            className="mt-1"
-                          />
-                          <span>
-                            <span className="font-medium block">{plan.name}</span>
-                            <span className="text-xs text-gray-600">
-                              {plan.price === 0
-                                ? `Free · up to ${plan.projects} projects`
-                                : `$${plan.price}/month${
-                                    plan.projects > 0
-                                      ? ` · up to ${plan.projects} projects`
-                                      : ' · unlimited projects'
-                                  }`}
-                            </span>
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                    <p className="text-xs text-gray-500 mt-2">
-                      Paid plans open Stripe Checkout after signup. Trial starts
-                      immediately with no card.
-                    </p>
-                  </div>
-                </>
+                <div>
+                  <label
+                    htmlFor="orgName"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Company / organization name
+                  </label>
+                  <input
+                    id="orgName"
+                    type="text"
+                    value={organizationName}
+                    onChange={(e) => setOrganizationName(e.target.value)}
+                    className="border border-gray-300 rounded-xl p-3 w-full bg-white"
+                    placeholder="Acme Restoration"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Next step: choose a subscription plan, then your account is
+                    created.
+                  </p>
+                </div>
               )}
 
               {role === 'worker' && (
@@ -514,8 +476,7 @@ export default function LoginPage() {
               !email.trim() ||
               !password ||
               (mode === 'signup' && !confirmPassword) ||
-              (mode === 'signup' && role === 'worker' && !inviteValid) ||
-              (mode === 'signup' && role === 'admin' && !billingPlan)
+              (mode === 'signup' && role === 'worker' && !inviteValid)
             }
             className="w-full bg-black text-white py-4 rounded-xl font-medium disabled:opacity-50 min-h-[52px]"
           >
