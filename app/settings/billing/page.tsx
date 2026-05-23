@@ -82,8 +82,9 @@ function BillingContent() {
 
       {!data.stripeConfigured && (
         <p className="text-xs text-amber-800 bg-amber-50 border border-amber-100 p-3 rounded-xl">
-          Stripe is not configured. Plans update locally. Set STRIPE_SECRET_KEY and
-          price IDs in production.
+          Stripe is not configured. Paid plans need API keys and price IDs — see{' '}
+          <code className="text-[11px]">STRIPE.md</code> in the repo. Trial still
+          works locally without Stripe.
         </p>
       )}
 

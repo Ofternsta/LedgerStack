@@ -39,12 +39,15 @@ NEXT_PUBLIC_APP_URL=       # Production: https://ledgerstack.org — local dev: 
 PLATFORM_OWNER_EMAIL=      # Your login email — only you can delete accounts at /settings/users
 SUPABASE_SERVICE_ROLE_KEY= # Required for account deletion (Supabase → Settings → API → service_role)
 
-# Optional — Stripe subscriptions
+# Stripe subscriptions (see STRIPE.md)
 STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
 STRIPE_PRICE_STARTER=
 STRIPE_PRICE_PROFESSIONAL=
 STRIPE_PRICE_ENTERPRISE=
 ```
+
+Full Stripe Dashboard steps: **`STRIPE.md`**
 
 ## Features
 
@@ -53,7 +56,7 @@ STRIPE_PRICE_ENTERPRISE=
 - **AI**: Claim summary, timeline (`/api/claim-summary`, `/api/claim-timeline`), evidence categorization
 - **Export**: PDF via jsPDF (`npm install`), HTML fallback for print-to-PDF
 - **Dashboard**: `/dashboard` (admin) — project/claim/evidence stats
-- **Billing**: `/settings/billing` (admin) — trial/starter/pro/enterprise plans
+- **Billing**: `/settings/billing` (admin) — trial/starter/pro/enterprise; Stripe Checkout + webhook
 
 ## Install dependencies
 
