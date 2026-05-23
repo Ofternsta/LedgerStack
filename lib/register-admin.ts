@@ -2,7 +2,7 @@ import 'server-only'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
-import { ensureUserProfile } from '@/lib/complete-signup-server'
+import { setupAdminOrganizationAfterStripe } from '@/lib/admin-signup-setup'
 import {
   decryptSignupPassword,
   encryptSignupPassword,
@@ -248,16 +248,11 @@ export async function fulfillPendingAdminSignup(
 
   const existingUserId = await getAuthUserIdByEmail(email)
   if (existingUserId) {
-    const profileResult = await ensureUserProfile(
+    const profileResult = await setupAdminOrganizationAfterStripe(
       service,
       existingUserId,
       {
-        role: 'admin',
-        full_name: pending.full_name ?? undefined,
-        organization_name: pending.organization_name,
-      },
-      {
-        role: 'admin',
+        fullName: pending.full_name,
         organizationName: pending.organization_name,
       }
     )
@@ -327,19 +322,10 @@ export async function fulfillPendingAdminSignup(
 
   const userId = created.user.id
 
-  const profileResult = await ensureUserProfile(
-    service,
-    userId,
-    {
-      role: 'admin',
-      full_name: pending.full_name ?? undefined,
-      organization_name: pending.organization_name,
-    },
-    {
-      role: 'admin',
-      organizationName: pending.organization_name,
-    }
-  )
+  const profileResult = await setupAdminOrganizationAfterStripe(service, userId, {
+    fullName: pending.full_name,
+    organizationName: pending.organization_name,
+  })
 
   if (profileResult.error || !profileResult.organizationId) {
     await service.auth.admin.deleteUser(userId)
