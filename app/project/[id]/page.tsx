@@ -9,7 +9,8 @@ import { ClaimStatusWorkflow } from '@/components/claim-status-workflow'
 import type { ClaimStatus } from '@/lib/claim-status'
 import { ClientPortalPanel } from '@/components/client-portal-panel'
 import { EvidenceUpload } from '@/components/evidence-upload'
-import { MessagePanel } from '@/components/message-panel'
+import { InternalNotesPanel } from '@/components/internal-notes-panel'
+import { ProjectSchedulePanel } from '@/components/project-schedule-panel'
 import { ProjectClientPanel } from '@/components/project-client-panel'
 import { EVIDENCE_TYPES } from '@/lib/evidence-types'
 import { loadUserAccess } from '@/lib/load-access'
@@ -364,19 +365,20 @@ export default function ProjectPageClient() {
               />
             )}
 
-            {access.role !== 'client' && (
-              <MessagePanel
-                channel="project"
-                projectId={id}
-                currentUserId={userId}
-                title="Project messages"
-                subtitle="Internal chat for your team on this project (clients cannot see this)."
-                canSend={
-                  access.role === 'admin' ||
-                  (access.role === 'worker' &&
-                    access.workerStatus === 'approved')
-                }
-              />
+            {access.canViewInternalNotes && (
+              <>
+                <ProjectSchedulePanel
+                  projectId={id}
+                  claimId={activeClaim.id}
+                  canEdit={access.canUpdateClaimInfo}
+                />
+                <InternalNotesPanel
+                  projectId={id}
+                  claimId={activeClaim.id}
+                  currentUserId={userId}
+                  canPost={access.canUpdateClaimInfo}
+                />
+              </>
             )}
 
             {access.canUploadEvidence && (

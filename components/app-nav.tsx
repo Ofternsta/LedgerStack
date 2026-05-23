@@ -26,6 +26,14 @@ export function AppNav({ access }: AppNavProps) {
       >
         Projects
       </Link>
+      {access.role !== 'client' && (
+        <Link
+          href="/calendar"
+          className="px-3 py-2 rounded-lg bg-gray-100 font-medium min-h-[40px] inline-flex items-center"
+        >
+          Calendar
+        </Link>
+      )}
       {access.canViewAnalytics && (
         <Link
           href="/dashboard"

@@ -17,6 +17,7 @@ export type UserAccess = {
   canManageProjectClients: boolean
   canUpdateClaimInfo: boolean
   canViewInternalNotes: boolean
+  canManageSchedule: boolean
   canViewAnalytics: boolean
   canManageBilling: boolean
   canManageSystemSettings: boolean
@@ -53,6 +54,7 @@ export function buildAccess(input: {
     canManageProjectClients: isAdmin,
     canUpdateClaimInfo: isAdmin || workerApproved,
     canViewInternalNotes: isAdmin || workerApproved,
+    canManageSchedule: isAdmin || workerApproved,
     canViewAnalytics: isAdmin,
     canManageBilling: isAdmin,
     canManageSystemSettings: isAdmin,
