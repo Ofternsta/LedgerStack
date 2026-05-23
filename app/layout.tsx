@@ -17,8 +17,12 @@ export const metadata: Metadata = {
   description: 'Manage restoration projects, claims, and evidence in the field',
   applicationName: 'LedgerStack',
   icons: {
-    icon: [{ url: '/logo-icon.png', type: 'image/png' }],
-    apple: [{ url: '/logo-icon.png', type: 'image/png' }],
+    icon: [
+      { url: '/icon.png', type: 'image/png', sizes: '512x512' },
+      { url: '/favicon.ico', sizes: '48x48' },
+    ],
+    apple: [{ url: '/apple-icon.png', type: 'image/png', sizes: '180x180' }],
+    shortcut: '/favicon.ico',
   },
   appleWebApp: {
     capable: true,
