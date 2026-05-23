@@ -1,0 +1,90 @@
+import 'server-only'
+
+import { createClient } from '@/lib/supabase/server'
+import {
+  buildAccess,
+  type AppRole,
+  type UserAccess,
+  type WorkerStatus,
+} from '@/lib/roles'
+
+export async function loadUserAccessServer(): Promise<{
+  userId: string | null
+  access: UserAccess | null
+  needsProfileSetup?: boolean
+}> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return { userId: null, access: null }
+
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  if (profileError) {
+    console.error('Profile load error:', profileError)
+  }
+
+  if (!profile?.role) {
+    return { userId: user.id, access: null, needsProfileSetup: true }
+  }
+
+  const role = profile.role as AppRole
+  let organizationId: string | null = null
+  let organizationName: string | null = null
+  let inviteCode: string | null = null
+  let workerStatus: WorkerStatus = 'none'
+
+  if (role === 'admin') {
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('id, name, invite_code')
+      .eq('admin_user_id', user.id)
+      .maybeSingle()
+
+    organizationId = org?.id ?? null
+    organizationName = org?.name ?? null
+    inviteCode = org?.invite_code ?? null
+  }
+
+  if (role === 'worker') {
+    const { data: membership } = await supabase
+      .from('organization_members')
+      .select('status, organization_id, organizations(name, invite_code)')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    const org = membership?.organizations as
+      | { name: string; invite_code: string }
+      | null
+      | undefined
+
+    organizationId = membership?.organization_id ?? null
+    organizationName = org?.name ?? null
+    inviteCode = org?.invite_code ?? null
+    workerStatus =
+      membership?.status === 'approved'
+        ? 'approved'
+        : membership
+          ? 'pending'
+          : 'none'
+  }
+
+  return {
+    userId: user.id,
+    access: buildAccess({
+      role,
+      organizationId,
+      organizationName,
+      inviteCode,
+      workerStatus,
+    }),
+  }
+}

@@ -105,64 +105,24 @@ export default function Home() {
 
     setCreating(true)
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const res = await fetch('/api/projects', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customer_name: customerName,
+        project_address: projectAddress,
+        notes,
+      }),
+    })
+    const payload = await res.json().catch(() => ({}))
 
-    if (!user) {
-      router.push('/login')
+    if (!res.ok) {
+      alert(
+        payload.error ||
+          'Could not create project. Run supabase/projects-rls-fix.sql in Supabase SQL Editor.'
+      )
       setCreating(false)
       return
-    }
-
-    const { data, error } = await supabase
-      .from('projects')
-      .insert([
-        {
-          customer_name: customerName,
-          project_address: projectAddress,
-          notes,
-          user_id: user.id,
-          organization_id: access.organizationId,
-        },
-      ])
-      .select()
-
-    if (error) {
-      alert(error.message)
-      setCreating(false)
-      return
-    }
-
-    const project = data?.[0]
-
-    if (project?.id) {
-      const { data: claimRows, error: claimError } = await supabase
-        .from('claims')
-        .insert([
-          {
-            project_id: project.id,
-            client_name: customerName,
-            property_address: projectAddress,
-            loss_type: 'Property',
-            insurance_company: 'Unknown',
-            claim_number: `AUTO-${Date.now()}`,
-            status: 'Inspection' as const,
-            notes: 'Auto claim',
-          },
-        ])
-        .select('id')
-
-      if (claimError || !claimRows?.length) {
-        await supabase.from('projects').delete().eq('id', project.id)
-        alert(
-          claimError?.message?.includes('permission denied')
-            ? 'Could not create project: run supabase/roles-and-orgs.sql in Supabase SQL Editor.'
-            : `Could not create project: ${claimError?.message || 'claim was not saved'}`
-        )
-        setCreating(false)
-        return
-      }
     }
 
     setCustomerName('')

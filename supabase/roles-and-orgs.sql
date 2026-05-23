@@ -27,6 +27,7 @@ CREATE POLICY "users update own profile"
   USING (id = auth.uid());
 
 GRANT SELECT, INSERT, UPDATE ON public.profiles TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO service_role;
 
 -- Organizations (owned by admin)
 CREATE TABLE IF NOT EXISTS public.organizations (
@@ -40,6 +41,7 @@ CREATE TABLE IF NOT EXISTS public.organizations (
 ALTER TABLE public.organizations ENABLE ROW LEVEL SECURITY;
 
 GRANT SELECT, INSERT, UPDATE ON public.organizations TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.organizations TO service_role;
 
 -- Workers request to join via invite_code (one-time admin approval)
 CREATE TABLE IF NOT EXISTS public.organization_members (
@@ -56,6 +58,7 @@ CREATE TABLE IF NOT EXISTS public.organization_members (
 ALTER TABLE public.organization_members ENABLE ROW LEVEL SECURITY;
 
 GRANT SELECT, INSERT, UPDATE ON public.organization_members TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.organization_members TO service_role;
 
 DROP POLICY IF EXISTS "admin read worker profiles" ON public.profiles;
 CREATE POLICY "admin read worker profiles"
@@ -236,9 +239,25 @@ DROP POLICY IF EXISTS "admin worker insert projects" ON public.projects;
 CREATE POLICY "admin worker insert projects"
   ON public.projects FOR INSERT TO authenticated
   WITH CHECK (
-    public.is_org_admin(organization_id)
-    OR public.is_approved_worker(organization_id)
+    user_id = auth.uid()
+    AND organization_id IS NOT NULL
+    AND (
+      EXISTS (
+        SELECT 1 FROM public.organizations o
+        WHERE o.id = organization_id AND o.admin_user_id = auth.uid()
+      )
+      OR EXISTS (
+        SELECT 1 FROM public.organization_members m
+        WHERE m.organization_id = organization_id
+          AND m.user_id = auth.uid()
+          AND m.status = 'approved'
+      )
+    )
   );
+
+GRANT EXECUTE ON FUNCTION public.is_org_admin(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_approved_worker(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.can_access_project(uuid) TO authenticated;
 
 DROP POLICY IF EXISTS "admin delete projects" ON public.projects;
 CREATE POLICY "admin delete projects"
