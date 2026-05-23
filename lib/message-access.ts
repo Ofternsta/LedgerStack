@@ -1,0 +1,56 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { AppRole } from '@/lib/roles'
+
+export type MessageChannel = 'org_team' | 'project'
+
+export async function canAccessOrgTeamMessages(
+  supabase: SupabaseClient,
+  userId: string,
+  organizationId: string
+): Promise<boolean> {
+  const { data: org } = await supabase
+    .from('organizations')
+    .select('id')
+    .eq('id', organizationId)
+    .eq('admin_user_id', userId)
+    .maybeSingle()
+
+  if (org) return true
+
+  const { data: member } = await supabase
+    .from('organization_members')
+    .select('id')
+    .eq('organization_id', organizationId)
+    .eq('user_id', userId)
+    .eq('status', 'approved')
+    .maybeSingle()
+
+  return Boolean(member)
+}
+
+export async function canAccessProjectMessages(
+  supabase: SupabaseClient,
+  projectId: string
+): Promise<boolean> {
+  const { data: project, error } = await supabase
+    .from('projects')
+    .select('id')
+    .eq('id', projectId)
+    .maybeSingle()
+
+  return !error && Boolean(project)
+}
+
+export function canSendOrgTeamMessages(
+  role: AppRole,
+  workerStatus: 'pending' | 'approved' | 'none'
+) {
+  return role === 'admin' || (role === 'worker' && workerStatus === 'approved')
+}
+
+export function canSendProjectMessages(role: AppRole, workerStatus: string) {
+  if (role === 'admin') return true
+  if (role === 'client') return true
+  if (role === 'worker' && workerStatus === 'approved') return true
+  return false
+}

@@ -13,6 +13,7 @@
 1. `supabase/roles-and-orgs.sql` — profiles, organizations, RLS on projects/claims
 2. `supabase/platform-security.sql` — storage RLS, subscriptions, invoices, timelines, claim updates
 3. `supabase/account-role-fix.sql` — lets workers convert to admin (wrong signup)
+4. `supabase/messaging.sql` — admin↔worker team chat and project messages with clients
 
 ### Worker signup (company invite code)
 
@@ -34,7 +35,7 @@ Remove or do not apply `anon-app-permissions.sql` / wide-open storage policies i
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 GROQ_API_KEY=              # AI summaries, OCR (vision), categorization
-NEXT_PUBLIC_APP_URL=       # Billing redirects: localhost locally, Vercel URL in production
+NEXT_PUBLIC_APP_URL=       # Production: https://ledgerstack.org — local dev: http://localhost:3000
 PLATFORM_OWNER_EMAIL=      # Your login email — only you can delete accounts at /settings/users
 SUPABASE_SERVICE_ROLE_KEY= # Required for account deletion (Supabase → Settings → API → service_role)
 

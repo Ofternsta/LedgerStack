@@ -7,6 +7,7 @@ import { EvidenceCard } from '@/components/evidence-card'
 import { ClaimAiPanel } from '@/components/claim-ai-panel'
 import { ClientPortalPanel } from '@/components/client-portal-panel'
 import { EvidenceUpload } from '@/components/evidence-upload'
+import { MessagePanel } from '@/components/message-panel'
 import { ProjectClientPanel } from '@/components/project-client-panel'
 import { EVIDENCE_TYPES } from '@/lib/evidence-types'
 import { loadUserAccess } from '@/lib/load-access'
@@ -47,8 +48,10 @@ export default function ProjectPageClient() {
   const [configError, setConfigError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('All')
+  const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => setUserId(user?.id ?? null))
     loadUserAccess().then(({ access: a }) => setAccess(a))
   }, [])
 
@@ -339,6 +342,24 @@ export default function ProjectPageClient() {
                 canApprove={access.canApproveDocuments}
               />
             )}
+
+            <MessagePanel
+              channel="project"
+              projectId={id}
+              currentUserId={userId}
+              title="Project messages"
+              subtitle={
+                access.role === 'client'
+                  ? 'Message your contractor team about this project.'
+                  : 'Chat with clients and your team on this project.'
+              }
+              canSend={
+                access.role === 'admin' ||
+                (access.role === 'worker' &&
+                  access.workerStatus === 'approved') ||
+                access.role === 'client'
+              }
+            />
 
             {access.canUploadEvidence && (
               <EvidenceUpload

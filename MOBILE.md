@@ -21,7 +21,7 @@ This project uses **Capacitor** for an App Store–like native shell (camera, sp
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `GROQ_API_KEY` (optional)
-4. Deploy. Copy your URL, e.g. `https://contractor-paperwork.vercel.app`.
+4. Deploy. Production URL: `https://ledgerstack.org`.
 
 ---
 
@@ -30,7 +30,7 @@ This project uses **Capacitor** for an App Store–like native shell (camera, sp
 Add to `.env.local`:
 
 ```env
-CAPACITOR_SERVER_URL=https://your-app.vercel.app
+CAPACITOR_SERVER_URL=https://ledgerstack.org
 ```
 
 Verify:

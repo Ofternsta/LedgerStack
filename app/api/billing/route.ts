@@ -138,8 +138,8 @@ export async function POST(req: Request) {
         customer: customerId,
         mode: 'subscription',
         line_items: [{ price: priceMap[plan]!, quantity: 1 }],
-        success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/settings/billing?success=1`,
-        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/settings/billing?canceled=1`,
+        success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://ledgerstack.org'}/settings/billing?success=1`,
+        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://ledgerstack.org'}/settings/billing?canceled=1`,
         metadata: { organization_id: org.id, plan },
       })
 

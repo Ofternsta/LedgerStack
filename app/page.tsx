@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { AdminTeamPanel } from '@/components/admin-team-panel'
+import { OrgTeamMessages } from '@/components/org-team-messages'
 import { AppHeader } from '@/components/app-header'
 import { AppNav } from '@/components/app-nav'
 import { linkClientAccessByEmail } from '@/lib/auth-signup'
@@ -30,8 +31,14 @@ export default function Home() {
   const [creating, setCreating] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [signingOut, setSigningOut] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
 
   async function refreshAccess() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    setUserId(user?.id ?? null)
+
     await linkClientAccessByEmail()
     let { access: a, needsProfileSetup } = await loadUserAccess()
 
@@ -249,6 +256,7 @@ export default function Home() {
       <main className="flex-1 safe-x px-4 py-4 max-w-lg mx-auto w-full pb-8 safe-bottom space-y-6">
         <AppNav access={access} />
         {access.canManageTeam && <AdminTeamPanel />}
+        <OrgTeamMessages access={access} userId={userId} />
 
         {access.canCreateProject && (
           <section className="border border-gray-200 rounded-xl p-4 bg-gray-50 space-y-3">
