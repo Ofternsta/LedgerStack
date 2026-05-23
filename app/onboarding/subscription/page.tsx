@@ -76,7 +76,7 @@ function SubscriptionOnboardingContent() {
       setTrialAvailable(Boolean(data.trialAvailable))
 
       if (!data.needsPlanSelection && data.subscription?.status === 'active') {
-        router.replace('/')
+        router.replace('/projects')
         return
       }
 

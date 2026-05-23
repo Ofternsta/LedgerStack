@@ -39,8 +39,15 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith('/api/auth/finish-signup')
   const isPublicOnboarding =
     pathname.startsWith('/onboarding/subscription')
+  const isPublicMarketing = pathname === '/'
 
-  if (!user && !isAuthRoute && !isPublicApi && !isPublicOnboarding) {
+  if (
+    !user &&
+    !isAuthRoute &&
+    !isPublicApi &&
+    !isPublicOnboarding &&
+    !isPublicMarketing
+  ) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
@@ -58,7 +65,13 @@ export async function updateSession(request: NextRequest) {
 
   if (user && emailConfirmed && pathname === '/login') {
     const url = request.nextUrl.clone()
-    url.pathname = '/'
+    url.pathname = '/projects'
+    return NextResponse.redirect(url)
+  }
+
+  if (user && emailConfirmed && pathname === '/') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/projects'
     return NextResponse.redirect(url)
   }
 

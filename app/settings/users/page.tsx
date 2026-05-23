@@ -35,7 +35,7 @@ export default function PlatformUsersPage() {
 
       if (!check.owner) {
         setAllowed(false)
-        router.replace('/')
+        router.replace('/projects')
         return
       }
 
@@ -105,7 +105,7 @@ export default function PlatformUsersPage() {
       <AppHeader
         title="Account management"
         subtitle="Platform owner — delete signed-up users"
-        backHref="/"
+        backHref="/projects"
         backLabel="Projects"
         onSignOut={signOut}
         signingOut={signingOut}

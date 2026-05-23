@@ -393,7 +393,7 @@ export default function LoginPage() {
     }
 
     await linkClientAccessByEmail()
-    router.push('/')
+    router.push('/projects')
     router.refresh()
     setLoading(false)
   }

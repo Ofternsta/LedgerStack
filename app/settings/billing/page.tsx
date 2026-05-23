@@ -154,7 +154,7 @@ export default function BillingPage() {
   useEffect(() => {
     loadUserAccess().then(({ access: a }) => {
       setAccess(a)
-      if (a && !a.canManageBilling) router.replace('/')
+      if (a && !a.canManageBilling) router.replace('/projects')
     })
   }, [router])
 
@@ -179,7 +179,7 @@ export default function BillingPage() {
       <AppHeader
         title="Billing"
         subtitle="Subscription plans for your organization"
-        backHref="/"
+        backHref="/projects"
         backLabel="Projects"
         onSignOut={signOut}
         signingOut={signingOut}

@@ -37,7 +37,7 @@ export default function DashboardPage() {
     loadUserAccess().then(({ access: a }) => {
       setAccess(a)
       if (a && !a.canViewAnalytics) {
-        router.replace('/')
+        router.replace('/projects')
       }
     })
   }, [router])
@@ -73,7 +73,7 @@ export default function DashboardPage() {
       <AppHeader
         title="Dashboard"
         subtitle={`${access.organizationName || 'Organization'} — analytics`}
-        backHref="/"
+        backHref="/projects"
         backLabel="Projects"
         onSignOut={signOut}
         signingOut={signingOut}

@@ -227,7 +227,7 @@ export default function ProjectPageClient() {
   if (!claims.length) {
     return (
       <div className="min-h-dvh">
-        <AppHeader title="No access" backHref="/" backLabel="Projects" />
+        <AppHeader title="No access" backHref="/projects" backLabel="Projects" />
         <div className="safe-x px-4 py-6 max-w-5xl mx-auto">
           <p className="text-gray-600">
             You do not have access to this project, or it has no claims yet.
@@ -241,7 +241,7 @@ export default function ProjectPageClient() {
   if (!activeClaim) {
     return (
       <div className="min-h-dvh">
-        <AppHeader title="No access" backHref="/" backLabel="Projects" />
+        <AppHeader title="No access" backHref="/projects" backLabel="Projects" />
         <div className="safe-x px-4 py-6 max-w-5xl mx-auto">
           <p className="text-gray-600">No claim selected for this project.</p>
         </div>
@@ -272,7 +272,7 @@ export default function ProjectPageClient() {
       <AppHeader
         title={selectedClaim?.client_name || 'Project'}
         subtitle={selectedClaim?.property_address}
-        backHref="/"
+        backHref="/projects"
         backLabel="Projects"
       />
 
