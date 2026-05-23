@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { createClient } from '@/lib/supabase/server'
-import { countOrgProjects, getAiUsageThisMonth } from '@/lib/plan-enforcement'
+import { countOrgProjects, getAiUsageThisMonth } from '@/lib/plan-usage'
 import { getOrgPlanContext, resolveUserOrganizationId } from '@/lib/org-plan'
 import {
   buildAccess,

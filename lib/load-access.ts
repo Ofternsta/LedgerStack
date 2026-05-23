@@ -1,4 +1,4 @@
-import { getAiUsageThisMonth, countOrgProjects } from '@/lib/plan-enforcement'
+import { countOrgProjects, getAiUsageThisMonth } from '@/lib/plan-usage'
 import { getOrgPlanContext, resolveUserOrganizationId } from '@/lib/org-plan'
 import { buildAccess, type AppRole, type UserAccess, type WorkerStatus } from '@/lib/roles'
 import { BILLING_PLANS } from '@/lib/stripe-config'

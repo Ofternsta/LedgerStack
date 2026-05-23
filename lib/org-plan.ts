@@ -4,7 +4,7 @@ import {
   type PlanEntitlements,
 } from '@/lib/plan-entitlements'
 import type { BillingPlanId } from '@/lib/stripe-config'
-import { isTrialExpired } from '@/lib/trial-eligibility'
+import { isTrialExpired } from '@/lib/trial-utils'
 
 export type OrgPlanContext = {
   organizationId: string

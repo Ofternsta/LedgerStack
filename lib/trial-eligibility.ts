@@ -1,12 +1,15 @@
 import 'server-only'
 
 import { paymentFingerprintHasUsedTrial } from '@/lib/stripe-payment-fingerprint'
-import { TRIAL_DAYS, trialEndsAtFromNow } from '@/lib/stripe-config'
+import { trialEndsAtFromNow } from '@/lib/stripe-config'
 import { createServiceClient } from '@/lib/supabase/service'
+import {
+  isTrialExpired,
+  normalizeSignupEmail,
+  trialDaysLabel,
+} from '@/lib/trial-utils'
 
-export function normalizeSignupEmail(email: string) {
-  return email.trim().toLowerCase()
-}
+export { isTrialExpired, normalizeSignupEmail, trialDaysLabel }
 
 /** True if this email already used a free trial. */
 export async function emailHasUsedTrial(email: string): Promise<boolean> {
@@ -33,15 +36,6 @@ export async function registerEmailTrial(email: string) {
 
   if (error) throw new Error(error.message)
   return trialEndsAt
-}
-
-export function isTrialExpired(trialEndsAt: string | null | undefined): boolean {
-  if (!trialEndsAt) return false
-  return new Date(trialEndsAt).getTime() < Date.now()
-}
-
-export function trialDaysLabel() {
-  return `${TRIAL_DAYS} days`
 }
 
 /** Email or card fingerprint already consumed a trial. */

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { isTrialExpired } from '@/lib/trial-eligibility'
+import { isTrialExpired } from '@/lib/trial-utils'
 
 /** Admin must pick or renew a plan. */
 export async function adminNeedsSubscription(
