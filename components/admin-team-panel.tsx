@@ -91,11 +91,11 @@ export function AdminTeamPanel() {
         This <strong>auto-generated</strong> code is required for worker signup.
         Each worker needs your <strong>one-time approval</strong> after they join.
       </p>
-      <div className="bg-gray-100 rounded-xl p-4 text-center space-y-2">
+      <div className="bg-background border border-border rounded-xl p-4 text-center space-y-2">
         <p className="text-xs text-muted-dim uppercase tracking-wide mb-1">
           Worker invite code (8 characters)
         </p>
-        <p className="text-2xl font-bold tracking-[0.2em] font-mono">
+        <p className="text-2xl font-bold tracking-[0.2em] font-mono text-brand-bright">
           {org.invite_code}
         </p>
         <button
@@ -115,9 +115,9 @@ export function AdminTeamPanel() {
           {pending.map((m) => (
             <li
               key={m.id}
-              className="border border-amber-200 bg-amber-50 rounded-xl p-3 flex flex-col gap-2"
+              className="border border-warning/40 bg-warning-surface rounded-xl p-3 flex flex-col gap-2"
             >
-              <p className="font-medium text-sm">
+              <p className="font-medium text-sm text-foreground">
                 {m.full_name || 'Worker'} — requested access
               </p>
               <div className="flex gap-2">
@@ -133,7 +133,7 @@ export function AdminTeamPanel() {
                   type="button"
                   disabled={actingId === m.id}
                   onClick={() => act(m.id, 'reject')}
-                  className="flex-1 border border-border py-2 rounded-lg text-sm font-medium min-h-[44px] disabled:opacity-50"
+                  className="flex-1 border border-border py-2 rounded-lg text-sm font-medium text-foreground min-h-[44px] disabled:opacity-50"
                 >
                   Deny
                 </button>
@@ -144,20 +144,22 @@ export function AdminTeamPanel() {
       )}
 
       {approved.length > 0 && (
-        <div className="pt-2 border-t border-gray-100 space-y-2">
-          <p className="text-sm font-medium text-gray-800">Approved workers</p>
+        <div className="pt-2 border-t border-border space-y-2">
+          <p className="text-sm font-medium text-foreground">Approved workers</p>
           <ul className="space-y-2">
             {approved.map((m) => (
               <li
                 key={m.id}
                 className="border border-border rounded-xl p-3 flex flex-col gap-2"
               >
-                <p className="font-medium text-sm">{m.full_name || 'Worker'}</p>
+                <p className="font-medium text-sm text-foreground">
+                  {m.full_name || 'Worker'}
+                </p>
                 <button
                   type="button"
                   disabled={actingId === m.id}
                   onClick={() => act(m.id, 'promote_admin')}
-                  className="text-sm border border-border py-2 rounded-lg font-medium min-h-[44px] disabled:opacity-50"
+                  className="text-sm border border-border py-2 rounded-lg font-medium text-foreground min-h-[44px] disabled:opacity-50"
                 >
                   Make organization admin
                 </button>
