@@ -8,6 +8,7 @@ import {
   type BillingPlanId,
   billingAppUrl,
   isStripeConfigured,
+  stripeCheckoutBranding,
   stripePriceIds,
 } from '@/lib/stripe-config'
 
@@ -77,6 +78,7 @@ export async function setupAdminSubscription(
   }
 
   const session = await stripe.checkout.sessions.create({
+    ...stripeCheckoutBranding(),
     customer: customerId,
     mode: 'subscription',
     line_items: [{ price: priceId, quantity: 1 }],

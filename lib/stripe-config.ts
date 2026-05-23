@@ -50,3 +50,18 @@ export function billingAppUrl(): string {
     'https://ledgerstack.org'
   )
 }
+
+/** Name shown at the top of Stripe Checkout (overrides Dashboard business name). */
+export function stripeCheckoutDisplayName(): string {
+  return process.env.STRIPE_CHECKOUT_DISPLAY_NAME?.trim() || 'OfternOS'
+}
+
+export function stripeCheckoutBranding(): {
+  branding_settings: { display_name: string }
+} {
+  return {
+    branding_settings: {
+      display_name: stripeCheckoutDisplayName(),
+    },
+  }
+}

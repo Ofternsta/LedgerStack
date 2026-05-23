@@ -32,8 +32,11 @@ Trial is free in-app only — no Stripe price needed.
 | Variable              | Where to copy                          |
 |-----------------------|----------------------------------------|
 | `STRIPE_SECRET_KEY`   | Secret key (`sk_test_...` or live)     |
+| `STRIPE_CHECKOUT_DISPLAY_NAME` | Optional. Name at top of Checkout (default: `OfternOS`) |
 
 Never commit secret keys. Add them only in `.env.local` and Vercel.
+
+Checkout shows **OfternOS** (not your personal Stripe account name) via `branding_settings.display_name`. To change it, set `STRIPE_CHECKOUT_DISPLAY_NAME` on Vercel or update the default in `lib/stripe-config.ts`.
 
 ## 4. Webhook
 

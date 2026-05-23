@@ -17,6 +17,7 @@ import {
   type BillingPlanId,
   billingAppUrl,
   isStripeConfigured,
+  stripeCheckoutBranding,
   stripePriceIds,
 } from '@/lib/stripe-config'
 import { sendSignupConfirmationEmail } from '@/lib/auth-email'
@@ -128,6 +129,7 @@ export async function startTrialAdminSignupCheckout(input: RegisterAdminInput) {
   const appUrl = billingAppUrl()
 
   const session = await stripe.checkout.sessions.create({
+    ...stripeCheckoutBranding(),
     mode: 'setup',
     customer_email: pending.email,
     payment_method_types: ['card'],
@@ -173,6 +175,7 @@ export async function startPaidAdminSignupCheckout(input: RegisterAdminInput) {
   const appUrl = billingAppUrl()
 
   const session = await stripe.checkout.sessions.create({
+    ...stripeCheckoutBranding(),
     mode: 'subscription',
     customer_email: pending.email,
     line_items: [{ price: priceId, quantity: 1 }],
