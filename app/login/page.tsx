@@ -10,6 +10,7 @@ import {
   normalizeInviteCode,
 } from '@/lib/invite-code'
 import type { AppRole } from '@/lib/roles'
+import { passwordResetRedirectUrl } from '@/lib/auth-redirect'
 import { supabase } from '@/lib/supabase'
 import {
   finishAccountSetup,
@@ -19,7 +20,7 @@ import {
 
 export default function LoginPage() {
   const router = useRouter()
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin')
+  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin')
   const [role, setRole] = useState<AppRole>('admin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -140,6 +141,11 @@ export default function LoginPage() {
           : 'Verify your email before signing in. Check your inbox for the confirmation link.'
       )
     }
+
+    if (params.get('reset') === '1') {
+      setMode('signin')
+      setMessage('Password updated. Sign in with your new password.')
+    }
   }, [runFinishSignup])
 
   async function handleResendVerification() {
@@ -194,6 +200,30 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     setMessage(null)
+
+    if (mode === 'forgot') {
+      const target = email.trim().toLowerCase()
+      if (!target) {
+        setMessage('Enter your email address.')
+        setLoading(false)
+        return
+      }
+
+      const { error } = await supabase.auth.resetPasswordForEmail(target, {
+        redirectTo: passwordResetRedirectUrl(),
+      })
+
+      setLoading(false)
+      if (error) {
+        setMessage(error.message)
+        return
+      }
+
+      setMessage(
+        'If an account exists for that email, we sent a password reset link. Check your inbox (and spam).'
+      )
+      return
+    }
 
     if (mode === 'signup') {
       if (password !== confirmPassword) {
@@ -415,26 +445,38 @@ export default function LoginPage() {
           onSubmit={handleSubmit}
           className="border border-gray-200 rounded-xl p-5 bg-gray-50 space-y-4"
         >
-          <div className="flex rounded-xl bg-white border border-gray-200 p-1">
-            <button
-              type="button"
-              onClick={() => setMode('signin')}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium min-h-[44px] ${
-                mode === 'signin' ? 'bg-black text-white' : 'text-gray-600'
-              }`}
-            >
-              Sign in
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode('signup')}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium min-h-[44px] ${
-                mode === 'signup' ? 'bg-black text-white' : 'text-gray-600'
-              }`}
-            >
-              Sign up
-            </button>
-          </div>
+          {mode === 'forgot' ? (
+            <p className="text-sm text-gray-700">
+              Enter your account email. We&apos;ll send a link to reset your password.
+            </p>
+          ) : (
+            <div className="flex rounded-xl bg-white border border-gray-200 p-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('signin')
+                  setMessage(null)
+                }}
+                className={`flex-1 py-2 rounded-lg text-sm font-medium min-h-[44px] ${
+                  mode === 'signin' ? 'bg-black text-white' : 'text-gray-600'
+                }`}
+              >
+                Sign in
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('signup')
+                  setMessage(null)
+                }}
+                className={`flex-1 py-2 rounded-lg text-sm font-medium min-h-[44px] ${
+                  mode === 'signup' ? 'bg-black text-white' : 'text-gray-600'
+                }`}
+              >
+                Sign up
+              </button>
+            </div>
+          )}
 
           {mode === 'signup' && (
             <>
@@ -577,27 +619,44 @@ export default function LoginPage() {
             />
           </div>
 
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              autoComplete={
-                mode === 'signup' ? 'new-password' : 'current-password'
-              }
-              required
-              minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="border border-gray-300 rounded-xl p-3 w-full bg-white"
-              placeholder="At least 6 characters"
-            />
-          </div>
+          {mode !== 'forgot' && (
+            <div>
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Password
+                </label>
+                {mode === 'signin' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('forgot')
+                      setMessage(null)
+                      setPassword('')
+                    }}
+                    className="text-sm text-gray-600 underline min-h-[44px]"
+                  >
+                    Forgot password?
+                  </button>
+                )}
+              </div>
+              <input
+                id="password"
+                type="password"
+                autoComplete={
+                  mode === 'signup' ? 'new-password' : 'current-password'
+                }
+                required
+                minLength={6}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="border border-gray-300 rounded-xl p-3 w-full bg-white"
+                placeholder="At least 6 characters"
+              />
+            </div>
+          )}
 
           {mode === 'signup' && (
             <div>
@@ -628,7 +687,9 @@ export default function LoginPage() {
                 message.includes('verified') ||
                 message.includes('created') ||
                 message.includes('approval') ||
-                message.includes('sent')
+                message.includes('sent') ||
+                message.includes('inbox') ||
+                message.includes('updated')
                   ? 'text-green-800 bg-green-50 border border-green-100 rounded-lg p-3'
                   : 'text-red-700 bg-red-50 border border-red-100 rounded-lg p-3'
               }`}
@@ -648,13 +709,26 @@ export default function LoginPage() {
             </button>
           )}
 
+          {mode === 'forgot' && (
+            <button
+              type="button"
+              onClick={() => {
+                setMode('signin')
+                setMessage(null)
+              }}
+              className="w-full border border-gray-300 text-gray-900 py-3 rounded-xl font-medium min-h-[48px]"
+            >
+              Back to sign in
+            </button>
+          )}
+
           <button
             type="submit"
             disabled={
               loading ||
               finishingAccount ||
               !email.trim() ||
-              !password ||
+              (mode !== 'forgot' && !password) ||
               (mode === 'signup' && !confirmPassword) ||
               (mode === 'signup' && role === 'worker' && !inviteValid)
             }
@@ -662,9 +736,11 @@ export default function LoginPage() {
           >
             {loading
               ? 'Please wait…'
-              : mode === 'signup'
-                ? 'Create account'
-                : 'Sign in'}
+              : mode === 'forgot'
+                ? 'Send reset link'
+                : mode === 'signup'
+                  ? 'Create account'
+                  : 'Sign in'}
           </button>
         </form>
       </main>

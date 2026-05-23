@@ -63,7 +63,12 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  if (user && emailConfirmed && pathname === '/login') {
+  if (
+    user &&
+    emailConfirmed &&
+    pathname === '/login' &&
+    !request.nextUrl.searchParams.has('reset')
+  ) {
     const url = request.nextUrl.clone()
     url.pathname = '/projects'
     return NextResponse.redirect(url)
