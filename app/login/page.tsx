@@ -29,7 +29,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [finishingAccount, setFinishingAccount] = useState(false)
-  const [postPaymentEmail, setPostPaymentEmail] = useState<string | null>(null)
 
   const runFinishSignup = useCallback(async (targetEmail: string) => {
     const normalized = targetEmail.trim().toLowerCase()
@@ -70,7 +69,7 @@ export default function LoginPage() {
         setMessage(status.message)
       } else {
         setMessage(
-          'Could not finish setup. Confirm Enterprise payment in Stripe, then click Finish account setup again.'
+          'Could not finish setup. Confirm payment in Stripe completed, then refresh this page.'
         )
       }
     } catch (err: unknown) {
@@ -86,10 +85,7 @@ export default function LoginPage() {
     const registeredEmail = params.get('email')?.trim().toLowerCase()
 
     if (params.get('registered') === '1') {
-      if (registeredEmail) {
-        setEmail(registeredEmail)
-        setPostPaymentEmail(registeredEmail)
-      }
+      if (registeredEmail) setEmail(registeredEmail)
       setMessage(
         params.get('trial') === '1'
           ? 'Card verified. Finishing your account…'
@@ -558,17 +554,6 @@ export default function LoginPage() {
             >
               {message}
             </p>
-          )}
-
-          {postPaymentEmail && (
-            <button
-              type="button"
-              disabled={finishingAccount || !email.trim()}
-              onClick={() => runFinishSignup(email.trim() || postPaymentEmail || '')}
-              className="w-full border border-gray-300 text-gray-900 py-3 rounded-xl font-medium disabled:opacity-50 min-h-[48px]"
-            >
-              {finishingAccount ? 'Finishing account…' : 'Finish account setup'}
-            </button>
           )}
 
           <button
