@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { extractMentionedUserIds } from '@/lib/mentions'
+import { requireOrgPlanFeature } from '@/lib/plan-guard'
 import {
   canAccessStaffProjectFeatures,
   getProjectOrgId,
@@ -76,6 +77,21 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
+    const orgId = await getProjectOrgId(supabase, projectId)
+    if (!orgId) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
+
+    const notesRead = await requireOrgPlanFeature(
+      supabase,
+      orgId,
+      'internalNotes',
+      'Internal notes'
+    )
+    if (!notesRead.ok) {
+      return NextResponse.json({ error: notesRead.error }, { status: 403 })
+    }
+
     let query = supabase
       .from('internal_notes')
       .select('id, author_id, body, mentioned_user_ids, note_kind, claim_id, created_at')
@@ -137,6 +153,16 @@ export async function POST(req: Request) {
     const organizationId = await getProjectOrgId(supabase, projectId)
     if (!organizationId) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
+
+    const notesWrite = await requireOrgPlanFeature(
+      supabase,
+      organizationId,
+      'internalNotes',
+      'Internal notes'
+    )
+    if (!notesWrite.ok) {
+      return NextResponse.json({ error: notesWrite.error }, { status: 403 })
     }
 
     const roster = await loadTeamRoster(supabase, organizationId)

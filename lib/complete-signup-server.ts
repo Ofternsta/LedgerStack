@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { generateInviteCode, isProceduralInviteFormat } from '@/lib/invite-code'
+import { assertCanAddWorker } from '@/lib/plan-enforcement'
 import type { AppRole } from '@/lib/roles'
 import { lookupOrganizationByInvite } from '@/lib/validate-invite'
 
@@ -93,6 +94,15 @@ export async function ensureUserProfile(
     if (!lookup.ok) {
       await supabase.from('profiles').delete().eq('id', userId)
       return { error: lookup.error, created: false, organizationId: undefined }
+    }
+
+    const workerCheck = await assertCanAddWorker(
+      supabase,
+      lookup.organizationId
+    )
+    if (!workerCheck.ok) {
+      await supabase.from('profiles').delete().eq('id', userId)
+      return { error: workerCheck.error, created: false, organizationId: undefined }
     }
 
     const { error: memberError } = await supabase

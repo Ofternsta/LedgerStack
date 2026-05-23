@@ -7,7 +7,7 @@ export function trialEndsAtFromNow() {
 }
 
 export const BILLING_PLANS = {
-  trial: { name: 'Trial', price: 0, projects: 3, days: TRIAL_DAYS },
+  trial: { name: 'Trial', price: 0, projects: 2, days: TRIAL_DAYS },
   starter: { name: 'Starter', price: 20, projects: 25 },
   professional: { name: 'Professional', price: 70, projects: 100 },
   enterprise: { name: 'Enterprise', price: 150, projects: -1 },

@@ -6,6 +6,7 @@ import {
   canSendProjectMessages,
   type MessageChannel,
 } from '@/lib/message-access'
+import { requireOrgPlanFeature } from '@/lib/plan-guard'
 import { requireAuth } from '@/lib/require-auth'
 
 export async function GET(req: Request) {
@@ -69,6 +70,16 @@ export async function GET(req: Request) {
       )
       if (!allowed) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+
+      const teamCheck = await requireOrgPlanFeature(
+        supabase,
+        organizationId,
+        'teamMessages',
+        'Team messages'
+      )
+      if (!teamCheck.ok) {
+        return NextResponse.json({ error: teamCheck.error }, { status: 403 })
       }
 
       const { data: rows, error } = await supabase
@@ -183,6 +194,16 @@ export async function POST(req: Request) {
 
       if (!organizationId) {
         return NextResponse.json({ error: 'No organization' }, { status: 403 })
+      }
+
+      const teamPost = await requireOrgPlanFeature(
+        supabase,
+        organizationId,
+        'teamMessages',
+        'Team messages'
+      )
+      if (!teamPost.ok) {
+        return NextResponse.json({ error: teamPost.error }, { status: 403 })
       }
 
       const { data: row, error } = await supabase

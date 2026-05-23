@@ -16,6 +16,8 @@
 4. `supabase/trial-and-pending-signup.sql` + `supabase/trial-payment-method.sql` + **`supabase/signup-table-grants.sql`** (signup tables; grants fix “permission denied”)
 5. `supabase/account-role-fix.sql` — lets workers convert to admin (wrong signup)
 6. `supabase/messaging.sql` — admin↔worker team chat and project messages with clients
+7. `supabase/scheduling-and-notes.sql` — calendar events and internal notes
+8. `supabase/plan-usage.sql` — monthly AI usage tracking + subscription read policies for workers
 
 ### Worker signup (company invite code)
 

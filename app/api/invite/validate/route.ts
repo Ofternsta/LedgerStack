@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server'
+import { getOrgPlanContext } from '@/lib/org-plan'
+import { createServiceClient } from '@/lib/supabase/service'
 import { lookupOrganizationByInvite } from '@/lib/validate-invite'
 import { createClient } from '@/lib/supabase/server'
 
@@ -10,6 +12,19 @@ export async function GET(req: Request) {
 
   if (!result.ok) {
     return NextResponse.json({ valid: false, error: result.error }, { status: 400 })
+  }
+
+  const service = createServiceClient()
+  const planCtx = await getOrgPlanContext(service, result.organizationId)
+  if (!planCtx?.entitlements.workerAccounts) {
+    return NextResponse.json(
+      {
+        valid: false,
+        error:
+          'This company must upgrade to Professional before adding workers.',
+      },
+      { status: 400 }
+    )
   }
 
   return NextResponse.json({

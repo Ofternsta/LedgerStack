@@ -8,6 +8,8 @@ import {
   saveEvidence,
   uploadEvidenceFile,
 } from '@/lib/evidence-storage'
+import { getOrgPlanContext } from '@/lib/org-plan'
+import { validateUploadForPlan } from '@/lib/plan-enforcement'
 import { requireAuth } from '@/lib/require-auth'
 import { validateUploadSize } from '@/lib/upload-limits'
 
@@ -79,6 +81,33 @@ export async function POST(req: Request) {
     const sizeError = validateUploadSize(file.size)
     if (sizeError) {
       return NextResponse.json({ error: sizeError }, { status: 400 })
+    }
+
+    const { data: project } = await supabase
+      .from('projects')
+      .select('organization_id')
+      .eq('id', projectId)
+      .maybeSingle()
+
+    if (!project?.organization_id) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
+
+    const planCtx = await getOrgPlanContext(supabase, project.organization_id)
+    if (!planCtx) {
+      return NextResponse.json(
+        { error: 'Active subscription required to upload.' },
+        { status: 403 }
+      )
+    }
+
+    const planUploadError = validateUploadForPlan(
+      file.type,
+      file.size,
+      planCtx.entitlements
+    )
+    if (planUploadError) {
+      return NextResponse.json({ error: planUploadError }, { status: 403 })
     }
 
     const filePath =

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { assertCanAddWorker } from '@/lib/plan-enforcement'
 import { transferOrgAdmin } from '@/lib/transfer-org-admin'
 import { requireAuth } from '@/lib/require-auth'
 
@@ -128,6 +129,13 @@ export async function POST(req: Request) {
 
   if (!org) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  if (action === 'approve') {
+    const workerCheck = await assertCanAddWorker(supabase, member.organization_id)
+    if (!workerCheck.ok) {
+      return NextResponse.json({ error: workerCheck.error }, { status: 403 })
+    }
   }
 
   const { error } = await supabase

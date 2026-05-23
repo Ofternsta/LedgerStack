@@ -1,12 +1,15 @@
 import 'server-only'
 
 import { createClient } from '@/lib/supabase/server'
+import { countOrgProjects, getAiUsageThisMonth } from '@/lib/plan-enforcement'
+import { getOrgPlanContext, resolveUserOrganizationId } from '@/lib/org-plan'
 import {
   buildAccess,
   type AppRole,
   type UserAccess,
   type WorkerStatus,
 } from '@/lib/roles'
+import { BILLING_PLANS } from '@/lib/stripe-config'
 
 export async function loadUserAccessServer(): Promise<{
   userId: string | null
@@ -77,6 +80,27 @@ export async function loadUserAccessServer(): Promise<{
           : 'none'
   }
 
+  if (role === 'client' && !organizationId) {
+    organizationId = await resolveUserOrganizationId(supabase, user.id, role)
+  }
+
+  let plan = null
+  let planName = null
+  let entitlements = null
+  let aiSummariesUsed = 0
+  let activeProjectCount = 0
+
+  if (organizationId) {
+    const ctx = await getOrgPlanContext(supabase, organizationId)
+    if (ctx) {
+      plan = ctx.plan
+      planName = BILLING_PLANS[ctx.plan].name
+      entitlements = ctx.entitlements
+      aiSummariesUsed = await getAiUsageThisMonth(supabase, organizationId)
+      activeProjectCount = await countOrgProjects(supabase, organizationId)
+    }
+  }
+
   return {
     userId: user.id,
     access: buildAccess({
@@ -85,6 +109,11 @@ export async function loadUserAccessServer(): Promise<{
       organizationName,
       inviteCode,
       workerStatus,
+      plan,
+      planName,
+      entitlements,
+      aiSummariesUsed,
+      activeProjectCount,
     }),
   }
 }

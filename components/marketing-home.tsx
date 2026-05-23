@@ -1,4 +1,9 @@
 import Link from 'next/link'
+import {
+  PLAN_ENTITLEMENTS,
+  PLAN_FEATURE_COPY,
+  formatPlanLimit,
+} from '@/lib/plan-entitlements'
 import { BILLING_PLANS } from '@/lib/stripe-config'
 
 const FEATURES = [
@@ -211,13 +216,22 @@ export function MarketingHome() {
                     </>
                   )}
                 </p>
-                <p className="mt-3 text-sm text-gray-600 flex-1">
-                  {id === 'trial'
-                    ? `${plan.days}-day trial with payment method`
-                    : 'projects' in plan && plan.projects === -1
-                      ? 'Unlimited projects'
-                      : `${plan.projects} projects`}
+                <p className="text-xs text-gray-500 mt-1">
+                  {PLAN_ENTITLEMENTS[id].tagline}
                 </p>
+                <p className="mt-3 text-sm text-gray-600">
+                  {id === 'trial'
+                    ? `${plan.days}-day trial · ${formatPlanLimit(PLAN_ENTITLEMENTS[id].maxActiveProjects, 'projects')}`
+                    : formatPlanLimit(
+                        PLAN_ENTITLEMENTS[id].maxActiveProjects,
+                        'projects'
+                      )}
+                </p>
+                <ul className="mt-3 text-xs text-gray-600 space-y-1 flex-1">
+                  {PLAN_FEATURE_COPY[id].includes.slice(0, 3).map((line) => (
+                    <li key={line}>✓ {line}</li>
+                  ))}
+                </ul>
               </li>
             ))}
           </ul>

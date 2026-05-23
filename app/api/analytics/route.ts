@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { listEvidence } from '@/lib/evidence-storage'
+import { requireOrgPlanFeature } from '@/lib/plan-guard'
 import { requireAuth } from '@/lib/require-auth'
 
 export async function GET() {
@@ -27,6 +28,16 @@ export async function GET() {
 
     if (!org) {
       return NextResponse.json({ error: 'No organization' }, { status: 404 })
+    }
+
+    const analyticsCheck = await requireOrgPlanFeature(
+      supabase,
+      org.id,
+      'analyticsDashboard',
+      'Analytics dashboard'
+    )
+    if (!analyticsCheck.ok) {
+      return NextResponse.json({ error: analyticsCheck.error }, { status: 403 })
     }
 
     const { data: projects } = await supabase

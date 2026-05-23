@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { isUnlimited } from '@/lib/plan-entitlements'
 
 type TimelineEvent = {
   event_date: string
@@ -13,18 +14,31 @@ type ClaimAiPanelProps = {
   claimId: string
   projectId: string
   canGenerate: boolean
+  canExportPdf: boolean
+  canExportHtml: boolean
+  exportHasWatermark: boolean
+  aiSummariesLimit: number
+  aiSummariesUsed: number
 }
 
 export function ClaimAiPanel({
   claimId,
   projectId,
   canGenerate,
+  canExportPdf,
+  canExportHtml,
+  exportHasWatermark,
+  aiSummariesLimit,
+  aiSummariesUsed,
 }: ClaimAiPanelProps) {
   const [summary, setSummary] = useState<string | null>(null)
   const [events, setEvents] = useState<TimelineEvent[]>([])
   const [loadingSummary, setLoadingSummary] = useState(false)
   const [loadingTimeline, setLoadingTimeline] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const aiAtLimit =
+    !isUnlimited(aiSummariesLimit) && aiSummariesUsed >= aiSummariesLimit
 
   useEffect(() => {
     if (!claimId) return
@@ -43,7 +57,7 @@ export function ClaimAiPanel({
   }
 
   async function generateSummary() {
-    if (!canGenerate) return
+    if (!canGenerate || aiAtLimit) return
     setLoadingSummary(true)
     setError(null)
     const res = await fetch('/api/claim-summary', {
@@ -61,7 +75,7 @@ export function ClaimAiPanel({
   }
 
   async function regenerateTimeline() {
-    if (!canGenerate) return
+    if (!canGenerate || aiAtLimit) return
     setLoadingTimeline(true)
     setError(null)
     const res = await fetch('/api/claim-timeline', {
@@ -82,8 +96,8 @@ export function ClaimAiPanel({
     setLoadingTimeline(false)
   }
 
-  async function exportPdf() {
-    const url = `/api/export-report?claim_id=${claimId}&project_id=${projectId}&format=pdf`
+  function exportReport(format: 'pdf' | 'html') {
+    const url = `/api/export-report?claim_id=${claimId}&project_id=${projectId}&format=${format}`
     window.open(url, '_blank')
   }
 
@@ -97,7 +111,7 @@ export function ClaimAiPanel({
               <button
                 type="button"
                 onClick={generateSummary}
-                disabled={loadingSummary}
+                disabled={loadingSummary || aiAtLimit}
                 className="text-sm bg-black text-white px-3 py-2 rounded-lg min-h-[40px] disabled:opacity-50"
               >
                 {loadingSummary ? 'Generating…' : 'AI summary'}
@@ -105,22 +119,47 @@ export function ClaimAiPanel({
               <button
                 type="button"
                 onClick={regenerateTimeline}
-                disabled={loadingTimeline}
+                disabled={loadingTimeline || aiAtLimit}
                 className="text-sm border border-gray-300 px-3 py-2 rounded-lg min-h-[40px] disabled:opacity-50"
               >
                 {loadingTimeline ? 'Updating…' : 'Refresh timeline'}
               </button>
             </>
           )}
-          <button
-            type="button"
-            onClick={exportPdf}
-            className="text-sm border border-gray-300 px-3 py-2 rounded-lg min-h-[40px]"
-          >
-            Export PDF
-          </button>
+          {canExportPdf && (
+            <button
+              type="button"
+              onClick={() => exportReport('pdf')}
+              className="text-sm border border-gray-300 px-3 py-2 rounded-lg min-h-[40px]"
+            >
+              Export PDF
+            </button>
+          )}
+          {canExportHtml && !canExportPdf && (
+            <button
+              type="button"
+              onClick={() => exportReport('html')}
+              className="text-sm border border-gray-300 px-3 py-2 rounded-lg min-h-[40px]"
+            >
+              {exportHasWatermark ? 'Preview export' : 'Export HTML'}
+            </button>
+          )}
         </div>
       </div>
+
+      {!isUnlimited(aiSummariesLimit) && (
+        <p className="text-xs text-gray-600">
+          AI summaries this month: {aiSummariesUsed} / {aiSummariesLimit}
+          {aiAtLimit && ' — limit reached. Upgrade for more.'}
+        </p>
+      )}
+
+      {exportHasWatermark && canExportHtml && (
+        <p className="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg p-2">
+          Trial exports include a watermark. Upgrade to Starter for standard PDF
+          exports.
+        </p>
+      )}
 
       {error && (
         <p className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg p-2">

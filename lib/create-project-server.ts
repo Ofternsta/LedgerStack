@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { DEFAULT_CLAIM_STATUS } from '@/lib/claim-status'
+import { assertCanCreateProject } from '@/lib/plan-enforcement'
 import { createServiceClient } from '@/lib/supabase/service'
 
 export type CreateProjectInput = {
@@ -51,6 +52,11 @@ export async function createProjectForUser(
   }
 
   const service = createServiceClient()
+
+  const projectCheck = await assertCanCreateProject(service, organizationId)
+  if (!projectCheck.ok) {
+    return { error: projectCheck.error }
+  }
 
   const { data: project, error: projectError } = await service
     .from('projects')

@@ -7,6 +7,8 @@ import { AdminTeamPanel } from '@/components/admin-team-panel'
 import { OrgTeamMessages } from '@/components/org-team-messages'
 import { AppHeader } from '@/components/app-header'
 import { AppNav } from '@/components/app-nav'
+import { PlanUpgradeBanner } from '@/components/plan-upgrade-banner'
+import { isUnlimited } from '@/lib/plan-entitlements'
 import { linkClientAccessByEmail } from '@/lib/auth-signup'
 import { deleteProject } from '@/lib/delete-project'
 import { loadUserAccess } from '@/lib/load-access'
@@ -229,8 +231,31 @@ export default function ProjectsPage() {
 
       <main className="flex-1 safe-x px-4 py-4 max-w-lg mx-auto w-full pb-8 safe-bottom space-y-6">
         <AppNav access={access} />
+
+        {access.planName && (
+          <p className="text-xs text-gray-600">
+            Plan: <strong>{access.planName}</strong>
+            {!isUnlimited(access.aiSummariesLimit) && (
+              <>
+                {' '}
+                · AI summaries {access.aiSummariesUsed}/{access.aiSummariesLimit}{' '}
+                this month
+              </>
+            )}
+            {!isUnlimited(access.activeProjectsLimit) && (
+              <> · up to {access.activeProjectsLimit} projects</>
+            )}
+          </p>
+        )}
+
+        {!access.canCreateProject && access.role !== 'client' && (
+          <PlanUpgradeBanner message="You have reached your project limit on this plan. Upgrade in Billing to add more projects." />
+        )}
+
         {access.canManageTeam && <AdminTeamPanel />}
-        <OrgTeamMessages access={access} userId={userId} />
+        {access.canUseTeamMessages && (
+          <OrgTeamMessages access={access} userId={userId} />
+        )}
 
         {access.canCreateProject && (
           <section className="border border-gray-200 rounded-xl p-4 bg-gray-50 space-y-3">

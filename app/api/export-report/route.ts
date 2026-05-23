@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { generateClaimSummary } from '@/lib/claim-ai'
 import { listEvidence } from '@/lib/evidence-storage'
+import { consumeAiSummary } from '@/lib/plan-enforcement'
+import { getOrgPlanContext } from '@/lib/org-plan'
 import { requireAuth } from '@/lib/require-auth'
 
 export const maxDuration = 60
@@ -13,10 +15,14 @@ function escapeHtml(text: string) {
     .replace(/"/g, '&quot;')
 }
 
+const TRIAL_WATERMARK =
+  'TRIAL — Upgrade to export without watermark · ledgerstack.org'
+
 function buildHtmlReport(
   claim: Record<string, unknown>,
   summary: string,
-  evidence: Awaited<ReturnType<typeof listEvidence>>
+  evidence: Awaited<ReturnType<typeof listEvidence>>,
+  watermark: boolean
 ) {
   const evidenceRows = evidence
     .map((e) => {
@@ -33,7 +39,12 @@ function buildHtmlReport(
 <style>body{font-family:system-ui,sans-serif;max-width:800px;margin:2rem auto;padding:0 1rem}
 h1{font-size:1.5rem}table{width:100%;border-collapse:collapse;margin-top:1rem}
 th,td{border:1px solid #ccc;padding:8px;text-align:left}th{background:#f5f5f5}
-@media print{body{margin:0}}</style></head><body>
+@media print{body{margin:0}}
+.watermark{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:bold;color:rgba(0,0,0,0.08);transform:rotate(-24deg);pointer-events:none;z-index:0}
+.content{position:relative;z-index:1}
+</style></head><body>
+${watermark ? `<div class="watermark" aria-hidden>${escapeHtml(TRIAL_WATERMARK)}</div>` : ''}
+<div class="content">
 <h1>Claim Evidence Report</h1>
 <p><strong>Client:</strong> ${escapeHtml(String(claim.client_name))}</p>
 <p><strong>Property:</strong> ${escapeHtml(String(claim.property_address))}</p>
@@ -46,13 +57,16 @@ th,td{border:1px solid #ccc;padding:8px;text-align:left}th{background:#f5f5f5}
 <table><thead><tr><th>Type</th><th>File</th><th>Uploaded</th><th>By</th><th>Summary</th></tr></thead>
 <tbody>${evidenceRows}</tbody></table>
 <p><em>Generated ${new Date().toLocaleString()} — LedgerStack. Use Print → Save as PDF.</em></p>
+${watermark ? `<p style="margin-top:2rem;font-size:12px;color:#666"><strong>${escapeHtml(TRIAL_WATERMARK)}</strong></p>` : ''}
+</div>
 </body></html>`
 }
 
 async function buildPdfReport(
   claim: Record<string, unknown>,
   summary: string,
-  evidence: Awaited<ReturnType<typeof listEvidence>>
+  evidence: Awaited<ReturnType<typeof listEvidence>>,
+  watermark: boolean
 ): Promise<ArrayBuffer | null> {
   try {
     const { jsPDF } = await import('jspdf')
@@ -106,6 +120,13 @@ async function buildPdfReport(
 
     addLine('')
     addLine(`Generated ${new Date().toLocaleString()} — LedgerStack`)
+    if (watermark) {
+      y += 12
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(120, 120, 120)
+      addLine(TRIAL_WATERMARK)
+      doc.setTextColor(0, 0, 0)
+    }
 
     return doc.output('arraybuffer')
   } catch {
@@ -143,15 +164,71 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Claim not found' }, { status: 404 })
     }
 
+    const { data: project } = await supabase
+      .from('projects')
+      .select('organization_id')
+      .eq('id', projectId)
+      .maybeSingle()
+
+    if (!project?.organization_id) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
+
+    const planCtx = await getOrgPlanContext(supabase, project.organization_id)
+    if (!planCtx) {
+      return NextResponse.json(
+        { error: 'Active subscription required to export.' },
+        { status: 403 }
+      )
+    }
+
+    const wantsPdf = format === 'pdf'
+    if (
+      wantsPdf &&
+      !planCtx.entitlements.standardPdfExport &&
+      !planCtx.entitlements.claimPacketExport
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            'PDF export is not included on your plan. Use HTML preview or upgrade to Starter.',
+        },
+        { status: 403 }
+      )
+    }
+
+    if (!wantsPdf && !planCtx.entitlements.exportWatermark && !planCtx.entitlements.standardPdfExport) {
+      return NextResponse.json(
+        { error: 'Exports are not available on your current plan.' },
+        { status: 403 }
+      )
+    }
+
+    const aiCheck = await consumeAiSummary(
+      project.organization_id,
+      planCtx.entitlements
+    )
+    if (!aiCheck.ok) {
+      return NextResponse.json(
+        { error: aiCheck.error, used: aiCheck.used, limit: aiCheck.limit },
+        { status: 403 }
+      )
+    }
+
     const evidence = await listEvidence(supabase, projectId, claimId)
     const summary = await generateClaimSummary(claim, evidence)
+    const watermark = planCtx.entitlements.exportWatermark
+    const branded = planCtx.entitlements.brandedExports
+    const footerBrand = branded
+      ? String(claim.client_name || 'LedgerStack')
+      : 'LedgerStack'
     const safeName = `claim-${claim.claim_number || claimId}`.replace(
       /[^a-zA-Z0-9.-]/g,
       '_'
     )
 
     if (format === 'html') {
-      const html = buildHtmlReport(claim, summary, evidence)
+      const html = buildHtmlReport(claim, summary, evidence, watermark)
       return new NextResponse(html, {
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
@@ -160,7 +237,7 @@ export async function GET(req: Request) {
       })
     }
 
-    const pdfBytes = await buildPdfReport(claim, summary, evidence)
+    const pdfBytes = await buildPdfReport(claim, summary, evidence, watermark)
 
     if (pdfBytes) {
       return new NextResponse(pdfBytes, {
@@ -171,11 +248,12 @@ export async function GET(req: Request) {
       })
     }
 
-    const html = buildHtmlReport(claim, summary, evidence)
+    const html = buildHtmlReport(claim, summary, evidence, watermark)
     return new NextResponse(html, {
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
         'Content-Disposition': `inline; filename="${safeName}.html"`,
+        'X-LedgerStack-Brand': footerBrand,
       },
     })
   } catch (err: unknown) {

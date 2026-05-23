@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { requireOrgPlanFeature } from '@/lib/plan-guard'
 import {
   canAccessStaffProjectFeatures,
   getProjectOrgId,
@@ -44,6 +45,16 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: 'No organization' }, { status: 403 })
       }
 
+      const scheduleRead = await requireOrgPlanFeature(
+        supabase,
+        organizationId,
+        'scheduling',
+        'Scheduling & calendar'
+      )
+      if (!scheduleRead.ok) {
+        return NextResponse.json({ error: scheduleRead.error }, { status: 403 })
+      }
+
       let query = supabase
         .from('schedule_events')
         .select('*')
@@ -69,6 +80,19 @@ export async function GET(req: Request) {
 
     if (!(await canAccessStaffProjectFeatures(supabase, projectId, user.id))) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const projectOrgId = await getProjectOrgId(supabase, projectId)
+    if (projectOrgId) {
+      const scheduleProject = await requireOrgPlanFeature(
+        supabase,
+        projectOrgId,
+        'scheduling',
+        'Scheduling & calendar'
+      )
+      if (!scheduleProject.ok) {
+        return NextResponse.json({ error: scheduleProject.error }, { status: 403 })
+      }
     }
 
     let query = supabase
@@ -122,6 +146,16 @@ export async function POST(req: Request) {
     const organizationId = await getProjectOrgId(supabase, projectId)
     if (!organizationId) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
+
+    const scheduleWrite = await requireOrgPlanFeature(
+      supabase,
+      organizationId,
+      'scheduling',
+      'Scheduling & calendar'
+    )
+    if (!scheduleWrite.ok) {
+      return NextResponse.json({ error: scheduleWrite.error }, { status: 403 })
     }
 
     const { data, error } = await supabase

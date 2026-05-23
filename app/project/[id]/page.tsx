@@ -11,7 +11,9 @@ import { ClientPortalPanel } from '@/components/client-portal-panel'
 import { EvidenceUpload } from '@/components/evidence-upload'
 import { InternalNotesPanel } from '@/components/internal-notes-panel'
 import { ProjectSchedulePanel } from '@/components/project-schedule-panel'
+import { PlanUpgradeBanner } from '@/components/plan-upgrade-banner'
 import { ProjectClientPanel } from '@/components/project-client-panel'
+import { isUnlimited } from '@/lib/plan-entitlements'
 import { EVIDENCE_TYPES } from '@/lib/evidence-types'
 import { loadUserAccess } from '@/lib/load-access'
 import type { UserAccess } from '@/lib/roles'
@@ -284,8 +286,25 @@ export default function ProjectPageClient() {
           </p>
         )}
 
+        {access.planName && access.role !== 'client' && (
+          <p className="text-xs text-gray-600">
+            {access.planName} plan
+            {!isUnlimited(access.aiSummariesLimit) && (
+              <>
+                {' '}
+                · AI {access.aiSummariesUsed}/{access.aiSummariesLimit} used this
+                month
+              </>
+            )}
+          </p>
+        )}
+
         {access.canManageProjectClients && (
           <ProjectClientPanel projectId={id} />
+        )}
+
+        {access.role === 'admin' && !access.canManageProjectClients && (
+          <PlanUpgradeBanner message="Client portal access is available on Professional and Enterprise. Upgrade to invite clients to view projects." />
         )}
 
         <label className="block lg:hidden">
@@ -356,6 +375,11 @@ export default function ProjectPageClient() {
               claimId={activeClaim.id}
               projectId={id}
               canGenerate={access.canUpdateClaimInfo}
+              canExportPdf={access.canExportPdf}
+              canExportHtml={access.canExportHtml}
+              exportHasWatermark={access.exportHasWatermark}
+              aiSummariesLimit={access.aiSummariesLimit}
+              aiSummariesUsed={access.aiSummariesUsed}
             />
 
             {access.canViewClientPortal && (
@@ -365,20 +389,21 @@ export default function ProjectPageClient() {
               />
             )}
 
+            {access.canManageSchedule && (
+              <ProjectSchedulePanel
+                projectId={id}
+                claimId={activeClaim.id}
+                canEdit={access.canUpdateClaimInfo}
+              />
+            )}
+
             {access.canViewInternalNotes && (
-              <>
-                <ProjectSchedulePanel
-                  projectId={id}
-                  claimId={activeClaim.id}
-                  canEdit={access.canUpdateClaimInfo}
-                />
-                <InternalNotesPanel
-                  projectId={id}
-                  claimId={activeClaim.id}
-                  currentUserId={userId}
-                  canPost={access.canUpdateClaimInfo}
-                />
-              </>
+              <InternalNotesPanel
+                projectId={id}
+                claimId={activeClaim.id}
+                currentUserId={userId}
+                canPost={access.canUpdateClaimInfo}
+              />
             )}
 
             {access.canUploadEvidence && (

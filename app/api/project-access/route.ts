@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { requireOrgPlanFeature } from '@/lib/plan-guard'
 import { requireAuth } from '@/lib/require-auth'
 
 /** GET client access rows for a project (admin only) */
@@ -84,6 +85,16 @@ export async function POST(req: Request) {
 
   if (!org) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  const portalCheck = await requireOrgPlanFeature(
+    supabase,
+    project.organization_id,
+    'clientPortal',
+    'Client portal'
+  )
+  if (!portalCheck.ok) {
+    return NextResponse.json({ error: portalCheck.error }, { status: 403 })
   }
 
   const { data: row, error } = await supabase
