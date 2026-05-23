@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server'
 import { deleteEvidence, listEvidence } from '@/lib/evidence-storage'
+import {
+  isOrganizationAdmin,
+  projectIdFromEvidencePath,
+} from '@/lib/org-admin'
+import { getProjectOrgId } from '@/lib/staff-project-access'
 import { requireAuth } from '@/lib/require-auth'
 import { updateEvidenceMeta } from '@/lib/update-evidence-meta'
 
@@ -30,22 +35,39 @@ export async function GET(req: Request) {
   }
 }
 
-/** PATCH update AI summary / category (admin only) */
+async function requireEvidenceOrgAdmin(
+  supabase: Awaited<ReturnType<typeof requireAuth>>['supabase'],
+  userId: string,
+  filePath: string
+) {
+  const projectId = projectIdFromEvidencePath(filePath)
+  if (!projectId) {
+    return { ok: false as const, error: 'Invalid file path' }
+  }
+
+  const organizationId = await getProjectOrgId(supabase, projectId)
+  if (!organizationId) {
+    return { ok: false as const, error: 'Project not found' }
+  }
+
+  const isAdmin = await isOrganizationAdmin(
+    supabase,
+    organizationId,
+    userId
+  )
+  if (!isAdmin) {
+    return { ok: false as const, error: 'Organization admin only' }
+  }
+
+  return { ok: true as const }
+}
+
+/** PATCH update AI summary / category (organization admin only) */
 export async function PATCH(req: Request) {
   try {
     const { supabase, user } = await requireAuth()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .maybeSingle()
-
-    if (profile?.role !== 'admin') {
-      return NextResponse.json({ error: 'Admin only' }, { status: 403 })
     }
 
     const body = await req.json()
@@ -55,6 +77,11 @@ export async function PATCH(req: Request) {
 
     if (!filePath) {
       return NextResponse.json({ error: 'file_path required' }, { status: 400 })
+    }
+
+    const gate = await requireEvidenceOrgAdmin(supabase, user.id, filePath)
+    if (!gate.ok) {
+      return NextResponse.json({ error: gate.error }, { status: 403 })
     }
 
     const evidence = await updateEvidenceMeta(supabase, filePath, {
@@ -77,16 +104,6 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .maybeSingle()
-
-    if (profile?.role !== 'admin') {
-      return NextResponse.json({ error: 'Admin only' }, { status: 403 })
-    }
-
     const filePath = new URL(req.url).searchParams.get('file_path')
 
     if (!filePath) {
@@ -94,6 +111,11 @@ export async function DELETE(req: Request) {
         { error: 'file_path is required' },
         { status: 400 }
       )
+    }
+
+    const gate = await requireEvidenceOrgAdmin(supabase, user.id, filePath)
+    if (!gate.ok) {
+      return NextResponse.json({ error: gate.error }, { status: 403 })
     }
 
     await deleteEvidence(supabase, filePath)

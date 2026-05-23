@@ -1,5 +1,4 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { generateInviteCode, isProceduralInviteFormat } from '@/lib/invite-code'
 import { assertCanAddWorker } from '@/lib/plan-enforcement'
 import type { AppRole } from '@/lib/roles'
 import { lookupOrganizationByInvite } from '@/lib/validate-invite'
@@ -38,8 +37,21 @@ export async function ensureUserProfile(
     return { error: null, created: false, organizationId: undefined }
   }
 
-  const role =
+  const requestedRole =
     overrides?.role ?? parseRole(metadata.role) ?? ('client' as AppRole)
+
+  // Admin companies are created only after Stripe (register-admin / webhook).
+  // Block self-serve admin via signUp metadata or API body.
+  if (requestedRole === 'admin') {
+    return {
+      error:
+        'Company admin accounts must be created through the signup and subscription flow at /login?signup=admin.',
+      created: false,
+      organizationId: undefined,
+    }
+  }
+
+  const role = requestedRole
 
   const { error: profileError } = await supabase.from('profiles').insert({
     id: userId,
@@ -52,37 +64,6 @@ export async function ensureUserProfile(
 
   if (profileError) {
     return { error: profileError.message, created: false, organizationId: undefined }
-  }
-
-  if (role === 'admin') {
-    let code = generateInviteCode()
-    for (let i = 0; i < 5 && !isProceduralInviteFormat(code); i++) {
-      code = generateInviteCode()
-    }
-
-    const { data: org, error: orgError } = await supabase
-      .from('organizations')
-      .insert({
-        admin_user_id: userId,
-        name:
-          overrides?.organizationName?.trim() ||
-          metadata.organization_name?.trim() ||
-          'My Company',
-        invite_code: code,
-      })
-      .select('id')
-      .single()
-
-    if (orgError || !org) {
-      await supabase.from('profiles').delete().eq('id', userId)
-      return {
-        error: orgError?.message || 'Could not create organization',
-        created: false,
-        organizationId: undefined,
-      }
-    }
-
-    return { error: null, created: true, organizationId: org.id }
   }
 
   if (role === 'worker') {

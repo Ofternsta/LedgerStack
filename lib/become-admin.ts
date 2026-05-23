@@ -3,7 +3,9 @@ import {
   generateInviteCode,
   isProceduralInviteFormat,
 } from '@/lib/invite-code'
+import { createServiceClient } from '@/lib/supabase/service'
 
+/** Worker → new company admin (must complete billing afterward). Uses service role for role/subscription writes. */
 export async function convertWorkerToAdmin(
   supabase: SupabaseClient,
   userId: string,
@@ -29,9 +31,11 @@ export async function convertWorkerToAdmin(
     return { error: 'You already have an admin organization.' }
   }
 
-  await supabase.from('organization_members').delete().eq('user_id', userId)
+  const service = createServiceClient()
 
-  const { error: profileError } = await supabase
+  await service.from('organization_members').delete().eq('user_id', userId)
+
+  const { error: profileError } = await service
     .from('profiles')
     .update({ role: 'admin' })
     .eq('id', userId)
@@ -44,6 +48,7 @@ export async function convertWorkerToAdmin(
   for (let i = 0; i < 5 && !isProceduralInviteFormat(inviteCode); i++) {
     inviteCode = generateInviteCode()
   }
+
   const { data: org, error: orgError } = await supabase
     .from('organizations')
     .insert({
@@ -54,8 +59,22 @@ export async function convertWorkerToAdmin(
     .select('id')
     .single()
 
-  if (orgError) {
-    return { error: orgError.message }
+  if (orgError || !org) {
+    return { error: orgError?.message || 'Could not create organization' }
+  }
+
+  const { error: subError } = await service.from('subscriptions').upsert(
+    {
+      organization_id: org.id,
+      plan: 'trial',
+      status: 'pending',
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'organization_id' }
+  )
+
+  if (subError) {
+    return { error: subError.message }
   }
 
   await supabase
