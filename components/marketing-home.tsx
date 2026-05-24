@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { BrandLogo } from '@/components/brand-logo'
+import { SupportLink } from '@/components/support-link'
 import {
   PLAN_ENTITLEMENTS,
   PLAN_FEATURE_COPY,
@@ -288,7 +289,8 @@ export function MarketingHome() {
       <footer className="border-t border-border bg-background">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted">
           <BrandLogo href="/" size="sm" showWordmark />
-          <div className="flex gap-6">
+          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-4 sm:gap-6">
+            <SupportLink className="hover:text-brand-bright" />
             <Link href="/login" className="hover:text-brand-bright">
               Sign in
             </Link>

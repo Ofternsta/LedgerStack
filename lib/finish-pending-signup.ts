@@ -13,6 +13,7 @@ import {
 } from '@/lib/register-admin'
 import { getCheckoutPaymentFingerprint } from '@/lib/stripe-payment-fingerprint'
 import { createServiceClient } from '@/lib/supabase/service'
+import { SUPPORT_EMAIL } from '@/lib/support'
 
 type PendingRow = {
   id: string
@@ -123,7 +124,7 @@ export async function getSignupStatus(email: string) {
       pending: false,
       lastSignupConsumed: Boolean(consumed),
       message: consumed
-        ? 'Signup was marked complete but no auth user exists. Use Complete setup or contact support.'
+        ? `Signup was marked complete but no auth user exists. Use Complete setup or email ${SUPPORT_EMAIL}.`
         : 'No pending signup found. Complete Stripe checkout first.',
     }
   }
@@ -234,7 +235,7 @@ export async function finishPendingSignup(email: string) {
       return {
         accountReady: false as const,
         error:
-          'Signup was already processed but no user exists. Contact support with your email.',
+          `Signup was already processed but no user exists. Email ${SUPPORT_EMAIL} with your signup address.`,
       }
     }
 

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { AdminTeamPanel } from '@/components/admin-team-panel'
 import { OrgTeamMessages } from '@/components/org-team-messages'
 import { AppHeader } from '@/components/app-header'
+import { AppFooter } from '@/components/app-footer'
 import { AppNav } from '@/components/app-nav'
 import { PlanUpgradeBanner } from '@/components/plan-upgrade-banner'
 import { isUnlimited } from '@/lib/plan-entitlements'
@@ -343,6 +344,8 @@ export default function ProjectsPage() {
             ))}
           </ul>
         </section>
+
+        <AppFooter />
       </main>
     </div>
   )

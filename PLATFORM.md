@@ -41,6 +41,8 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 GROQ_API_KEY=              # AI summaries, OCR (vision), categorization
 NEXT_PUBLIC_APP_URL=       # Production: https://ledgerstack.org — local dev: http://localhost:3000
+
+Support email: **support@ledgerstack.org** — set up forwarding in DNS (see SUPPORT.md).
 PLATFORM_OWNER_EMAIL=      # Your login email — only you can delete accounts at /settings/users
 SUPABASE_SERVICE_ROLE_KEY= # Required for account deletion (Supabase → Settings → API → service_role)
 

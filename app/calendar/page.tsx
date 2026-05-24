@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { AppHeader } from '@/components/app-header'
+import { AppFooter } from '@/components/app-footer'
 import { AppNav } from '@/components/app-nav'
 import {
   SCHEDULE_EVENT_LABELS,
@@ -144,6 +145,8 @@ export default function CalendarPage() {
             ))}
           </ul>
         )}
+
+        <AppFooter />
       </main>
     </div>
   )

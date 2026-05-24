@@ -13,6 +13,8 @@ import type { AppRole } from '@/lib/roles'
 import { passwordResetRedirectUrl } from '@/lib/auth-redirect'
 import { supabase } from '@/lib/supabase'
 import { BrandLogo } from '@/components/brand-logo'
+import { SupportLink } from '@/components/support-link'
+import { SUPPORT_EMAIL } from '@/lib/support'
 import {
   finishAccountSetup,
   getAccountSetupStatus,
@@ -410,7 +412,7 @@ export default function LoginPage() {
     if (!setupRes.ok) {
       setMessage(
         setupPayload.error ||
-          'Signed in but profile setup failed. Try signing up again or contact support.'
+          `Signed in but profile setup failed. Try signing up again or email ${SUPPORT_EMAIL}.`
       )
       setLoading(false)
       return
@@ -741,6 +743,10 @@ export default function LoginPage() {
                   : 'Sign in'}
           </button>
         </form>
+
+        <p className="mt-8 text-center text-sm text-muted">
+          Need help? <SupportLink className="text-brand-bright hover:underline" />
+        </p>
       </main>
     </div>
   )

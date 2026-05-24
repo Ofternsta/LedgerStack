@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { AppHeader } from '@/components/app-header'
+import { AppFooter } from '@/components/app-footer'
 import { AppNav } from '@/components/app-nav'
 import { loadUserAccess } from '@/lib/load-access'
 import type { UserAccess } from '@/lib/roles'
@@ -173,6 +174,8 @@ export default function DashboardPage() {
             </section>
           </>
         )}
+
+        <AppFooter />
       </main>
     </div>
   )
