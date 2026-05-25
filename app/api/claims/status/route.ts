@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { isClaimStatus, normalizeClaimStatus } from '@/lib/claim-status'
-import { loadUserAccess } from '@/lib/load-access'
+import { loadUserAccessServer } from '@/lib/load-access-server'
 import { requireAuth } from '@/lib/require-auth'
 
 export async function PATCH(req: Request) {
@@ -10,9 +10,16 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { access } = await loadUserAccess()
+    const { access } = await loadUserAccessServer()
     if (!access?.canUpdateClaimInfo) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      const message = !access?.plan
+        ? 'Active subscription required. Open Billing or complete your plan setup.'
+        : access.role === 'client'
+          ? 'Clients have view-only access.'
+          : access.workerStatus !== 'approved' && access.role === 'worker'
+            ? 'Your worker account must be approved by an admin.'
+            : 'You do not have permission to update claim status.'
+      return NextResponse.json({ error: message }, { status: 403 })
     }
 
     const body = await req.json().catch(() => ({}))

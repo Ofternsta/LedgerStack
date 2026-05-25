@@ -18,7 +18,12 @@
 6. `supabase/messaging.sql` — admin↔worker team chat and project messages with clients
 7. `supabase/scheduling-and-notes.sql` — calendar events and internal notes
 8. `supabase/plan-usage.sql` — monthly AI usage tracking + subscription read policies for workers
-9. **`supabase/security-hardening.sql`** — **required for production** (billing bypass, invite leak, role lock)
+9. **`supabase/claim-status-workflow.sql`** — claim status CHECK constraint (Inspection → Completed)
+10. **`supabase/security-hardening.sql`** — **required for production** (billing bypass, invite leak, role lock)
+
+**Storage:** Supabase → Storage → create bucket **`project-files`** (private). Policies are in `platform-security.sql`.
+
+**Testing upload + status:** see **`TESTING-EVIDENCE.md`**.
 
 ### Worker signup (company invite code)
 
