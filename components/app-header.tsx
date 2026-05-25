@@ -19,7 +19,7 @@ export function AppHeader({
   signingOut,
 }: AppHeaderProps) {
   return (
-    <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border safe-top">
+    <header className="border-b border-border bg-background safe-top shrink-0">
       <div className="px-4 py-3 max-w-5xl mx-auto">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">

@@ -1,20 +1,21 @@
 import Link from 'next/link'
 
-type ProjectStickyHeaderProps = {
+type ProjectPageHeaderProps = {
   title: string
   location: string
   backHref?: string
   backLabel?: string
 }
 
-export function ProjectStickyHeader({
+/** Project title block at the top of the page (scrolls with content). */
+export function ProjectPageHeader({
   title,
   location,
   backHref = '/projects',
   backLabel = 'Projects',
-}: ProjectStickyHeaderProps) {
+}: ProjectPageHeaderProps) {
   return (
-    <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border safe-top">
+    <header className="border-b border-border bg-background safe-top shrink-0">
       <div className="px-4 py-3 max-w-5xl mx-auto w-full">
         {backHref && (
           <Link

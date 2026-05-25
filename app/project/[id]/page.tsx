@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { EvidenceFolders } from '@/components/evidence-folders'
-import { ProjectStickyHeader } from '@/components/project-sticky-header'
+import { ProjectPageHeader } from '@/components/project-page-header'
 import { ClaimAiPanel } from '@/components/claim-ai-panel'
 import { ClaimStatusWorkflow } from '@/components/claim-status-workflow'
 import type { ClaimStatus } from '@/lib/claim-status'
@@ -229,7 +229,7 @@ export default function ProjectPageClient() {
   if (!claims.length) {
     return (
       <div className="min-h-dvh">
-        <ProjectStickyHeader
+        <ProjectPageHeader
           title="No access"
           location="Return to your project list."
           backHref="/projects"
@@ -248,7 +248,7 @@ export default function ProjectPageClient() {
   if (!activeClaim) {
     return (
       <div className="min-h-dvh">
-        <ProjectStickyHeader
+        <ProjectPageHeader
           title="No access"
           location="Return to your project list."
           backHref="/projects"
@@ -278,7 +278,7 @@ export default function ProjectPageClient() {
 
   return (
     <div className="min-h-dvh flex flex-col">
-      <ProjectStickyHeader
+      <ProjectPageHeader
         title={activeClaim.client_name}
         location={activeClaim.property_address}
         backHref="/projects"
