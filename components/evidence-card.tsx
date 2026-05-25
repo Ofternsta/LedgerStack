@@ -8,13 +8,17 @@ type EvidenceCardProps = {
     id: string
     file_name: string
     file_path: string
+    file_type?: string
     evidence_type: string
     summary: string
     created_at?: string
     uploaded_by_label?: string
   }
+  projectId?: string
+  claimId?: string
   canEdit: boolean
   canDelete: boolean
+  canRescan?: boolean
   onOpen: (filePath: string) => void
   onDelete: (filePath: string) => void
   onUpdated: () => void
@@ -22,8 +26,11 @@ type EvidenceCardProps = {
 
 export function EvidenceCard({
   doc,
+  projectId,
+  claimId,
   canEdit,
   canDelete,
+  canRescan = false,
   onOpen,
   onDelete,
   onUpdated,
@@ -32,7 +39,12 @@ export function EvidenceCard({
   const [summary, setSummary] = useState(doc.summary)
   const [evidenceType, setEvidenceType] = useState(doc.evidence_type)
   const [saving, setSaving] = useState(false)
+  const [rescanning, setRescanning] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const isPdf =
+    doc.file_type === 'application/pdf' ||
+    doc.file_name.toLowerCase().endsWith('.pdf')
 
   async function save() {
     setSaving(true)
@@ -58,6 +70,26 @@ export function EvidenceCard({
     setEditing(false)
     onUpdated()
     setSaving(false)
+  }
+
+  async function rescanText() {
+    if (!canRescan || !projectId || !claimId || rescanning) return
+    setRescanning(true)
+    setError(null)
+    try {
+      const { rescanEvidenceWithAi } = await import('@/lib/upload-evidence-server')
+      await rescanEvidenceWithAi(
+        projectId,
+        claimId,
+        doc.file_path,
+        doc.file_name,
+        doc.file_type || 'application/pdf'
+      )
+      onUpdated()
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Re-scan failed')
+    }
+    setRescanning(false)
   }
 
   return (
@@ -126,10 +158,20 @@ export function EvidenceCard({
       )}
 
       <div className="flex flex-wrap gap-3 mt-3">
+        {canRescan && isPdf && !editing && (
+          <button
+            type="button"
+            className="text-sm font-medium text-brand-bright min-h-[44px] disabled:opacity-50"
+            disabled={rescanning}
+            onClick={rescanText}
+          >
+            {rescanning ? 'Re-scanning…' : 'Re-scan text'}
+          </button>
+        )}
         {canEdit && !editing && (
           <button
             type="button"
-            className="text-sm font-medium text-gray-800 min-h-[44px]"
+            className="text-sm font-medium text-foreground min-h-[44px]"
             onClick={() => setEditing(true)}
           >
             Edit summary

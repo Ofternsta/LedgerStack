@@ -154,6 +154,7 @@ project-files / {projectId} / {claimId} / {timestamp}-{filename}.meta.json
 | Storage / RLS error on upload | Run `platform-security.sql`; bucket `project-files` exists |
 | Status update fails | Run `claim-status-workflow.sql` |
 | No AI category / empty summary | Set `GROQ_API_KEY`; without it, filename heuristics still work |
+| PDF says “no text could be extracted” | Often a **scanned/image PDF**; set `GROQ_API_KEY`, deploy, then **Re-scan text** on the card (or re-upload). OCR reads up to 6 pages. |
 | 401 on API | Sign in again |
 | Project empty / no claim | Create project from `/projects` (auto-creates one claim) |
 

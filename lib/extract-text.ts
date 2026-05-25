@@ -16,6 +16,9 @@ const TEXT_EXTENSIONS = new Set([
 ])
 
 const MAX_EXTRACT_CHARS = 50_000
+/** When embedded text is shorter than this, try page OCR (scanned/image PDFs). */
+const MIN_PDF_TEXT_CHARS = 40
+const MAX_PDF_OCR_PAGES = 6
 
 function extension(name: string) {
   const i = name.lastIndexOf('.')
@@ -27,11 +30,68 @@ function isTextLike(file: File) {
   return TEXT_EXTENSIONS.has(extension(file.name))
 }
 
+type PdfParser = {
+  getText: (params?: { first?: number }) => Promise<{ text?: string }>
+  getScreenshot: (params?: {
+    first?: number
+    scale?: number
+    imageBuffer?: boolean
+    imageDataUrl?: boolean
+  }) => Promise<{ pages: Array<{ pageNumber: number; data?: Uint8Array }> }>
+  destroy: () => Promise<void>
+}
+
+async function ocrPdfPages(parser: PdfParser): Promise<string> {
+  if (!process.env.GROQ_API_KEY) return ''
+
+  try {
+    const shots = await parser.getScreenshot({
+      first: MAX_PDF_OCR_PAGES,
+      scale: 1.25,
+      imageBuffer: true,
+      imageDataUrl: false,
+    })
+
+    const parts: string[] = []
+    for (const page of shots.pages) {
+      if (!page.data?.length) continue
+      const buf = Buffer.from(page.data)
+      const pageText = await ocrImageFromBuffer(
+        buf,
+        'image/png',
+        `page-${page.pageNumber}.png`
+      )
+      if (pageText.trim()) {
+        parts.push(`--- Page ${page.pageNumber} ---\n${pageText.trim()}`)
+      }
+    }
+    return parts.join('\n\n')
+  } catch (err) {
+    console.error('PDF OCR fallback failed:', err)
+    return ''
+  }
+}
+
 async function extractPdfText(buffer: Buffer): Promise<string> {
   const { PDFParse } = await import('pdf-parse')
-  const parser = new PDFParse({ data: buffer })
-  const result = await parser.getText()
-  return result.text?.trim() || ''
+  const parser = new PDFParse({ data: buffer }) as PdfParser
+
+  try {
+    const result = await parser.getText()
+    let text = result.text?.trim() || ''
+
+    if (text.length < MIN_PDF_TEXT_CHARS) {
+      const ocrText = await ocrPdfPages(parser)
+      if (ocrText.length > text.length) text = ocrText
+    }
+
+    return text
+  } catch (err) {
+    console.error('PDF text extraction failed:', err)
+    return ''
+  } finally {
+    await parser.destroy()
+  }
 }
 
 export async function extractTextFromFile(file: File): Promise<string> {
@@ -55,12 +115,8 @@ export async function extractTextFromFile(file: File): Promise<string> {
   }
 
   if (ext === '.pdf' || file.type === 'application/pdf') {
-    try {
-      const text = await extractPdfText(buffer)
-      if (text) return truncate(text)
-    } catch (err) {
-      console.error('PDF text extraction failed:', err)
-    }
+    const text = await extractPdfText(buffer)
+    if (text) return truncate(text)
     return ''
   }
 

@@ -18,7 +18,7 @@ export function summarizeFile(
   }
 
   if (isPdf) {
-    return `${label}: ${describeFile(file)} — PDF stored, but no readable text was found. This often happens with scanned or image-only PDFs (e.g. exports from Copilot or screenshots).`
+    return `${label}: ${describeFile(file)} — PDF stored, but no readable text was found (common with scanned or image-only PDFs). Use Re-scan text on this file after deploy, or re-upload; ensure GROQ_API_KEY is set for OCR.`
   }
 
   if (file.type.startsWith('image/')) {

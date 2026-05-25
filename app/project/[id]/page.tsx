@@ -448,8 +448,11 @@ export default function ProjectPageClient() {
                 <EvidenceCard
                   key={doc.id}
                   doc={doc}
+                  projectId={id}
+                  claimId={activeClaim.id}
                   canEdit={access.canEditEvidenceSummary}
                   canDelete={access.canDeleteEvidence}
+                  canRescan={access.canUploadEvidence}
                   onOpen={openFile}
                   onDelete={deleteFile}
                   onUpdated={() => fetchEvidence(activeClaim.id)}

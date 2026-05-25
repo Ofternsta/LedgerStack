@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["pdf-parse", "mammoth"],
+  serverExternalPackages: ["pdf-parse", "mammoth", "@napi-rs/canvas"],
   images: {
     localPatterns: [{ pathname: "/logo.png" }, { pathname: "/logo-icon.png" }],
   },
