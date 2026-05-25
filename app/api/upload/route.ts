@@ -114,8 +114,12 @@ export async function POST(req: Request) {
       existingPath ||
       (await uploadEvidenceFile(supabase, projectId, claimId, file)).filePath
 
-    const extractedText = await extractTextFromFile(file)
-    const { evidenceType, summary } = await analyzeEvidence(file, extractedText)
+    let extractedText = await extractTextFromFile(file)
+    const analysis = await analyzeEvidence(file, extractedText)
+    if (analysis.extractedText?.trim()) {
+      extractedText = analysis.extractedText.trim()
+    }
+    const { evidenceType, summary } = analysis
 
     const previous = existingPath
       ? await readEvidenceMeta(supabase, existingPath)

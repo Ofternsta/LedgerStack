@@ -1,4 +1,5 @@
 import 'server-only'
+import { GROQ_VISION_MODEL } from '@/lib/groq-models'
 
 const MAX_OCR_CHARS = 12_000
 
@@ -19,16 +20,18 @@ export async function ocrImageFromBuffer(
     const groq = new Groq({ apiKey })
 
     const completion = await groq.chat.completions.create({
-      model: 'llama-3.2-11b-vision-preview',
+      model: GROQ_VISION_MODEL,
       temperature: 0,
-      max_tokens: 2048,
+      max_tokens: 4096,
       messages: [
         {
           role: 'user',
           content: [
             {
               type: 'text',
-              text: `Extract all readable text from this image (${fileName}). Return plain text only — labels, amounts, dates, addresses, claim numbers. If no text is visible, reply with an empty string.`,
+              text: `Extract ALL readable text from this image (${fileName}).
+
+This may be a screenshot or scan of an insurance claim, policy, estimate, invoice, email, or form — not only a job-site photo. Return plain text only: headings, labels, amounts, dates, addresses, claim/policy numbers, tables. Preserve line breaks where helpful. If no text is visible, reply with an empty string.`,
             },
             {
               type: 'image_url',

@@ -45,6 +45,10 @@ export function EvidenceCard({
   const isPdf =
     doc.file_type === 'application/pdf' ||
     doc.file_name.toLowerCase().endsWith('.pdf')
+  const isImage =
+    doc.file_type?.startsWith('image/') ||
+    /\.(jpe?g|png|gif|webp)$/i.test(doc.file_name)
+  const canRunAiRescan = isPdf || isImage
 
   async function save() {
     setSaving(true)
@@ -158,7 +162,7 @@ export function EvidenceCard({
       )}
 
       <div className="flex flex-wrap gap-3 mt-3">
-        {canRescan && isPdf && !editing && (
+        {canRescan && canRunAiRescan && !editing && (
           <button
             type="button"
             className="text-sm font-medium text-brand-bright min-h-[44px] disabled:opacity-50"

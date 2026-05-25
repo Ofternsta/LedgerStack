@@ -155,6 +155,7 @@ project-files / {projectId} / {claimId} / {timestamp}-{filename}.meta.json
 | Status update fails | Run `claim-status-workflow.sql` |
 | No AI category / empty summary | Set `GROQ_API_KEY`; without it, filename heuristics still work |
 | PDF says “no text could be extracted” | Often a **scanned/image PDF**; set `GROQ_API_KEY`, deploy, then **Re-scan text** on the card (or re-upload). OCR reads up to 6 pages. |
+| PNG of a claim PDF labeled **Damage Photo** | Redeploy (Llama 4 Scout vision + document rules). **Re-scan text** on the image card or re-upload. |
 | `DOMMatrix is not defined` on upload | Redeploy after fix; needs `pdf-parse/worker` + `@napi-rs/canvas` (Node 20.16+ / 22.3+ on Vercel). |
 | 401 on API | Sign in again |
 | Project empty / no claim | Create project from `/projects` (auto-creates one claim) |
