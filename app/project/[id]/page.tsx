@@ -18,6 +18,7 @@ import { loadUserAccess } from '@/lib/load-access'
 import type { UserAccess } from '@/lib/roles'
 import { supabase } from '@/lib/supabase'
 import { uploadEvidenceWithAi } from '@/lib/upload-evidence-server'
+import { inferUploadMimeType } from '@/lib/file-meta'
 import { validateUploadSize } from '@/lib/upload-limits'
 
 type Claim = {
@@ -114,9 +115,26 @@ export default function ProjectPageClient() {
   async function uploadFile(file: File) {
     if (!selectedClaim || !access?.canUploadEvidence) return
 
+    if (file.size === 0) {
+      setUploadMessage(
+        'That file is empty. For a PDF use Choose File. For a photo of a document use Take Photo.'
+      )
+      return
+    }
+
     const sizeError = validateUploadSize(file.size)
     if (sizeError) {
       setUploadMessage(sizeError)
+      return
+    }
+
+    if (
+      /\.pdf$/i.test(file.name) &&
+      inferUploadMimeType(file) !== 'application/pdf'
+    ) {
+      setUploadMessage(
+        'This does not look like a valid PDF. Use Choose File and select the PDF from your files.'
+      )
       return
     }
 

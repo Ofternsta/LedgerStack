@@ -129,6 +129,7 @@ export function EvidenceUpload({
           <input
             type="file"
             multiple
+            accept="image/*,application/pdf,.heic,.heif,.docx"
             className="sr-only"
             disabled={uploading}
             onChange={handleChange}
@@ -137,8 +138,13 @@ export function EvidenceUpload({
       </div>
 
       <p className="text-sm text-muted mt-3 leading-relaxed">
-        Photos, PDFs, Word docs, videos — up to 50 MB. OCR and AI categorize and
-        summarize automatically.
+        <strong className="text-foreground">PDF file?</strong> Use Choose File (not
+        Take Photo). Take Photo saves a picture of the page — good for scanned
+        docs, not the original PDF.
+      </p>
+      <p className="text-xs text-muted-dim mt-2 leading-relaxed">
+        Photos, PDFs, and Word docs up to your plan size limit. AI categorizes and
+        summarizes after upload.
       </p>
 
       {uploading && (

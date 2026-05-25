@@ -1,5 +1,19 @@
 import type { EvidenceRecord } from '@/lib/evidence-storage'
 
+async function parseUploadError(res: Response): Promise<string> {
+  const body = await res.text()
+  if (!body) {
+    return `Upload failed (${res.status})`
+  }
+  try {
+    const payload = JSON.parse(body) as { error?: string }
+    if (payload.error) return payload.error
+  } catch {
+    /* not JSON */
+  }
+  return body.length > 280 ? `${body.slice(0, 280)}…` : body
+}
+
 /** Upload file to storage, then run server AI/OCR via /api/upload. */
 export async function uploadEvidenceWithAi(
   projectId: string,
@@ -16,18 +30,17 @@ export async function uploadEvidenceWithAi(
     body: formData,
   })
 
-  const payload = await res.json().catch(() => ({}))
-
   if (res.status === 401) {
     window.location.href = '/login'
     throw new Error('Unauthorized')
   }
 
   if (!res.ok) {
-    throw new Error(payload.error || 'Upload failed')
+    throw new Error(await parseUploadError(res))
   }
 
-  return payload.evidence as EvidenceRecord
+  const payload = (await res.json()) as { evidence: EvidenceRecord }
+  return payload.evidence
 }
 
 /** Re-run text extraction and AI summary on a file already in storage. */
@@ -50,16 +63,15 @@ export async function rescanEvidenceWithAi(
     }),
   })
 
-  const payload = await res.json().catch(() => ({}))
-
   if (res.status === 401) {
     window.location.href = '/login'
     throw new Error('Unauthorized')
   }
 
   if (!res.ok) {
-    throw new Error(payload.error || 'Re-scan failed')
+    throw new Error(await parseUploadError(res))
   }
 
-  return payload.evidence as EvidenceRecord
+  const payload = (await res.json()) as { evidence: EvidenceRecord }
+  return payload.evidence
 }

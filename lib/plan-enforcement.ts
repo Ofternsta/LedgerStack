@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { inferUploadMimeType } from '@/lib/file-meta'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
   getPlanEntitlements,
@@ -170,7 +171,8 @@ const BASIC_UPLOAD_TYPES = new Set([
 export function validateUploadForPlan(
   fileType: string,
   fileSize: number,
-  entitlements: PlanEntitlements
+  entitlements: PlanEntitlements,
+  fileName = ''
 ): string | null {
   if (fileSize > entitlements.maxUploadBytes) {
     const mb = Math.round(entitlements.maxUploadBytes / (1024 * 1024))
@@ -178,9 +180,9 @@ export function validateUploadForPlan(
   }
 
   if (entitlements.basicUploadsOnly) {
-    const type = (fileType || '').toLowerCase()
+    const type = inferUploadMimeType({ type: fileType, name: fileName })
     if (!BASIC_UPLOAD_TYPES.has(type) && !type.startsWith('image/')) {
-      return 'Trial plan allows images and PDF uploads only. Upgrade for video and other file types.'
+      return 'Trial plan allows images and PDF uploads only. Use Choose File for PDFs, or Take Photo for pictures of documents.'
     }
   }
 

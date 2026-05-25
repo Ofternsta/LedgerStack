@@ -15,6 +15,7 @@ import {
 import { getOrgPlanContext } from '@/lib/org-plan'
 import { validateUploadForPlan } from '@/lib/plan-enforcement'
 import { requireAuth } from '@/lib/require-auth'
+import { normalizeUploadFile } from '@/lib/file-meta'
 import { validateUploadSize } from '@/lib/upload-limits'
 
 export const maxDuration = 60
@@ -107,7 +108,7 @@ export async function POST(req: Request) {
 
     const displayFileName = file.name
     let storageFileName = file.name
-    let storedMime = file.type
+    let storedMime = file.type || 'application/octet-stream'
 
     if (!existingPath) {
       try {
@@ -123,9 +124,10 @@ export async function POST(req: Request) {
     }
 
     const planUploadError = validateUploadForPlan(
-      storedMime || file.type,
+      storedMime,
       file.size,
-      planCtx.entitlements
+      planCtx.entitlements,
+      displayFileName
     )
     if (planUploadError) {
       return NextResponse.json({ error: planUploadError }, { status: 403 })
