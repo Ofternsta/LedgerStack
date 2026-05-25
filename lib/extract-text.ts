@@ -1,5 +1,6 @@
 import 'server-only'
 import { ocrImageFromBuffer } from '@/lib/ocr'
+import { createPdfParser } from '@/lib/pdf-parse-server'
 
 const TEXT_EXTENSIONS = new Set([
   '.txt',
@@ -73,8 +74,7 @@ async function ocrPdfPages(parser: PdfParser): Promise<string> {
 }
 
 async function extractPdfText(buffer: Buffer): Promise<string> {
-  const { PDFParse } = await import('pdf-parse')
-  const parser = new PDFParse({ data: buffer }) as PdfParser
+  const parser = (await createPdfParser(buffer)) as PdfParser
 
   try {
     const result = await parser.getText()
