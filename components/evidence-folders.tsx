@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { EvidenceCard } from '@/components/evidence-card'
 import { EVIDENCE_TYPES, type EvidenceType } from '@/lib/evidence-types'
 
@@ -80,6 +80,15 @@ export function EvidenceFolders({
 
   const totalCount = documents.length
 
+  useEffect(() => {
+    if (
+      selectedPath &&
+      !documents.some((d) => d.file_path === selectedPath)
+    ) {
+      setSelectedPath(null)
+    }
+  }, [documents, selectedPath])
+
   function toggleFolder(type: EvidenceType) {
     setExpanded((prev) => {
       const next = new Set(prev)
@@ -89,13 +98,14 @@ export function EvidenceFolders({
     })
   }
 
-  function selectFile(filePath: string) {
+  function selectFile(filePath: string, folder: EvidenceType) {
+    setExpanded((prev) => new Set(prev).add(folder))
     setSelectedPath((current) => (current === filePath ? null : filePath))
   }
 
   function handleDelete(filePath: string) {
     setSelectedPath((current) => (current === filePath ? null : current))
-    onDelete(filePath)
+    void onDelete(filePath)
   }
 
   if (totalCount === 0) {
@@ -164,7 +174,7 @@ export function EvidenceFolders({
                     <li key={doc.id}>
                       <button
                         type="button"
-                        onClick={() => selectFile(doc.file_path)}
+                        onClick={() => selectFile(doc.file_path, type)}
                         className={`flex w-full flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-3 px-4 py-3 min-h-[44px] text-left transition-colors ${
                           isSelected
                             ? 'bg-brand/10 border-l-2 border-l-brand'

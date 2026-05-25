@@ -110,11 +110,15 @@ export async function POST(req: Request) {
     let storedMime = file.type
 
     if (!existingPath) {
-      const compressed = await compressEvidenceImage(file)
-      if (compressed) {
-        file = fileFromCompressed(compressed, displayFileName)
-        storageFileName = compressed.fileName
-        storedMime = compressed.mimeType
+      try {
+        const compressed = await compressEvidenceImage(file)
+        if (compressed) {
+          file = fileFromCompressed(compressed, displayFileName)
+          storageFileName = compressed.fileName
+          storedMime = compressed.mimeType
+        }
+      } catch (compressErr) {
+        console.error('Image optimize failed, storing original:', compressErr)
       }
     }
 

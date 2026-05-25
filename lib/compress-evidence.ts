@@ -132,7 +132,8 @@ export async function compressEvidenceImage(
 
   const storedBytes = buffer.length
 
-  if (storedBytes >= originalBytes) {
+  // Always convert HEIC/HEIF so storage and browsers get JPEG, even if slightly larger.
+  if (!isHeic && storedBytes >= originalBytes) {
     return null
   }
 
