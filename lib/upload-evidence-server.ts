@@ -1,10 +1,20 @@
 import type { EvidenceRecord } from '@/lib/evidence-storage'
+import { prepareEvidenceFileForUpload } from '@/lib/compress-evidence-client'
 
 async function parseUploadError(res: Response): Promise<string> {
+  if (res.status === 413) {
+    return 'Photo is too large for upload. We now resize photos automatically — refresh the page and try again.'
+  }
+
   const body = await res.text()
   if (!body) {
     return `Upload failed (${res.status})`
   }
+
+  if (/entity too large/i.test(body)) {
+    return 'Photo is too large for upload. Refresh the page and try Take Photo again.'
+  }
+
   try {
     const payload = JSON.parse(body) as { error?: string }
     if (payload.error) return payload.error
@@ -20,8 +30,10 @@ export async function uploadEvidenceWithAi(
   claimId: string,
   file: File
 ): Promise<EvidenceRecord> {
+  const prepared = await prepareEvidenceFileForUpload(file)
+
   const formData = new FormData()
-  formData.append('file', file)
+  formData.append('file', prepared)
   formData.append('project_id', projectId)
   formData.append('claim_id', claimId)
 

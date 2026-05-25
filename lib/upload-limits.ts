@@ -1,6 +1,9 @@
 /** Supabase free tier allows up to 50 MB per file */
 export const MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 
+/** Stay under Vercel serverless request body limit (~4.5 MB). */
+export const VERCEL_SAFE_UPLOAD_BYTES = 4 * 1024 * 1024
+
 export function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`

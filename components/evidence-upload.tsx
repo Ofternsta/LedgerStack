@@ -138,13 +138,7 @@ export function EvidenceUpload({
       </div>
 
       <p className="text-sm text-muted mt-3 leading-relaxed">
-        <strong className="text-foreground">PDF file?</strong> Use Choose File (not
-        Take Photo). Take Photo saves a picture of the page — good for scanned
-        docs, not the original PDF.
-      </p>
-      <p className="text-xs text-muted-dim mt-2 leading-relaxed">
-        Photos, PDFs, and Word docs up to your plan size limit. AI categorizes and
-        summarizes after upload.
+        Photos, PDFs, and Word docs — AI categorizes and summarizes after upload.
       </p>
 
       {uploading && (

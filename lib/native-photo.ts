@@ -10,7 +10,7 @@ export async function takeNativePhoto(): Promise<File | null> {
   )
 
   const photo = await Camera.getPhoto({
-    quality: 90,
+    quality: 80,
     allowEditing: false,
     resultType: CameraResultType.Uri,
     source: CameraSource.Camera,
