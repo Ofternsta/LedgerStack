@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
     "pdfjs-dist",
     "mammoth",
     "@napi-rs/canvas",
+    "sharp",
   ],
   outputFileTracingIncludes: {
     "/api/upload": [
@@ -13,6 +14,8 @@ const nextConfig: NextConfig = {
       "./node_modules/pdfjs-dist/**/*",
       "./node_modules/@napi-rs/canvas/**/*",
       "./node_modules/@napi-rs/canvas-*/**/*",
+      "./node_modules/sharp/**/*",
+      "./node_modules/@img/**/*",
     ],
   },
   images: {

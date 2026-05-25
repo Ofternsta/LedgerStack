@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server'
 import { analyzeEvidence } from '@/lib/analyze-evidence'
+import {
+  compressEvidenceImage,
+  fileFromCompressed,
+} from '@/lib/compress-evidence'
 import { extractTextFromFile } from '@/lib/extract-text'
 import { loadEvidenceUploader } from '@/lib/evidence-uploader'
 import {
@@ -101,8 +105,21 @@ export async function POST(req: Request) {
       )
     }
 
+    const displayFileName = file.name
+    let storageFileName = file.name
+    let storedMime = file.type
+
+    if (!existingPath) {
+      const compressed = await compressEvidenceImage(file)
+      if (compressed) {
+        file = fileFromCompressed(compressed, displayFileName)
+        storageFileName = compressed.fileName
+        storedMime = compressed.mimeType
+      }
+    }
+
     const planUploadError = validateUploadForPlan(
-      file.type,
+      storedMime || file.type,
       file.size,
       planCtx.entitlements
     )
@@ -112,7 +129,9 @@ export async function POST(req: Request) {
 
     const filePath =
       existingPath ||
-      (await uploadEvidenceFile(supabase, projectId, claimId, file)).filePath
+      (await uploadEvidenceFile(supabase, projectId, claimId, file, {
+        storageFileName,
+      })).filePath
 
     let extractedText = await extractTextFromFile(file)
     const analysis = await analyzeEvidence(file, extractedText)
@@ -142,9 +161,9 @@ export async function POST(req: Request) {
     const evidence = await saveEvidence(supabase, {
       id: previous?.id ?? newEvidenceId(),
       claim_id: claimId,
-      file_name: file.name,
+      file_name: displayFileName,
       file_path: filePath,
-      file_type: file.type,
+      file_type: storedMime || file.type,
       evidence_type: evidenceType,
       summary,
       extracted_text: extractedText || undefined,

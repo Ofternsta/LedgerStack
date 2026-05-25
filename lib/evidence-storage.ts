@@ -116,11 +116,18 @@ export async function uploadEvidenceFile(
   supabase: SupabaseClient,
   projectId: string,
   claimId: string,
-  file: File
+  file: File,
+  options?: { storageFileName?: string }
 ): Promise<{ filePath: string }> {
-  const filePath = `${projectId}/${claimId}/${Date.now()}-${file.name}`
+  const storedName = options?.storageFileName ?? file.name
+  const filePath = `${projectId}/${claimId}/${Date.now()}-${storedName}`
 
-  const { error } = await supabase.storage.from(BUCKET).upload(filePath, file)
+  const body = await file.arrayBuffer()
+
+  const { error } = await supabase.storage.from(BUCKET).upload(filePath, body, {
+    contentType: file.type || undefined,
+    upsert: false,
+  })
 
   if (error) throw new Error(error.message)
   return { filePath }

@@ -128,7 +128,9 @@ Must be logged in as admin or approved worker with active subscription.
 | 1 | Upload a small **JPEG** | Success; card appears with category (e.g. Damage Photo) |
 | 2 | Open evidence file | File opens (signed URL) |
 | 3 | Search box | Finds file by name or summary text |
-| 4 | Upload **PDF** | Works on trial+ |
+| 4 | Upload **PDF** | Works on trial+ (stored as-is; no lossy compression) |
+| 4b | Upload **HEIC** from iPhone | Converts to high-quality JPEG in storage; original filename shown in UI |
+| 4c | Upload large **JPEG/PNG** | Stored smaller when optimization helps; quality 95 / lossless PNG |
 | 5 | Upload **MP4** on **trial** plan | **403** or type error (trial = images/PDF only) |
 | 6 | Upload **MP4** on **professional** | Works if under 50 MB |
 | 7 | File over plan size limit | Clear error (10 MB trial / 25 starter / 50 pro) |
