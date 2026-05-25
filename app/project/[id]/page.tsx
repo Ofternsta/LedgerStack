@@ -55,6 +55,7 @@ export default function ProjectPageClient() {
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('All')
   const [userId, setUserId] = useState<string | null>(null)
+  const [timelineRefreshKey, setTimelineRefreshKey] = useState(0)
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setUserId(user?.id ?? null))
@@ -368,12 +369,14 @@ export default function ProjectPageClient() {
                 setSelectedClaim((c) =>
                   c?.id === activeClaim.id ? { ...c, status: next } : c
                 )
+                setTimelineRefreshKey((k) => k + 1)
               }}
             />
 
             <ClaimAiPanel
               claimId={activeClaim.id}
               projectId={id}
+              timelineRefreshKey={timelineRefreshKey}
               canGenerate={access.canUpdateClaimInfo}
               canExportPdf={access.canExportPdf}
               canExportHtml={access.canExportHtml}

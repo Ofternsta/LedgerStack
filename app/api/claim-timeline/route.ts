@@ -17,19 +17,54 @@ export async function GET(req: Request) {
     const params = new URL(req.url).searchParams
     const claimId = params.get('claim_id')
     const projectId = params.get('project_id')
+    const kind = params.get('kind')
 
-    if (!claimId || !projectId) {
+    if (!projectId) {
+      return NextResponse.json({ error: 'project_id required' }, { status: 400 })
+    }
+
+    if (kind === 'status_updates') {
+      const { data: claims } = await supabase
+        .from('claims')
+        .select('id, client_name')
+        .eq('project_id', projectId)
+
+      const claimIds = (claims || []).map((c) => c.id)
+      if (!claimIds.length) {
+        return NextResponse.json({ events: [] })
+      }
+
+      const nameByClaim = Object.fromEntries(
+        (claims || []).map((c) => [c.id, c.client_name])
+      )
+
+      const { data: statusEvents } = await supabase
+        .from('claim_timeline_events')
+        .select('id, claim_id, event_date, title, description, source, created_at')
+        .in('claim_id', claimIds)
+        .eq('title', 'Status updated')
+        .order('created_at', { ascending: false })
+
+      const events = (statusEvents || []).map((e) => ({
+        ...e,
+        client_name: nameByClaim[e.claim_id as string] || 'Claim',
+      }))
+
+      return NextResponse.json({ events })
+    }
+
+    if (!claimId) {
       return NextResponse.json(
-        { error: 'claim_id and project_id required' },
+        { error: 'claim_id required unless kind=status_updates' },
         { status: 400 }
       )
     }
 
     const { data: stored } = await supabase
       .from('claim_timeline_events')
-      .select('event_date, title, description, source')
+      .select('id, event_date, title, description, source, created_at')
       .eq('claim_id', claimId)
-      .order('event_date', { ascending: true })
+      .order('created_at', { ascending: true })
 
     if (stored?.length) {
       return NextResponse.json({ events: stored })
@@ -119,6 +154,7 @@ export async function POST(req: Request) {
         .from('claim_timeline_events')
         .delete()
         .eq('claim_id', claim_id)
+        .in('source', ['ai', 'evidence'])
 
       await supabase.from('claim_timeline_events').insert(
         events.map((e) => ({

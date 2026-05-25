@@ -67,7 +67,7 @@ export async function PATCH(req: Request) {
         claim_id: claimId,
         title: 'Status updated',
         description: `${previousStatus} → ${rawStatus}`,
-        event_date: new Date().toISOString(),
+        event_date: new Date().toISOString().slice(0, 10),
         source: 'manual',
       })
     }
