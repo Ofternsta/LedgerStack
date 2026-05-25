@@ -1,7 +1,5 @@
 import type { Metadata } from 'next'
-import { redirect } from 'next/navigation'
 import { MarketingHome } from '@/components/marketing-home'
-import { createClient } from '@/lib/supabase/server'
 
 export const metadata: Metadata = {
   title: 'LedgerStack — Claims & evidence for restoration contractors',
@@ -15,15 +13,9 @@ export const metadata: Metadata = {
   },
 }
 
-export default async function HomePage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+/** Static marketing page; logged-in users are redirected in middleware. */
+export const dynamic = 'force-static'
 
-  if (user?.email_confirmed_at) {
-    redirect('/projects')
-  }
-
+export default function HomePage() {
   return <MarketingHome />
 }

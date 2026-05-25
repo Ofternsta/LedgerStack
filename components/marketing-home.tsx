@@ -94,14 +94,6 @@ export function MarketingHome() {
           />
           <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-20 lg:py-28">
             <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-12 xl:gap-16">
-              <div className="lg:hidden flex justify-center w-full">
-                <BrandLogo
-                  href="/"
-                  size="hero-xl"
-                  className="drop-shadow-[0_0_48px_var(--brand-glow)] max-w-[min(100vw-2rem,360px)]"
-                />
-              </div>
-
               <div className="flex-1 text-center lg:text-left">
                 <p className="text-sm font-semibold text-brand-bright mb-4">
                   Built for restoration &amp; insurance contractors
@@ -138,6 +130,7 @@ export function MarketingHome() {
                 <BrandLogo
                   href="/"
                   size="hero-xl"
+                  priority
                   className="drop-shadow-[0_0_56px_var(--brand-glow)]"
                 />
               </div>
@@ -269,6 +262,7 @@ export function MarketingHome() {
               variant="icon"
               size="cta"
               className="mx-auto mb-6"
+              priority={false}
             />
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
               Ready to stack your paperwork?

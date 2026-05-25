@@ -13,6 +13,8 @@ type BrandLogoProps = {
   variant?: keyof typeof LOGO_ASSETS
   showWordmark?: boolean
   className?: string
+  /** Only set true for the single above-the-fold LCP image. */
+  priority?: boolean
 }
 
 const heights = {
@@ -31,11 +33,11 @@ export function BrandLogo({
   variant = 'full',
   showWordmark = false,
   className = '',
+  priority = false,
 }: BrandLogoProps) {
   const h = heights[size]
   const asset = LOGO_ASSETS[variant]
-  const isPriority =
-    size === 'hero' || size === 'hero-xl' || size === 'cta' || size === 'lg'
+  const heroQuality = size === 'hero-xl' ? 85 : 90
 
   const img = (
     <Image
@@ -43,9 +45,16 @@ export function BrandLogo({
       alt="LedgerStack"
       width={asset.width}
       height={asset.height}
-      quality={95}
-      priority={isPriority}
-      sizes={`${h}px`}
+      quality={priority ? heroQuality : 85}
+      priority={priority}
+      loading={priority ? undefined : 'lazy'}
+      sizes={
+        size === 'hero-xl'
+          ? '(max-width: 1024px) 0px, 360px'
+          : size === 'hero'
+            ? '120px'
+            : `${h}px`
+      }
       className={`h-auto w-auto max-w-full object-contain ${className}`}
       style={{ height: h, width: 'auto' }}
     />

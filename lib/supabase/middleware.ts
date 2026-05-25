@@ -1,7 +1,41 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+/** Skip Supabase round-trip when the browser has no session cookies. */
+function hasSupabaseSessionCookies(request: NextRequest): boolean {
+  return request.cookies.getAll().some(
+    (c) => c.name.startsWith('sb-') && c.name.includes('auth')
+  )
+}
+
 export async function updateSession(request: NextRequest) {
+  const pathname = request.nextUrl.pathname
+  const isAuthRoute =
+    pathname.startsWith('/login') || pathname.startsWith('/auth')
+  const isPublicApi =
+    pathname.startsWith('/api/billing/webhook') ||
+    pathname.startsWith('/api/auth/register-admin') ||
+    pathname.startsWith('/api/auth/trial-eligibility') ||
+    pathname.startsWith('/api/auth/finish-signup')
+  const isPublicOnboarding =
+    pathname.startsWith('/onboarding/subscription')
+  const isPublicMarketing = pathname === '/'
+
+  const isPublicRoute =
+    isAuthRoute ||
+    isPublicApi ||
+    isPublicOnboarding ||
+    isPublicMarketing
+
+  if (!hasSupabaseSessionCookies(request)) {
+    if (!isPublicRoute) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      return NextResponse.redirect(url)
+    }
+    return NextResponse.next()
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -29,25 +63,7 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const pathname = request.nextUrl.pathname
-  const isAuthRoute =
-    pathname.startsWith('/login') || pathname.startsWith('/auth')
-  const isPublicApi =
-    pathname.startsWith('/api/billing/webhook') ||
-    pathname.startsWith('/api/auth/register-admin') ||
-    pathname.startsWith('/api/auth/trial-eligibility') ||
-    pathname.startsWith('/api/auth/finish-signup')
-  const isPublicOnboarding =
-    pathname.startsWith('/onboarding/subscription')
-  const isPublicMarketing = pathname === '/'
-
-  if (
-    !user &&
-    !isAuthRoute &&
-    !isPublicApi &&
-    !isPublicOnboarding &&
-    !isPublicMarketing
-  ) {
+  if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
