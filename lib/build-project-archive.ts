@@ -1,6 +1,5 @@
-import archiver from 'archiver'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { PassThrough } from 'stream'
+import JSZip from 'jszip'
 import { buildFallbackSummary } from '@/lib/claim-ai'
 import {
   buildHtmlReport,
@@ -21,8 +20,8 @@ function zipBasename(storagePath: string) {
   return parts[parts.length - 1] || 'file'
 }
 
-function appendJson(archive: archiver.Archiver, zipPath: string, data: unknown) {
-  archive.append(JSON.stringify(data, null, 2), { name: zipPath })
+function appendJson(zip: InstanceType<typeof JSZip>, zipPath: string, data: unknown) {
+  zip.file(zipPath, JSON.stringify(data, null, 2))
 }
 
 async function downloadStorageFile(
@@ -155,25 +154,14 @@ export async function buildProjectArchiveZip(
     storagePaths.filter((p) => p.endsWith('.meta.json'))
   )
 
-  const archive = archiver('zip', { zlib: { level: 6 } })
-  const passthrough = new PassThrough()
-  const chunks: Buffer[] = []
-
-  const bufferPromise = new Promise<Buffer>((resolve, reject) => {
-    passthrough.on('data', (chunk: Buffer) => chunks.push(chunk))
-    passthrough.on('end', () => resolve(Buffer.concat(chunks)))
-    passthrough.on('error', reject)
-    archive.on('error', reject)
-    archive.pipe(passthrough)
-  })
-
+  const zip = new JSZip()
   const exportedAt = new Date().toISOString()
   const customer = safeSegment(
     String(project.customer_name || 'project'),
     'project'
   )
 
-  appendJson(archive, 'manifest.json', {
+  appendJson(zip, 'manifest.json', {
     exported_at: exportedAt,
     ledgerstack_version: 1,
     project_id: projectId,
@@ -182,18 +170,18 @@ export async function buildProjectArchiveZip(
     storage_file_count: storagePaths.filter((p) => !metaPaths.has(p)).length,
   })
 
-  appendJson(archive, 'project.json', project)
+  appendJson(zip, 'project.json', project)
 
   if (projectMessages.length) {
-    appendJson(archive, 'messages-project.json', projectMessages)
+    appendJson(zip, 'messages-project.json', projectMessages)
   }
 
   if (internalNotes.length) {
-    appendJson(archive, 'internal-notes.json', internalNotes)
+    appendJson(zip, 'internal-notes.json', internalNotes)
   }
 
   if (scheduleEvents.length) {
-    appendJson(archive, 'schedule.json', scheduleEvents)
+    appendJson(zip, 'schedule.json', scheduleEvents)
   }
 
   for (const claim of claimList) {
@@ -203,16 +191,16 @@ export async function buildProjectArchiveZip(
     )
     const base = `reports/${reportFolder}`
 
-    appendJson(archive, `${base}/report.json`, claim)
+    appendJson(zip, `${base}/report.json`, claim)
 
     const timeline = timelineByClaim[claim.id] || []
-    appendJson(archive, `${base}/timeline.json`, timeline)
+    appendJson(zip, `${base}/timeline.json`, timeline)
 
     const evidence = await listEvidence(supabase, projectId, claim.id)
-    appendJson(archive, `${base}/documents-index.json`, evidence)
+    appendJson(zip, `${base}/documents-index.json`, evidence)
 
     const summary = buildFallbackSummary(claim, evidence)
-    archive.append(summary, { name: `${base}/ai-summary.txt` })
+    zip.file(`${base}/ai-summary.txt`, summary)
 
     const intelligence = {
       exported_at: exportedAt,
@@ -222,23 +210,21 @@ export async function buildProjectArchiveZip(
       document_count: evidence.length,
       summary,
     }
-    appendJson(archive, `${base}/report-intelligence.json`, intelligence)
+    appendJson(zip, `${base}/report-intelligence.json`, intelligence)
 
     const html = buildHtmlReport(claim, summary, evidence, exportWatermark)
-    archive.append(html, { name: `${base}/report.html` })
+    zip.file(`${base}/report.html`, html)
 
     const pdfBytes = await buildPdfReport(claim, summary, evidence, exportWatermark)
     if (pdfBytes) {
-      archive.append(Buffer.from(pdfBytes), { name: `${base}/report.pdf` })
+      zip.file(`${base}/report.pdf`, pdfBytes)
     }
 
     for (const doc of evidence) {
       const fileBuf = await downloadStorageFile(supabase, doc.file_path)
       if (fileBuf) {
         const docName = safeSegment(doc.file_name, zipBasename(doc.file_path))
-        archive.append(fileBuf, {
-          name: `${base}/documents/${docName}`,
-        })
+        zip.file(`${base}/documents/${docName}`, fileBuf)
       }
     }
   }
@@ -248,7 +234,7 @@ export async function buildProjectArchiveZip(
       const buf = await downloadStorageFile(supabase, path)
       if (buf) {
         const rel = path.replace(`${projectId}/`, '')
-        archive.append(buf, { name: `storage-meta/${rel}` })
+        zip.file(`storage-meta/${rel}`, buf)
       }
       continue
     }
@@ -261,12 +247,15 @@ export async function buildProjectArchiveZip(
     const buf = await downloadStorageFile(supabase, path)
     if (buf) {
       const rel = path.replace(`${projectId}/`, '')
-      archive.append(buf, { name: `other-files/${rel}` })
+      zip.file(`other-files/${rel}`, buf)
     }
   }
 
-  await archive.finalize()
-  const buffer = await bufferPromise
+  const buffer = await zip.generateAsync({
+    type: 'nodebuffer',
+    compression: 'DEFLATE',
+    compressionOptions: { level: 6 },
+  })
 
   const datePart = exportedAt.slice(0, 10)
   const filename = `ledgerstack-${customer}-${datePart}.zip`
