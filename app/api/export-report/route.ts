@@ -35,7 +35,7 @@ function buildHtmlReport(
     .join('')
 
   return `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Claim Report</title>
+<html><head><meta charset="utf-8"><title>LedgerStack Report</title>
 <style>body{font-family:system-ui,sans-serif;max-width:800px;margin:2rem auto;padding:0 1rem}
 h1{font-size:1.5rem}table{width:100%;border-collapse:collapse;margin-top:1rem}
 th,td{border:1px solid #ccc;padding:8px;text-align:left}th{background:#f5f5f5}
@@ -45,15 +45,15 @@ th,td{border:1px solid #ccc;padding:8px;text-align:left}th{background:#f5f5f5}
 </style></head><body>
 ${watermark ? `<div class="watermark" aria-hidden>${escapeHtml(TRIAL_WATERMARK)}</div>` : ''}
 <div class="content">
-<h1>Claim Evidence Report</h1>
+<h1>Report — documents</h1>
 <p><strong>Client:</strong> ${escapeHtml(String(claim.client_name))}</p>
 <p><strong>Property:</strong> ${escapeHtml(String(claim.property_address))}</p>
-<p><strong>Claim #:</strong> ${escapeHtml(String(claim.claim_number))}</p>
+<p><strong>Report #:</strong> ${escapeHtml(String(claim.claim_number))}</p>
 <p><strong>Insurer:</strong> ${escapeHtml(String(claim.insurance_company))}</p>
 <p><strong>Status:</strong> ${escapeHtml(String(claim.status))}</p>
 <h2>AI Summary</h2>
 <p>${escapeHtml(summary)}</p>
-<h2>Evidence (${evidence.length})</h2>
+<h2>Documents (${evidence.length})</h2>
 <table><thead><tr><th>Type</th><th>File</th><th>Uploaded</th><th>By</th><th>Summary</th></tr></thead>
 <tbody>${evidenceRows}</tbody></table>
 <p><em>Generated ${new Date().toLocaleString()} — LedgerStack. Use Print → Save as PDF.</em></p>
@@ -90,11 +90,11 @@ async function buildPdfReport(
       }
     }
 
-    addLine('Claim Evidence Report', true)
+    addLine('Report — documents', true)
     y += 6
     addLine(`Client: ${claim.client_name}`)
     addLine(`Property: ${claim.property_address}`)
-    addLine(`Claim #: ${claim.claim_number}`)
+    addLine(`Report #: ${claim.claim_number}`)
     addLine(`Insurer: ${claim.insurance_company}`)
     addLine(`Status: ${claim.status}`)
     addLine(`Loss type: ${claim.loss_type}`)
@@ -102,7 +102,7 @@ async function buildPdfReport(
     addLine('AI Summary', true)
     addLine(summary)
     y += 8
-    addLine(`Evidence (${evidence.length} files)`, true)
+    addLine(`Documents (${evidence.length} files)`, true)
 
     for (const e of evidence) {
       const when = e.created_at
@@ -161,7 +161,7 @@ export async function GET(req: Request) {
       .maybeSingle()
 
     if (error || !claim) {
-      return NextResponse.json({ error: 'Claim not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Report not found' }, { status: 404 })
     }
 
     const { data: project } = await supabase
@@ -222,7 +222,7 @@ export async function GET(req: Request) {
     const footerBrand = branded
       ? String(claim.client_name || 'LedgerStack')
       : 'LedgerStack'
-    const safeName = `claim-${claim.claim_number || claimId}`.replace(
+    const safeName = `report-${claim.claim_number || claimId}`.replace(
       /[^a-zA-Z0-9.-]/g,
       '_'
     )

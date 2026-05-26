@@ -95,7 +95,7 @@ export async function createProjectForUser(
   if (claimError || !claimRows?.length) {
     await service.from('projects').delete().eq('id', project.id)
     return {
-      error: claimError?.message || 'Project created but claim could not be saved.',
+      error: claimError?.message || 'Project created but report could not be saved.',
     }
   }
 

@@ -110,7 +110,8 @@ export function EvidenceFolders({
 
   if (totalCount === 0) {
     return (
-      <section className="space-y-2" aria-label="Evidence by category">
+      <section className="space-y-2" aria-label="Documents">
+        <h2 className="font-bold text-lg text-foreground">Documents</h2>
         {EVIDENCE_TYPES.map((type) => (
           <div
             key={type}
@@ -123,14 +124,15 @@ export function EvidenceFolders({
           </div>
         ))}
         <p className="text-sm text-muted-dim text-center py-4">
-          No evidence uploaded yet. Upload files to add them to a category folder.
+          No documents uploaded yet. Upload files to add them to a category folder.
         </p>
       </section>
     )
   }
 
   return (
-    <section className="space-y-2" aria-label="Evidence by category">
+    <section className="space-y-2" aria-label="Documents">
+      <h2 className="font-bold text-lg text-foreground">Documents</h2>
       {EVIDENCE_TYPES.map((type) => {
         const files = grouped[type]
         const count = files.length

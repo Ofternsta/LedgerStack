@@ -116,7 +116,7 @@ export const PLAN_FEATURE_COPY: Record<
   trial: {
     includes: [
       '1 user · 2 active projects',
-      'Timeline, uploads & claim workflow',
+      'Timeline, uploads & report workflow',
       'Limited AI summaries',
       'Basic uploads (images & PDF)',
     ],
@@ -130,7 +130,7 @@ export const PLAN_FEATURE_COPY: Record<
   starter: {
     includes: [
       '1 user · up to 25 projects',
-      'Claim workflow, timeline & AI summaries',
+      'Report workflow, timeline & AI summaries',
       'Standard PDF export',
       'Mobile-friendly uploads',
     ],
@@ -146,7 +146,7 @@ export const PLAN_FEATURE_COPY: Record<
       'Multiple workers & client portal',
       'Scheduling / calendar',
       'Internal notes & team messages',
-      'Branded exports & claim packets',
+      'Branded exports & report packets',
       'Analytics dashboard',
     ],
   },

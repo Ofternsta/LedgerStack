@@ -58,7 +58,7 @@ export function ClaimStatusWorkflow({
   return (
     <section className="border border-border rounded-xl p-4 bg-surface-elevated">
       <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-        <h2 className="font-bold text-foreground">Claim status</h2>
+        <h2 className="font-bold text-foreground">Report status</h2>
         <span className="text-sm font-medium text-muted">{current}</span>
       </div>
 
@@ -95,7 +95,7 @@ export function ClaimStatusWorkflow({
 
       {canEdit && (
         <p className="text-xs text-muted-dim mt-3">
-          Tap a stage to update the claim workflow.
+          Tap a stage to update the report workflow.
         </p>
       )}
 

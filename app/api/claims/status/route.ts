@@ -18,7 +18,7 @@ export async function PATCH(req: Request) {
           ? 'Clients have view-only access.'
           : access.workerStatus !== 'approved' && access.role === 'worker'
             ? 'Your worker account must be approved by an admin.'
-            : 'You do not have permission to update claim status.'
+            : 'You do not have permission to update report status.'
       return NextResponse.json({ error: message }, { status: 403 })
     }
 
@@ -35,7 +35,7 @@ export async function PATCH(req: Request) {
     }
 
     if (!isClaimStatus(rawStatus)) {
-      return NextResponse.json({ error: 'Invalid claim status' }, { status: 400 })
+      return NextResponse.json({ error: 'Invalid report status' }, { status: 400 })
     }
 
     const { data: claim, error: fetchError } = await supabase
@@ -46,7 +46,7 @@ export async function PATCH(req: Request) {
       .maybeSingle()
 
     if (fetchError || !claim) {
-      return NextResponse.json({ error: 'Claim not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Report not found' }, { status: 404 })
     }
 
     const previousStatus = normalizeClaimStatus(claim.status)

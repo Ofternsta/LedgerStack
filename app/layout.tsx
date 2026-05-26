@@ -21,7 +21,7 @@ const FAVICON_VERSION = '2'
 
 export const metadata: Metadata = {
   title: 'LedgerStack',
-  description: 'Manage restoration projects, claims, and evidence in the field',
+  description: 'Manage restoration projects, reports, and documents in the field',
   applicationName: 'LedgerStack',
   icons: {
     icon: [

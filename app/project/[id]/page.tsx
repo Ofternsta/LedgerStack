@@ -103,7 +103,7 @@ export default function ProjectPageClient() {
     }
 
     if (!res.ok) {
-      setConfigError(payload.error || 'Failed to load evidence')
+      setConfigError(payload.error || 'Failed to load documents')
       setDocuments([])
       return
     }
@@ -242,7 +242,7 @@ export default function ProjectPageClient() {
         />
         <div className="safe-x px-4 py-6 max-w-5xl mx-auto">
           <p className="text-gray-600">
-            You do not have access to this project, or it has no claims yet.
+            You do not have access to this project, or it has no reports yet.
           </p>
         </div>
       </div>
@@ -260,7 +260,7 @@ export default function ProjectPageClient() {
           backLabel="Projects"
         />
         <div className="safe-x px-4 py-6 max-w-5xl mx-auto">
-          <p className="text-gray-600">No claim selected for this project.</p>
+          <p className="text-gray-600">No report selected for this project.</p>
         </div>
       </div>
     )
@@ -320,7 +320,7 @@ export default function ProjectPageClient() {
 
         <label className="block lg:hidden">
           <span className="text-sm font-medium text-muted mb-1 block">
-            Active claim
+            Active report
           </span>
           <select
             className="input-field"
@@ -340,7 +340,7 @@ export default function ProjectPageClient() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
           <aside className="hidden lg:block lg:col-span-3 card p-3">
-            <h2 className="font-bold mb-3">Claims</h2>
+            <h2 className="font-bold mb-3">Reports</h2>
             {claims.map((c) => (
               <button
                 key={c.id}

@@ -62,7 +62,7 @@ async function analyzeImageWithVision(file: File): Promise<{
     messages: [
       {
         role: 'system',
-        content: `You analyze restoration/insurance claim evidence images.
+        content: `You analyze restoration/insurance project document images.
 
 Return JSON only:
 {
@@ -73,7 +73,7 @@ Return JSON only:
 
 ${CATEGORY_RULES}
 
-Never invent claim details not visible in the image.`,
+Never invent report details not visible in the image.`,
       },
       {
         role: 'user',
@@ -157,7 +157,7 @@ export async function analyzeEvidence(
       messages: [
         {
           role: 'system',
-          content: `You analyze restoration/insurance claim evidence files.
+          content: `You analyze restoration/insurance project document files.
 
 Return JSON only:
 {

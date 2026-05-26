@@ -61,7 +61,7 @@ export function EvidenceUpload({
 
   return (
     <div className="border p-4 rounded-xl bg-surface">
-      <h2 className="font-bold mb-3 text-lg">Upload Evidence</h2>
+      <h2 className="font-bold mb-3 text-lg">Upload documents</h2>
 
       <div
         onDragOver={(e) => {

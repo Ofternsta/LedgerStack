@@ -32,6 +32,14 @@ function eventSortTime(e: TimelineEvent): number {
   return Number.isNaN(t) ? 0 : t
 }
 
+function formatTimelineSource(source?: string): string | undefined {
+  if (!source) return undefined
+  if (source === 'evidence') return 'Document'
+  if (source === 'ai') return 'AI'
+  if (source === 'manual') return 'Team'
+  return source
+}
+
 function formatEventWhen(e: TimelineEvent): string {
   if (e.created_at) {
     return new Date(e.created_at).toLocaleString(undefined, {
@@ -78,9 +86,9 @@ function TimelineList({
           {e.description && (
             <p className="text-sm text-muted mt-0.5">{e.description}</p>
           )}
-          {e.source && (
+          {formatTimelineSource(e.source) && (
             <p className="text-[10px] uppercase tracking-wide text-muted-dim mt-1">
-              {e.source}
+              {formatTimelineSource(e.source)}
             </p>
           )}
         </li>
@@ -220,7 +228,7 @@ export function ClaimAiPanel({
   return (
     <section className="border border-border rounded-xl p-4 bg-surface-elevated space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-bold text-lg text-foreground">Claim intelligence</h2>
+        <h2 className="font-bold text-lg text-foreground">Report intelligence</h2>
         <div className="flex flex-wrap gap-2">
           {canGenerate && (
             <>
@@ -317,7 +325,7 @@ export function ClaimAiPanel({
 
         {!loadingTimeline && !latestEvent && (
           <p className="text-sm text-muted-dim">
-            Upload evidence or change claim status to build history. Use Refresh
+            Upload documents or change report status to build history. Use Refresh
             timeline to add AI-derived milestones from files.
           </p>
         )}
@@ -331,9 +339,9 @@ export function ClaimAiPanel({
             {latestEvent.description && (
               <p className="text-sm text-muted mt-1">{latestEvent.description}</p>
             )}
-            {latestEvent.source && (
+            {formatTimelineSource(latestEvent.source) && (
               <p className="text-[10px] uppercase tracking-wide text-muted-dim mt-2">
-                {latestEvent.source}
+                {formatTimelineSource(latestEvent.source)}
               </p>
             )}
           </div>
@@ -342,7 +350,7 @@ export function ClaimAiPanel({
         {showFullTimeline && (
           <div className="pt-1">
             <p className="text-xs text-muted mb-2">
-              Full timeline for this claim ({events.length}{' '}
+              Full timeline for this report ({events.length}{' '}
               {events.length === 1 ? 'entry' : 'entries'})
             </p>
             <TimelineList events={events} newestFirst />
@@ -354,7 +362,7 @@ export function ClaimAiPanel({
             <p className="text-xs text-muted mb-2 mt-3">
               Every status change on this project
               {claimStatusUpdates.length > 0 &&
-                ` · ${claimStatusUpdates.length} on this claim`}
+                ` · ${claimStatusUpdates.length} on this report`}
             </p>
             {loadingStatusHistory && (
               <p className="text-sm text-muted-dim">Loading status history…</p>

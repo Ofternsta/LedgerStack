@@ -30,7 +30,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ evidence })
   } catch (err: unknown) {
     const message =
-      err instanceof Error ? err.message : 'Failed to load evidence'
+      err instanceof Error ? err.message : 'Failed to load documents'
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
@@ -92,7 +92,7 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ evidence })
   } catch (err: unknown) {
     const message =
-      err instanceof Error ? err.message : 'Failed to update evidence'
+      err instanceof Error ? err.message : 'Failed to update document'
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
@@ -122,7 +122,7 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ ok: true })
   } catch (err: unknown) {
     const message =
-      err instanceof Error ? err.message : 'Failed to delete evidence'
+      err instanceof Error ? err.message : 'Failed to delete document'
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }

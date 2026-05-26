@@ -10,19 +10,19 @@ import { BILLING_PLANS } from '@/lib/stripe-config'
 
 const FEATURES = [
   {
-    title: 'Claim workflow',
+    title: 'Report workflow',
     description:
       'Track every job through Inspection → Documentation → Estimate → Approved → In Progress → Completed.',
   },
   {
-    title: 'Evidence vault',
+    title: 'Document library',
     description:
       'Upload photos, PDFs, and videos from the field. OCR and AI categorize and summarize automatically.',
   },
   {
-    title: 'AI claim assistant',
+    title: 'AI report assistant',
     description:
-      'Generate timelines and summaries from your evidence so adjusters and clients stay aligned.',
+      'Generate timelines and summaries from your documents so adjusters and clients stay aligned.',
   },
   {
     title: 'Team & clients',
@@ -40,12 +40,12 @@ const STEPS = [
   {
     step: '2',
     title: 'Open a project',
-    body: 'Add the customer, address, and a claim — evidence uploads attach to the claim.',
+    body: 'Add the customer, address, and a report — document uploads attach to that report.',
   },
   {
     step: '3',
     title: 'Document & close',
-    body: 'Move the claim through stages, export reports, and share with clients when ready.',
+    body: 'Move the report through stages, export packets, and share with clients when ready.',
   },
 ]
 
@@ -99,12 +99,12 @@ export function MarketingHome() {
                   Built for restoration &amp; insurance contractors
                 </p>
                 <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1] max-w-3xl">
-                  <span className="text-white">Claims, evidence, and teams</span>
+                  <span className="text-white">Reports, documents, and teams</span>
                   <span className="brand-gradient-text"> — in one stack.</span>
                 </h1>
                 <p className="mt-6 text-lg sm:text-xl text-muted leading-relaxed max-w-2xl mx-auto lg:mx-0">
                   LedgerStack helps your company organize projects, document damage,
-                  track claim status, and collaborate with workers and clients without
+                  track report status, and collaborate with workers and clients without
                   scattered folders or email threads.
                 </p>
                 <div className="mt-10 flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
@@ -268,7 +268,7 @@ export function MarketingHome() {
               Ready to stack your paperwork?
             </h2>
             <p className="mt-4 text-muted text-lg max-w-xl mx-auto">
-              Join contractors who keep claims, photos, and status in one place.
+              Join contractors who keep reports, photos, and status in one place.
             </p>
             <Link
               href="/login?signup=admin"
