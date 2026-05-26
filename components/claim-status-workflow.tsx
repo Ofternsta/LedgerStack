@@ -14,6 +14,7 @@ type Props = {
   status: string
   canEdit: boolean
   onStatusChange: (status: ClaimStatus) => void
+  onMarkedCompleted?: () => void
 }
 
 export function ClaimStatusWorkflow({
@@ -22,6 +23,7 @@ export function ClaimStatusWorkflow({
   status,
   canEdit,
   onStatusChange,
+  onMarkedCompleted,
 }: Props) {
   const current = normalizeClaimStatus(status)
   const currentIndex = claimStatusIndex(current)
@@ -52,6 +54,9 @@ export function ClaimStatusWorkflow({
     }
 
     onStatusChange(next)
+    if (next === 'Completed') {
+      onMarkedCompleted?.()
+    }
     setSaving(false)
   }
 

@@ -6,7 +6,11 @@ import { EvidenceFolders } from '@/components/evidence-folders'
 import { ProjectPageHeader } from '@/components/project-page-header'
 import { ClaimAiPanel } from '@/components/claim-ai-panel'
 import { ClaimStatusWorkflow } from '@/components/claim-status-workflow'
-import type { ClaimStatus } from '@/lib/claim-status'
+import { ProjectArchivePanel } from '@/components/project-archive-panel'
+import {
+  normalizeClaimStatus,
+  type ClaimStatus,
+} from '@/lib/claim-status'
 import { ClientPortalPanel } from '@/components/client-portal-panel'
 import { EvidenceUpload } from '@/components/evidence-upload'
 import { InternalNotesPanel } from '@/components/internal-notes-panel'
@@ -54,6 +58,7 @@ export default function ProjectPageClient() {
   const [search, setSearch] = useState('')
   const [userId, setUserId] = useState<string | null>(null)
   const [timelineRefreshKey, setTimelineRefreshKey] = useState(0)
+  const [archivePrompt, setArchivePrompt] = useState(false)
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setUserId(user?.id ?? null))
@@ -250,6 +255,13 @@ export default function ProjectPageClient() {
   }
 
   const activeClaim = selectedClaim ?? claims[0]
+  const activeStatus = activeClaim
+    ? normalizeClaimStatus(activeClaim.status)
+    : null
+  const allReportsCompleted =
+    claims.length > 0 &&
+    claims.every((c) => normalizeClaimStatus(c.status) === 'Completed')
+
   if (!activeClaim) {
     return (
       <div className="min-h-dvh">
@@ -381,7 +393,20 @@ export default function ProjectPageClient() {
                 )
                 setTimelineRefreshKey((k) => k + 1)
               }}
+              onMarkedCompleted={() => setArchivePrompt(true)}
             />
+
+            {access.canArchiveProject && access.role !== 'client' && (
+              <ProjectArchivePanel
+                projectId={id}
+                projectName={activeClaim.client_name}
+                reportCompleted={activeStatus === 'Completed'}
+                allReportsCompleted={allReportsCompleted}
+                canArchive={access.canArchiveProject}
+                promptSave={archivePrompt}
+                onPromptDismiss={() => setArchivePrompt(false)}
+              />
+            )}
 
             <ClaimAiPanel
               claimId={activeClaim.id}

@@ -1,138 +1,15 @@
 import { NextResponse } from 'next/server'
 import { generateClaimSummary } from '@/lib/claim-ai'
+import {
+  buildHtmlReport,
+  buildPdfReport,
+} from '@/lib/export-report-builders'
 import { listEvidence } from '@/lib/evidence-storage'
 import { consumeAiSummary } from '@/lib/plan-enforcement'
 import { getOrgPlanContext } from '@/lib/org-plan'
 import { requireAuth } from '@/lib/require-auth'
 
 export const maxDuration = 60
-
-function escapeHtml(text: string) {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-}
-
-const TRIAL_WATERMARK =
-  'TRIAL — Upgrade to export without watermark · ledgerstack.org'
-
-function buildHtmlReport(
-  claim: Record<string, unknown>,
-  summary: string,
-  evidence: Awaited<ReturnType<typeof listEvidence>>,
-  watermark: boolean
-) {
-  const evidenceRows = evidence
-    .map((e) => {
-      const when = e.created_at
-        ? new Date(e.created_at).toLocaleString()
-        : '—'
-      const who = e.uploaded_by_label || '—'
-      return `<tr><td>${escapeHtml(e.evidence_type)}</td><td>${escapeHtml(e.file_name)}</td><td>${escapeHtml(when)}</td><td>${escapeHtml(who)}</td><td>${escapeHtml(e.summary)}</td></tr>`
-    })
-    .join('')
-
-  return `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>LedgerStack Report</title>
-<style>body{font-family:system-ui,sans-serif;max-width:800px;margin:2rem auto;padding:0 1rem}
-h1{font-size:1.5rem}table{width:100%;border-collapse:collapse;margin-top:1rem}
-th,td{border:1px solid #ccc;padding:8px;text-align:left}th{background:#f5f5f5}
-@media print{body{margin:0}}
-.watermark{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:bold;color:rgba(0,0,0,0.08);transform:rotate(-24deg);pointer-events:none;z-index:0}
-.content{position:relative;z-index:1}
-</style></head><body>
-${watermark ? `<div class="watermark" aria-hidden>${escapeHtml(TRIAL_WATERMARK)}</div>` : ''}
-<div class="content">
-<h1>Report — documents</h1>
-<p><strong>Client:</strong> ${escapeHtml(String(claim.client_name))}</p>
-<p><strong>Property:</strong> ${escapeHtml(String(claim.property_address))}</p>
-<p><strong>Report #:</strong> ${escapeHtml(String(claim.claim_number))}</p>
-<p><strong>Insurer:</strong> ${escapeHtml(String(claim.insurance_company))}</p>
-<p><strong>Status:</strong> ${escapeHtml(String(claim.status))}</p>
-<h2>AI Summary</h2>
-<p>${escapeHtml(summary)}</p>
-<h2>Documents (${evidence.length})</h2>
-<table><thead><tr><th>Type</th><th>File</th><th>Uploaded</th><th>By</th><th>Summary</th></tr></thead>
-<tbody>${evidenceRows}</tbody></table>
-<p><em>Generated ${new Date().toLocaleString()} — LedgerStack. Use Print → Save as PDF.</em></p>
-${watermark ? `<p style="margin-top:2rem;font-size:12px;color:#666"><strong>${escapeHtml(TRIAL_WATERMARK)}</strong></p>` : ''}
-</div>
-</body></html>`
-}
-
-async function buildPdfReport(
-  claim: Record<string, unknown>,
-  summary: string,
-  evidence: Awaited<ReturnType<typeof listEvidence>>,
-  watermark: boolean
-): Promise<ArrayBuffer | null> {
-  try {
-    const { jsPDF } = await import('jspdf')
-    const doc = new jsPDF({ unit: 'pt', format: 'letter' })
-    const margin = 48
-    let y = margin
-    const lineHeight = 14
-    const pageWidth = doc.internal.pageSize.getWidth()
-    const maxWidth = pageWidth - margin * 2
-
-    function addLine(text: string, bold = false) {
-      doc.setFont('helvetica', bold ? 'bold' : 'normal')
-      const lines = doc.splitTextToSize(text, maxWidth)
-      for (const line of lines) {
-        if (y > doc.internal.pageSize.getHeight() - margin) {
-          doc.addPage()
-          y = margin
-        }
-        doc.text(line, margin, y)
-        y += lineHeight
-      }
-    }
-
-    addLine('Report — documents', true)
-    y += 6
-    addLine(`Client: ${claim.client_name}`)
-    addLine(`Property: ${claim.property_address}`)
-    addLine(`Report #: ${claim.claim_number}`)
-    addLine(`Insurer: ${claim.insurance_company}`)
-    addLine(`Status: ${claim.status}`)
-    addLine(`Loss type: ${claim.loss_type}`)
-    y += 8
-    addLine('AI Summary', true)
-    addLine(summary)
-    y += 8
-    addLine(`Documents (${evidence.length} files)`, true)
-
-    for (const e of evidence) {
-      const when = e.created_at
-        ? new Date(e.created_at).toLocaleString()
-        : 'unknown time'
-      const who = e.uploaded_by_label || 'unknown uploader'
-      addLine(`• [${e.evidence_type}] ${e.file_name}`)
-      addLine(`  Uploaded ${when} · ${who}`)
-      addLine(`  ${e.summary}`)
-      if (e.extracted_text) {
-        addLine(`  Extracted: ${e.extracted_text.slice(0, 400)}`)
-      }
-      y += 4
-    }
-
-    addLine('')
-    addLine(`Generated ${new Date().toLocaleString()} — LedgerStack`)
-    if (watermark) {
-      y += 12
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(120, 120, 120)
-      addLine(TRIAL_WATERMARK)
-      doc.setTextColor(0, 0, 0)
-    }
-
-    return doc.output('arraybuffer')
-  } catch {
-    return null
-  }
-}
 
 export async function GET(req: Request) {
   try {

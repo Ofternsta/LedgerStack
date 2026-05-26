@@ -7,8 +7,10 @@ const nextConfig: NextConfig = {
     "mammoth",
     "@napi-rs/canvas",
     "sharp",
+    "archiver",
   ],
   outputFileTracingIncludes: {
+    "/api/archive-project": ["./node_modules/archiver/**/*"],
     "/api/upload": [
       "./node_modules/pdf-parse/**/*",
       "./node_modules/pdfjs-dist/**/*",

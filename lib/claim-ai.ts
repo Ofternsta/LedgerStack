@@ -122,7 +122,7 @@ ${evidenceBlock || 'No evidence yet'}`,
   }
 }
 
-function buildFallbackSummary(
+export function buildFallbackSummary(
   claim: Record<string, unknown>,
   evidence: EvidenceRecord[]
 ) {

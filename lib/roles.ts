@@ -35,6 +35,7 @@ export type UserAccess = {
   canExportHtml: boolean
   canUseTeamMessages: boolean
   canUseClaimPacketExport: boolean
+  canArchiveProject: boolean
   exportHasWatermark: boolean
 }
 
@@ -120,6 +121,13 @@ export function buildAccess(input: {
     canExportHtml,
     canUseTeamMessages,
     canUseClaimPacketExport: Boolean(ent?.claimPacketExport),
+    canArchiveProject:
+      staffCapable &&
+      Boolean(
+        ent?.claimPacketExport ||
+          ent?.standardPdfExport ||
+          ent?.exportWatermark
+      ),
     exportHasWatermark: Boolean(ent?.exportWatermark),
   }
 }
