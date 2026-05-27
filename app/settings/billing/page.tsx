@@ -6,6 +6,11 @@ import { AppHeader } from '@/components/app-header'
 import { AppFooter } from '@/components/app-footer'
 import { AppNav } from '@/components/app-nav'
 import { BackupSettingsPanel } from '@/components/backup-settings-panel'
+import {
+  PLAN_ENTITLEMENTS,
+  PLAN_FEATURE_COPY,
+} from '@/lib/plan-entitlements'
+import type { BillingPlanId } from '@/lib/stripe-config'
 import { loadUserAccess } from '@/lib/load-access'
 import type { UserAccess } from '@/lib/roles'
 import { supabase } from '@/lib/supabase'
@@ -136,18 +141,22 @@ function BillingContent() {
         )}
 
       <div className="space-y-3">
-        {Object.entries(data.plans).map(([key, plan]) => (
+        {(Object.entries(data.plans) as [BillingPlanId, PlanInfo][]).map(
+          ([planId, plan]) => (
           <div
-            key={key}
+            key={planId}
             className={`border rounded-xl p-4 ${
-              data.subscription?.plan === key
+              data.subscription?.plan === planId
                 ? 'border-black bg-surface'
                 : 'border-border'
             }`}
           >
             <div className="flex justify-between items-start gap-2">
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="font-bold">{plan.name}</p>
+                <p className="text-xs text-muted mt-0.5">
+                  {PLAN_ENTITLEMENTS[planId].tagline}
+                </p>
                 <p className="text-sm text-muted mt-1">
                   {plan.price === 0
                     ? 'Free trial'
@@ -156,20 +165,32 @@ function BillingContent() {
                     ? ` · up to ${plan.projects} projects`
                     : ' · unlimited projects'}
                 </p>
+                <ul className="mt-2 space-y-0.5 text-xs text-muted">
+                  {PLAN_FEATURE_COPY[planId].includes
+                    .slice(0, 3)
+                    .map((line) => (
+                      <li key={line}>✓ {line}</li>
+                    ))}
+                </ul>
               </div>
-              {data.subscription?.plan !== key && (
+              {data.subscription?.plan !== planId && (
                 <button
                   type="button"
                   disabled={loading !== null}
-                  onClick={() => selectPlan(key)}
+                  onClick={() => selectPlan(planId)}
                   className="shrink-0 btn-primary text-[#052e16] text-sm px-4 py-2 rounded-lg min-h-[40px] disabled:opacity-50"
                 >
-                  {loading === key ? '…' : key === 'trial' ? 'Verify card' : 'Pay with card'}
+                  {loading === planId
+                    ? '…'
+                    : planId === 'trial'
+                      ? 'Verify card'
+                      : 'Pay with card'}
                 </button>
               )}
             </div>
           </div>
-        ))}
+        )
+        )}
       </div>
     </>
   )

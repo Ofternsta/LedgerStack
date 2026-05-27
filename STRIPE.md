@@ -17,6 +17,8 @@ Create **three recurring products** (monthly). Suggested names (match the app):
 | Professional   | $70/month       | `STRIPE_PRICE_PROFESSIONAL`  |
 | Enterprise     | $150/month      | `STRIPE_PRICE_ENTERPRISE`    |
 
+Marketing copy for each paid plan lives in `lib/plan-entitlements.ts` (`PLAN_FEATURE_COPY`, `PLAN_STRIPE_DESCRIPTIONS`). Each Checkout session updates the linked Stripe **Product** name and description to match the website before opening payment.
+
 For each product:
 
 1. **Product catalog → Add product**

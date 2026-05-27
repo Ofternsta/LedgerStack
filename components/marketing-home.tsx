@@ -190,8 +190,10 @@ export function MarketingHome() {
           className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20 scroll-mt-20"
         >
           <h2 className="text-3xl font-bold tracking-tight">Simple pricing</h2>
-          <p className="mt-3 text-muted text-lg">
-            Choose a plan when you create your company account.
+          <p className="mt-3 text-muted text-lg max-w-2xl">
+            Start with a 7-day trial (card required), then pick the plan that
+            matches your crew size. All plans keep your projects and documents
+            in one place.
           </p>
           <ul className="mt-10 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {(
@@ -236,11 +238,13 @@ export function MarketingHome() {
                       )}
                 </p>
                 <ul className="mt-3 text-xs text-muted space-y-1 flex-1">
-                  {PLAN_FEATURE_COPY[id].includes.slice(0, 3).map((line) => (
-                    <li key={line} className="text-brand-bright/90">
-                      ✓ {line}
-                    </li>
-                  ))}
+                  {PLAN_FEATURE_COPY[id].includes
+                    .slice(0, id === 'professional' ? 5 : 4)
+                    .map((line) => (
+                      <li key={line} className="text-brand-bright/90">
+                        ✓ {line}
+                      </li>
+                    ))}
                 </ul>
               </li>
             ))}

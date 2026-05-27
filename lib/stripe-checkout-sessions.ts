@@ -8,7 +8,7 @@ import {
   stripeCheckoutPaymentIntentBranding,
   stripePriceIds,
 } from '@/lib/stripe-config'
-import { ensureStripeProductStatementDescriptor } from '@/lib/stripe-product-branding'
+import { ensureStripeProductBranding } from '@/lib/stripe-product-branding'
 
 export type CheckoutUiMode = 'hosted' | 'embedded'
 
@@ -79,7 +79,7 @@ export async function createStripeCheckoutSession(
     throw new Error(`Stripe price not configured for ${input.plan}.`)
   }
 
-  await ensureStripeProductStatementDescriptor(stripe, input.plan)
+  await ensureStripeProductBranding(stripe, input.plan)
 
   const session = await stripe.checkout.sessions.create({
     ...base,

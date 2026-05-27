@@ -27,7 +27,7 @@ export type PlanEntitlements = {
 
 export const PLAN_ENTITLEMENTS: Record<BillingPlanId, PlanEntitlements> = {
   trial: {
-    tagline: 'Experience the workflow — limited seats and exports',
+    tagline: '7-day trial — experience the workflow, not the full business stack',
     maxStaffUsers: 1,
     maxActiveProjects: 2,
     aiSummariesPerMonth: 10,
@@ -46,7 +46,7 @@ export const PLAN_ENTITLEMENTS: Record<BillingPlanId, PlanEntitlements> = {
     advancedAnalytics: false,
   },
   starter: {
-    tagline: 'Solo contractor — organized documentation for one person',
+    tagline: 'Solo contractor — organized documentation for one-person shops',
     maxStaffUsers: 1,
     maxActiveProjects: 25,
     aiSummariesPerMonth: 50,
@@ -65,7 +65,7 @@ export const PLAN_ENTITLEMENTS: Record<BillingPlanId, PlanEntitlements> = {
     advancedAnalytics: false,
   },
   professional: {
-    tagline: 'Team operations — coordinate workers, clients, and schedules',
+    tagline: 'Real team operations — the software runs your workflow',
     maxStaffUsers: 15,
     maxActiveProjects: 100,
     aiSummariesPerMonth: 250,
@@ -84,7 +84,7 @@ export const PLAN_ENTITLEMENTS: Record<BillingPlanId, PlanEntitlements> = {
     advancedAnalytics: false,
   },
   enterprise: {
-    tagline: 'Business infrastructure — scale, analytics, and control',
+    tagline: 'Business infrastructure — scale, analytics, and company control',
     maxStaffUsers: -1,
     maxActiveProjects: -1,
     aiSummariesPerMonth: -1,
@@ -116,49 +116,75 @@ export const PLAN_FEATURE_COPY: Record<
   trial: {
     includes: [
       '1 user · 2 active projects',
-      'Timeline, uploads & report workflow',
-      'Limited AI summaries',
-      'Basic uploads (images & PDF)',
+      'Report timeline, uploads & claim workflow',
+      'Limited AI summaries (10/month)',
+      'Basic uploads — images & PDF only',
     ],
     excludes: [
-      'Client portal',
-      'Team collaboration',
-      'Advanced exports (watermarked preview only)',
-      'Analytics & automation',
+      'Client portal & worker accounts',
+      'Team chat, calendar & internal notes',
+      'Branded or advanced exports (watermarked preview)',
+      'Analytics dashboard & automation',
     ],
   },
   starter: {
     includes: [
-      '1 user · up to 25 projects',
-      'Report workflow, timeline & AI summaries',
-      'Standard PDF export',
-      'Mobile-friendly uploads',
+      '1 user · up to 25 active projects',
+      'Full report workflow, timeline & AI summaries',
+      'Standard PDF export · mobile uploads',
+      '25 MB uploads (photos, PDFs & video)',
     ],
     excludes: [
-      'Worker & client accounts',
-      'Internal notes & calendar',
-      'Analytics dashboard',
-      'Branded reports',
+      'Worker & client logins',
+      'Internal notes, calendar & team messages',
+      'Analytics dashboard & branded reports',
+      'Claim packets & client portal',
     ],
   },
   professional: {
     includes: [
-      'Multiple workers & client portal',
-      'Scheduling / calendar',
-      'Internal notes & team messages',
-      'Branded exports & report packets',
-      'Analytics dashboard',
+      'Up to 15 team members · 100 projects',
+      'Worker accounts, client portal & permissions',
+      'Calendar, internal notes & team messages',
+      'Branded exports, claim packets & analytics',
+      'Higher AI limits (250 summaries/month)',
     ],
   },
   enterprise: {
     includes: [
-      'Unlimited workers & projects',
-      'Advanced analytics',
-      'Branded / white-label exports',
-      'Priority support & onboarding',
-      'Enterprise controls (SSO, API — contact us)',
+      'Unlimited workers & active projects',
+      'Advanced analytics & activity insights',
+      'White-label / branded export templates',
+      'Priority support & dedicated onboarding',
+      'Enterprise options: SSO, API & integrations (contact us)',
     ],
   },
+}
+
+/** Shown on Stripe Product records (Checkout line items). */
+export const PLAN_STRIPE_DESCRIPTIONS: Record<
+  Exclude<BillingPlanId, 'trial'>,
+  string
+> = {
+  starter:
+    'LedgerStack Starter ($20/mo) — For solo contractors: 1 user, up to 25 active projects, report timeline & workflow, AI summaries, standard PDF export, and mobile field uploads. Organized documentation without worker or client accounts.',
+  professional:
+    'LedgerStack Professional ($70/mo) — Run your team’s workflow: up to 15 workers, client portal, scheduling, internal notes, team messages, branded exports, claim packets, searchable evidence, and analytics dashboard. Built for real restoration operations.',
+  enterprise:
+    'LedgerStack Enterprise ($150/mo) — Company infrastructure: unlimited workers & projects, advanced analytics, branded/white-label exports, priority support, and onboarding. Ask about SSO, API access, audit logs, and custom integrations.',
+}
+
+export function getPlanStripeDescription(
+  plan: Exclude<BillingPlanId, 'trial'>
+): string {
+  return PLAN_STRIPE_DESCRIPTIONS[plan]
+}
+
+export function getPlanStripeProductName(
+  plan: Exclude<BillingPlanId, 'trial'>,
+  planLabel: string
+): string {
+  return `LedgerStack ${planLabel}`
 }
 
 export function isUnlimited(limit: number) {

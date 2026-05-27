@@ -2,13 +2,18 @@ import 'server-only'
 
 import type Stripe from 'stripe'
 import {
+  getPlanStripeDescription,
+  getPlanStripeProductName,
+} from '@/lib/plan-entitlements'
+import {
+  BILLING_PLANS,
   type BillingPlanId,
   stripePriceIds,
   stripeProductStatementDescriptor,
 } from '@/lib/stripe-config'
 
-/** Subscription charges use each Product's statement_descriptor — keep it branded. */
-export async function ensureStripeProductStatementDescriptor(
+/** Keep Stripe Product name + description in sync with ledgerstack.org pricing copy. */
+export async function ensureStripeProductBranding(
   stripe: Stripe,
   plan: Exclude<BillingPlanId, 'trial'>
 ) {
@@ -21,11 +26,13 @@ export async function ensureStripeProductStatementDescriptor(
       typeof price.product === 'string' ? price.product : price.product?.id
     if (!productId) return
 
-    const descriptor = stripeProductStatementDescriptor()
+    const planLabel = BILLING_PLANS[plan].name
     await stripe.products.update(productId, {
-      statement_descriptor: descriptor,
+      name: getPlanStripeProductName(plan, planLabel),
+      description: getPlanStripeDescription(plan),
+      statement_descriptor: stripeProductStatementDescriptor(),
     })
   } catch (err) {
-    console.warn('Stripe product statement_descriptor update failed:', err)
+    console.warn('Stripe product branding update failed:', err)
   }
 }

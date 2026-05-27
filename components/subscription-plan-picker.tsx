@@ -65,7 +65,7 @@ export function SubscriptionPlanPicker({
                 {formatPlanLimit(ent.maxActiveProjects, 'projects')}
               </span>
               <ul className="mt-2 space-y-1 text-xs text-brand-bright/90">
-                {copy.includes.slice(0, 4).map((line) => (
+                {copy.includes.slice(0, 5).map((line) => (
                   <li key={line}>✓ {line}</li>
                 ))}
               </ul>
