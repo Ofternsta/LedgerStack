@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
+import { AppMessagingRoot } from '@/components/app-messaging-root'
 import './globals.css'
 
 const geistSans = Geist({
@@ -75,6 +76,7 @@ export default function RootLayout({
         <link rel="shortcut icon" href={iconHref} type="image/png" />
       </head>
       <body className="min-h-dvh flex flex-col bg-background text-foreground">
+        <AppMessagingRoot />
         {children}
       </body>
     </html>

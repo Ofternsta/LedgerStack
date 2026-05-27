@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { OrgTeamMessages } from '@/components/org-team-messages'
 import { AppHeader } from '@/components/app-header'
 import { AppFooter } from '@/components/app-footer'
 import { AppNav } from '@/components/app-nav'
@@ -33,14 +32,8 @@ export default function ProjectsPage() {
   const [creating, setCreating] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [signingOut, setSigningOut] = useState(false)
-  const [userId, setUserId] = useState<string | null>(null)
 
   async function refreshAccess() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    setUserId(user?.id ?? null)
-
     await linkClientAccessByEmail()
     let { access: a, needsProfileSetup } = await loadUserAccess()
 
@@ -258,10 +251,6 @@ export default function ProjectsPage() {
             Workers cannot create projects. Your admin creates jobs and assigns you
             under each project&apos;s &quot;Assign workers&quot; section.
           </p>
-        )}
-
-        {access.canUseTeamMessages && (
-          <OrgTeamMessages access={access} userId={userId} />
         )}
 
         {access.canCreateProject && (

@@ -47,7 +47,7 @@ export function AppHeader({
               type="button"
               onClick={onSignOut}
               disabled={signingOut}
-              className="shrink-0 text-sm text-muted font-medium min-h-[44px] px-2 hover:text-foreground disabled:opacity-50"
+              className="shrink-0 text-sm text-muted font-medium min-h-[44px] px-2 pr-12 hover:text-foreground disabled:opacity-50"
             >
               {signingOut ? '…' : 'Sign out'}
             </button>
