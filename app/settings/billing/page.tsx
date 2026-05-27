@@ -136,7 +136,7 @@ function BillingContent() {
             onClick={openPortal}
             className="w-full border border-border py-3 rounded-xl text-sm font-medium min-h-[48px] disabled:opacity-50"
           >
-            {loading === 'portal' ? 'Opening…' : 'Manage card & billing (Stripe)'}
+            {loading === 'portal' ? 'Opening…' : 'Manage card & billing'}
           </button>
         )}
 

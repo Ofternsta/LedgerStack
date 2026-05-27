@@ -13,6 +13,7 @@ import {
   createStripeClient,
   type CheckoutUiMode,
 } from '@/lib/stripe-checkout-sessions'
+import { resolveStripeCustomerId } from '@/lib/stripe-customer-resolve'
 
 export function parseBillingPlan(raw: unknown): BillingPlanId | null {
   if (typeof raw !== 'string') return null
@@ -62,7 +63,7 @@ export async function setupAdminSubscription(
 
   const { data: existing } = await supabase
     .from('subscriptions')
-    .select('stripe_customer_id, status, plan')
+    .select('stripe_customer_id, stripe_subscription_id, status, plan')
     .eq('organization_id', organizationId)
     .maybeSingle()
 
@@ -81,9 +82,17 @@ export async function setupAdminSubscription(
     }
   }
 
-  let customerId = existing?.stripe_customer_id
+  const resolved = await resolveStripeCustomerId(stripe, {
+    organizationId,
+    email,
+    storedCustomerId: existing?.stripe_customer_id,
+    storedSubscriptionId: existing?.stripe_subscription_id ?? null,
+  })
 
-  if (!customerId) {
+  let customerId: string
+  if ('customerId' in resolved) {
+    customerId = resolved.customerId
+  } else {
     const customer = await stripe.customers.create({
       email: email ?? undefined,
       metadata: { organization_id: organizationId },
@@ -126,7 +135,8 @@ export async function setupAdminSubscription(
 export async function createBillingPortalSession(
   supabase: SupabaseClient,
   organizationId: string,
-  returnPath = '/settings/billing'
+  returnPath = '/settings/billing',
+  adminEmail?: string | null
 ): Promise<{ url?: string; error?: string }> {
   if (!isStripeConfigured()) {
     return { error: 'Stripe is not configured.' }
@@ -134,18 +144,37 @@ export async function createBillingPortalSession(
 
   const { data: sub } = await supabase
     .from('subscriptions')
-    .select('stripe_customer_id')
+    .select('stripe_customer_id, stripe_subscription_id')
     .eq('organization_id', organizationId)
     .maybeSingle()
 
-  if (!sub?.stripe_customer_id) {
-    return { error: 'No payment profile yet. Subscribe to a plan first.' }
+  const stripe = createStripeClient()
+  const resolved = await resolveStripeCustomerId(stripe, {
+    organizationId,
+    email: adminEmail,
+    storedCustomerId: sub?.stripe_customer_id,
+    storedSubscriptionId: sub?.stripe_subscription_id,
+  })
+
+  if ('error' in resolved) {
+    return { error: resolved.error }
   }
 
-  const stripe = createStripeClient()
+  const customerId = resolved.customerId
+
+  if (sub && customerId !== sub.stripe_customer_id) {
+    await supabase
+      .from('subscriptions')
+      .update({
+        stripe_customer_id: customerId,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('organization_id', organizationId)
+  }
+
   const appUrl = billingAppUrl()
   const session = await stripe.billingPortal.sessions.create({
-    customer: sub.stripe_customer_id,
+    customer: customerId,
     return_url: `${appUrl}${returnPath.startsWith('/') ? returnPath : `/${returnPath}`}`,
   })
 

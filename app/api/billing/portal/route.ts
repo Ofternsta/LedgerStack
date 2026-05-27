@@ -38,7 +38,8 @@ export async function POST(req: Request) {
     const result = await createBillingPortalSession(
       supabase,
       org.id,
-      returnPath
+      returnPath,
+      user.email
     )
 
     if (result.error) {
