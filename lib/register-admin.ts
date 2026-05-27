@@ -124,22 +124,28 @@ async function upsertPendingSignupRow(input: RegisterAdminInput) {
     return { error: emailBlock.reason }
   }
 
-  let passwordEncrypted: string
-  try {
-    passwordEncrypted = encryptSignupPassword(input.password)
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Encryption failed'
-    return { error: message }
-  }
-
   const { data: existingPending } = await service
     .from('pending_admin_signups')
-    .select('id')
+    .select('id, password_encrypted')
     .eq('email', email)
     .is('consumed_at', null)
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()
+
+  let passwordEncrypted: string
+  if (input.password) {
+    try {
+      passwordEncrypted = encryptSignupPassword(input.password)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Encryption failed'
+      return { error: message }
+    }
+  } else if (existingPending?.password_encrypted) {
+    passwordEncrypted = existingPending.password_encrypted as string
+  } else {
+    return { error: 'Signup session expired. Start again from sign up.' }
+  }
 
   if (existingPending?.id) {
     const { error } = await service
@@ -174,6 +180,57 @@ async function upsertPendingSignupRow(input: RegisterAdminInput) {
   }
 
   return { pendingId: pending.id as string, email }
+}
+
+/** Reuse or create pending_admin_signups row (after auth user already exists). */
+async function ensurePendingSignupForCheckout(input: RegisterAdminInput) {
+  const email = normalizeSignupEmail(input.email)
+  if (await authUserExists(createServiceClient(), email)) {
+    return upsertPendingSignupRow(input)
+  }
+  return insertPendingSignup(input)
+}
+
+/** Load signup fields from pending row (e.g. after email verify in a new tab). */
+export async function loadRegisterInputFromPendingEmail(
+  email: string,
+  plan: BillingPlanId
+): Promise<RegisterAdminInput | { error: string }> {
+  const service = createServiceClient()
+  const normalized = normalizeSignupEmail(email)
+
+  const { data: pending, error } = await service
+    .from('pending_admin_signups')
+    .select('email, password_encrypted, full_name, organization_name, plan')
+    .eq('email', normalized)
+    .is('consumed_at', null)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (error || !pending) {
+    return {
+      error:
+        'Signup session not found. Return to sign up, choose your plan again, and complete checkout in the same browser if possible.',
+    }
+  }
+
+  let password: string
+  try {
+    password = decryptSignupPassword(pending.password_encrypted as string)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Could not restore signup'
+    return { error: message }
+  }
+
+  return {
+    email: normalized,
+    password,
+    fullName: (pending.full_name as string | null) || undefined,
+    organizationName:
+      String(pending.organization_name || '').trim() || 'My Company',
+    plan,
+  }
 }
 
 function signupCheckoutVerifyNextPath(plan: BillingPlanId) {
@@ -260,7 +317,7 @@ export async function startTrialAdminSignupCheckout(
     }
   }
 
-  const pending = await insertPendingSignup(input)
+  const pending = await ensurePendingSignupForCheckout(input)
   if ('error' in pending) return { error: pending.error }
 
   const stripe = createStripeClient()
@@ -307,7 +364,7 @@ export async function startPaidAdminSignupCheckout(
     return { error: 'Paid plans require Stripe configuration.' }
   }
 
-  const pending = await insertPendingSignup(input)
+  const pending = await ensurePendingSignupForCheckout(input)
   if ('error' in pending) return { error: pending.error }
 
   const stripe = createStripeClient()

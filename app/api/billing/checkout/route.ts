@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server'
 import { parseBillingPlan, setupAdminSubscription } from '@/lib/admin-billing-setup'
 import {
+  loadRegisterInputFromPendingEmail,
+  prepareAdminCheckoutVerification,
   startPaidAdminSignupCheckout,
   startTrialAdminSignupCheckout,
   type RegisterAdminInput,
 } from '@/lib/register-admin'
 import { isEmailVerifiedAddress, isEmailVerifiedUser } from '@/lib/email-verification'
-import {
-  prepareAdminCheckoutVerification,
-} from '@/lib/register-admin'
+import { parseRegisterCheckoutPayload } from '@/lib/parse-register-payload'
 import { requireAuth } from '@/lib/require-auth'
 import { isStripeConfigured } from '@/lib/stripe-config'
 import { normalizeSignupEmail } from '@/lib/trial-eligibility'
@@ -36,19 +36,52 @@ export async function POST(req: Request) {
     }
 
     if (register) {
-      const input: RegisterAdminInput = {
-        email: String(register.email || '').trim(),
-        password: String(register.password || ''),
-        fullName: register.fullName as string | undefined,
-        organizationName: String(register.organizationName || '').trim(),
-        plan: planId,
-      }
-
-      if (!input.email || !input.password || !input.organizationName) {
+      const parsed = parseRegisterCheckoutPayload(register, planId)
+      if (!parsed) {
         return NextResponse.json(
-          { error: 'Email, password, and company name are required.' },
+          { error: 'Invalid signup checkout payload.' },
           { status: 400 }
         )
+      }
+
+      let input: RegisterAdminInput
+
+      if (parsed.pendingSignup) {
+        const normalizedEmail = normalizeSignupEmail(parsed.email)
+        if (!(await isEmailVerifiedAddress(normalizedEmail))) {
+          return NextResponse.json(
+            {
+              needsEmailVerification: true,
+              email: normalizedEmail,
+              message:
+                'Verify your email before checkout. Check your inbox for the confirmation link.',
+            },
+            { status: 403 }
+          )
+        }
+        const loaded = await loadRegisterInputFromPendingEmail(
+          normalizedEmail,
+          planId
+        )
+        if ('error' in loaded) {
+          return NextResponse.json({ error: loaded.error }, { status: 400 })
+        }
+        input = loaded
+      } else {
+        input = {
+          email: parsed.email,
+          password: parsed.password,
+          fullName: parsed.fullName,
+          organizationName: parsed.organizationName,
+          plan: planId,
+        }
+
+        if (!input.email || !input.password || !input.organizationName) {
+          return NextResponse.json(
+            { error: 'Email, password, and company name are required.' },
+            { status: 400 }
+          )
+        }
       }
 
       const normalizedEmail = normalizeSignupEmail(input.email)

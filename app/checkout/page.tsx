@@ -7,13 +7,61 @@ import { StripeEmbeddedCheckout } from '@/components/stripe-embedded-checkout'
 import { VerifyEmailBeforeCheckout } from '@/components/verify-email-before-checkout'
 import { BrandLogo } from '@/components/brand-logo'
 import { BILLING_PLANS, type BillingPlanId } from '@/lib/stripe-config'
-import { loadAdminSignupDraft } from '@/lib/signup-draft'
+import {
+  loadAdminSignupDraft,
+  type AdminSignupDraft,
+} from '@/lib/signup-draft'
+
+function registerPayloadFromDraft(draft: AdminSignupDraft, plan: BillingPlanId) {
+  return {
+    email: draft.email,
+    password: draft.password,
+    fullName: draft.fullName,
+    organizationName: draft.organizationName,
+    plan,
+  }
+}
+
+async function registerPayloadForSignup(
+  plan: BillingPlanId,
+  fallbackEmail: string | null
+) {
+  const draft = loadAdminSignupDraft()
+  if (draft) return registerPayloadFromDraft(draft, plan)
+
+  const statusRes = await fetch('/api/auth/email-verification-status')
+  const status = await statusRes.json().catch(() => ({}))
+  if (statusRes.ok && status.verified && status.email) {
+    const email = String(status.email)
+    const pendingRes = await fetch(
+      `/api/auth/finish-signup?email=${encodeURIComponent(email)}`
+    )
+    const pending = await pendingRes.json().catch(() => ({}))
+    if (pendingRes.ok && pending.pending) {
+      return { pendingSignup: true as const, email, plan }
+    }
+  }
+
+  if (fallbackEmail) {
+    const verifyRes = await fetch(
+      `/api/auth/email-verification-status?email=${encodeURIComponent(fallbackEmail)}`
+    )
+    const verify = await verifyRes.json().catch(() => ({}))
+    if (verifyRes.ok && verify.verified) {
+      return { pendingSignup: true as const, email: fallbackEmail, plan }
+    }
+  }
+
+  return null
+}
 
 function CheckoutContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const planParam = searchParams.get('plan') as BillingPlanId | null
   const isRegister = searchParams.get('register') === '1'
+  const isSignupFlow =
+    isRegister || Boolean(typeof window !== 'undefined' && loadAdminSignupDraft())
 
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [publishableKey, setPublishableKey] = useState<string | null>(null)
@@ -62,19 +110,12 @@ function CheckoutContent() {
       embedded: true,
     }
 
-    if (isRegister) {
-      const draft = loadAdminSignupDraft()
-      if (!draft) {
-        router.replace('/login?signup=admin')
-        return
-      }
-      body.register = {
-        email: draft.email,
-        password: draft.password,
-        full_name: draft.fullName,
-        organization_name: draft.organizationName,
-        plan,
-      }
+    const registerPayload = await registerPayloadForSignup(plan, checkoutEmail)
+    if (registerPayload) {
+      body.register = registerPayload
+    } else if (isSignupFlow) {
+      router.replace('/login?signup=admin')
+      return
     }
 
     const res = await fetch('/api/billing/checkout', {
@@ -117,7 +158,7 @@ function CheckoutContent() {
 
     setClientSecret(payload.clientSecret)
     setLoading(false)
-  }, [plan, isRegister, router])
+  }, [plan, isSignupFlow, router, checkoutEmail])
 
   useEffect(() => {
     if (!plan) {
@@ -127,38 +168,85 @@ function CheckoutContent() {
     }
 
     async function init() {
-      if (isRegister) {
-        const draft = loadAdminSignupDraft()
-        if (!draft) {
+      const draft = loadAdminSignupDraft()
+      const statusRes = await fetch('/api/auth/email-verification-status')
+      const status = await statusRes.json().catch(() => ({}))
+      const sessionEmail =
+        statusRes.ok && status.email
+          ? String(status.email).trim().toLowerCase()
+          : null
+
+      let pendingSignup = false
+      let pendingData: { plan?: string; pending?: boolean } = {}
+      if (sessionEmail && status.verified) {
+        const pendingRes = await fetch(
+          `/api/auth/finish-signup?email=${encodeURIComponent(sessionEmail)}`
+        )
+        pendingData = await pendingRes.json().catch(() => ({}))
+        pendingSignup = Boolean(pendingRes.ok && pendingData.pending)
+      }
+
+      const signupFlow = isSignupFlow || pendingSignup
+
+      if (signupFlow) {
+        const email =
+          draft?.email.trim().toLowerCase() ||
+          sessionEmail ||
+          searchParams.get('email')?.trim().toLowerCase() ||
+          null
+
+        if (!email) {
           router.replace('/login?signup=admin')
           return
         }
 
-        setCheckoutEmail(draft.email.trim().toLowerCase())
+        setCheckoutEmail(email)
 
-        const accountRes = await fetch('/api/auth/register-admin-account', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: draft.email,
-            password: draft.password,
-            full_name: draft.fullName,
-            organization_name: draft.organizationName,
-            plan,
-          }),
-        })
-        const accountPayload = await accountRes.json().catch(() => ({}))
-
-        if (!accountRes.ok) {
-          setError(accountPayload.error || 'Could not prepare account')
-          setLoading(false)
-          return
+        if (!isRegister && !planParam && pendingData?.plan) {
+          const pendingPlan = pendingData.plan as BillingPlanId
+          if (pendingPlan in BILLING_PLANS) {
+            router.replace(
+              `/checkout?plan=${encodeURIComponent(pendingPlan)}&register=1`
+            )
+            return
+          }
         }
 
-        if (!accountPayload.emailVerified) {
-          setEmailVerified(false)
-          setLoading(false)
-          return
+        if (draft) {
+          const accountRes = await fetch('/api/auth/register-admin-account', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: draft.email,
+              password: draft.password,
+              full_name: draft.fullName,
+              organization_name: draft.organizationName,
+              plan,
+            }),
+          })
+          const accountPayload = await accountRes.json().catch(() => ({}))
+
+          if (!accountRes.ok) {
+            setError(accountPayload.error || 'Could not prepare account')
+            setLoading(false)
+            return
+          }
+
+          if (!accountPayload.emailVerified) {
+            setEmailVerified(false)
+            setLoading(false)
+            return
+          }
+        } else {
+          const verifyRes = await fetch(
+            `/api/auth/email-verification-status?email=${encodeURIComponent(email)}`
+          )
+          const verify = await verifyRes.json().catch(() => ({}))
+          if (!verifyRes.ok || !verify.verified) {
+            setEmailVerified(false)
+            setLoading(false)
+            return
+          }
         }
 
         setEmailVerified(true)
@@ -166,17 +254,14 @@ function CheckoutContent() {
         return
       }
 
-      const statusRes = await fetch('/api/auth/email-verification-status')
-      const statusPayload = await statusRes.json().catch(() => ({}))
-
       if (!statusRes.ok) {
-        setError(statusPayload.error || 'Sign in to continue to checkout')
+        setError(status.error || 'Sign in to continue to checkout')
         setLoading(false)
         return
       }
 
-      if (!statusPayload.verified) {
-        setCheckoutEmail(statusPayload.email || null)
+      if (!status.verified) {
+        setCheckoutEmail(status.email || null)
         setEmailVerified(false)
         setLoading(false)
         return
@@ -187,9 +272,9 @@ function CheckoutContent() {
     }
 
     void init()
-  }, [plan, isRegister, router, startStripeCheckout])
+  }, [plan, isSignupFlow, isRegister, planParam, router, searchParams, startStripeCheckout])
 
-  const cancelHref = isRegister
+  const cancelHref = isSignupFlow
     ? '/onboarding/subscription?register=1'
     : '/settings/billing?canceled=1'
 
