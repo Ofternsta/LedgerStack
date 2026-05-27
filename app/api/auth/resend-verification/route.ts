@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
+import { parseBillingPlan } from '@/lib/admin-billing-setup'
+import { signupEmailVerifiedNextPath } from '@/lib/auth-redirect'
 import { sendSignupConfirmationEmail } from '@/lib/auth-email'
+import { createServiceClient } from '@/lib/supabase/service'
 import { normalizeSignupEmail } from '@/lib/trial-eligibility'
 
 export async function POST(req: Request) {
@@ -11,7 +14,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'email is required' }, { status: 400 })
     }
 
-    const result = await sendSignupConfirmationEmail(email)
+    let plan = parseBillingPlan(body.plan)
+    if (!plan) {
+      const service = createServiceClient()
+      const { data: pending } = await service
+        .from('pending_admin_signups')
+        .select('plan')
+        .eq('email', email)
+        .is('consumed_at', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      plan = parseBillingPlan(pending?.plan) ?? 'starter'
+    }
+
+    const result = await sendSignupConfirmationEmail(email, {
+      nextPath: signupEmailVerifiedNextPath(plan),
+    })
     if (!result.ok) {
       return NextResponse.json(
         { error: result.error || 'Could not send verification email' },

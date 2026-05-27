@@ -38,7 +38,10 @@ export function VerifyEmailBeforeCheckout({
     const res = await fetch('/api/auth/resend-verification', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({
+        email,
+        plan: new URLSearchParams(window.location.search).get('plan'),
+      }),
     })
     const payload = await res.json().catch(() => ({}))
     setResending(false)
@@ -46,7 +49,9 @@ export function VerifyEmailBeforeCheckout({
       setMessage(payload.error || 'Could not resend email')
       return
     }
-    setMessage('Verification email sent. Open the link, then this page will continue.')
+    setMessage(
+      'Verification email sent. Open the link, then return to this tab — payment will continue here.'
+    )
   }
 
   return (
@@ -55,7 +60,8 @@ export function VerifyEmailBeforeCheckout({
       <p className="text-sm text-amber-900 leading-relaxed">
         For security, you must confirm <strong>{email}</strong> before card
         checkout. We sent a link to that inbox (check spam). After you click
-        it, you will return here to enter payment details.
+        it, come back to this tab to enter payment (you do not need to sign in
+        on the page the email opens).
       </p>
       <p className="text-xs text-amber-800/90">
         Your login is created now; your company workspace is set up after payment

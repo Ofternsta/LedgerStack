@@ -18,6 +18,7 @@ import {
   createStripeClient,
   type CheckoutUiMode,
 } from '@/lib/stripe-checkout-sessions'
+import { signupEmailVerifiedNextPath } from '@/lib/auth-redirect'
 import { sendSignupConfirmationEmail } from '@/lib/auth-email'
 import {
   getAuthUserIdByEmail,
@@ -233,10 +234,6 @@ export async function loadRegisterInputFromPendingEmail(
   }
 }
 
-function signupCheckoutVerifyNextPath(plan: BillingPlanId) {
-  return `/checkout?plan=${encodeURIComponent(plan)}&register=1`
-}
-
 /** Create account + pending signup if needed; require email verification before Stripe. */
 export async function prepareAdminCheckoutVerification(
   input: RegisterAdminInput
@@ -259,7 +256,7 @@ export async function prepareAdminCheckoutVerification(
       return { error: pending.error }
     }
     const sent = await sendSignupConfirmationEmail(email, {
-      nextPath: signupCheckoutVerifyNextPath(input.plan),
+      nextPath: signupEmailVerifiedNextPath(input.plan),
     })
     if (!sent.ok) return { error: sent.error || 'Could not send verification email' }
     return {
@@ -292,7 +289,7 @@ export async function prepareAdminCheckoutVerification(
   }
 
   const sent = await sendSignupConfirmationEmail(email, {
-    nextPath: signupCheckoutVerifyNextPath(input.plan),
+    nextPath: signupEmailVerifiedNextPath(input.plan),
   })
   if (!sent.ok) {
     return { error: sent.error || 'Could not send verification email' }

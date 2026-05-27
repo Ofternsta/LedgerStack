@@ -20,8 +20,7 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith('/api/auth/resend-verification') ||
     pathname.startsWith('/api/auth/trial-eligibility') ||
     pathname.startsWith('/api/auth/finish-signup')
-  const isPublicOnboarding =
-    pathname.startsWith('/onboarding/subscription')
+  const isPublicOnboarding = pathname.startsWith('/onboarding/')
   const isPublicSignupCheckout = isPublicSignupCheckoutPath(pathname)
   const isPublicMarketing = pathname === '/'
 
