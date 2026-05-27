@@ -22,6 +22,7 @@ type EvidenceFoldersProps = {
   canEdit: boolean
   canDelete: boolean
   canRescan: boolean
+  emptyMessage?: string
   onOpen: (filePath: string) => void
   onDelete: (filePath: string) => void
   onUpdated: () => void
@@ -55,6 +56,7 @@ export function EvidenceFolders({
   canEdit,
   canDelete,
   canRescan,
+  emptyMessage = 'No documents uploaded yet. Upload files to add them to a category folder.',
   onOpen,
   onDelete,
   onUpdated,
@@ -123,9 +125,7 @@ export function EvidenceFolders({
             </div>
           </div>
         ))}
-        <p className="text-sm text-muted-dim text-center py-4">
-          No documents uploaded yet. Upload files to add them to a category folder.
-        </p>
+        <p className="text-sm text-muted-dim text-center py-4">{emptyMessage}</p>
       </section>
     )
   }

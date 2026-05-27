@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { isOrganizationAdmin } from '@/lib/org-admin'
+import { hasApprovedClientProjectAccess } from '@/lib/project-client-access'
 import {
   type WorkerPermissionKey,
   parseWorkerPermissions,
@@ -26,7 +27,8 @@ export async function assertProjectMemberPermission(
   supabase: SupabaseClient,
   userId: string,
   projectId: string,
-  permission: WorkerPermissionKey
+  permission: WorkerPermissionKey,
+  options?: { email?: string | null }
 ): Promise<{ ok: true } | { ok: false; error: string; status: number }> {
   const organizationId = await getProjectOrgId(supabase, projectId)
   if (!organizationId) {
@@ -35,6 +37,18 @@ export async function assertProjectMemberPermission(
 
   if (await isOrganizationAdmin(supabase, organizationId, userId)) {
     return { ok: true }
+  }
+
+  if (permission === 'can_view_files') {
+    const clientOk = await hasApprovedClientProjectAccess(
+      supabase,
+      projectId,
+      userId,
+      options?.email
+    )
+    if (clientOk) {
+      return { ok: true }
+    }
   }
 
   const { data: member } = await supabase
@@ -47,7 +61,11 @@ export async function assertProjectMemberPermission(
     .maybeSingle()
 
   if (member?.status !== 'approved') {
-    return { ok: false, error: 'Forbidden', status: 403 }
+    return {
+      ok: false,
+      error: 'You do not have access to this project.',
+      status: 403,
+    }
   }
 
   const flags = parseWorkerPermissions(member)

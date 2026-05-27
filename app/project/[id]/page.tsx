@@ -11,7 +11,6 @@ import {
   normalizeClaimStatus,
   type ClaimStatus,
 } from '@/lib/claim-status'
-import { ClientPortalPanel } from '@/components/client-portal-panel'
 import { EvidenceUpload } from '@/components/evidence-upload'
 import { InternalNotesPanel } from '@/components/internal-notes-panel'
 import { MessagePanel } from '@/components/message-panel'
@@ -303,6 +302,7 @@ export default function ProjectPageClient() {
   }
 
   const activeClaim = selectedClaim ?? claims[0]
+  const isClientViewer = access.role === 'client'
   const activeStatus = activeClaim
     ? normalizeClaimStatus(activeClaim.status)
     : null
@@ -351,12 +351,6 @@ export default function ProjectPageClient() {
       />
 
       <main className="flex-1 safe-x px-4 py-4 max-w-5xl mx-auto w-full pb-8 safe-bottom space-y-4">
-        {access.role === 'client' && (
-          <p className="text-sm text-blue-800 bg-blue-50 border border-blue-100 rounded-xl p-3">
-            View only — you cannot upload or edit files on this project.
-          </p>
-        )}
-
         {access.planName && access.role !== 'client' && (
           <p className="text-xs text-gray-600">
             {access.planName} plan
@@ -430,6 +424,7 @@ export default function ProjectPageClient() {
               projectId={id}
               status={activeClaim.status}
               canEdit={access.canUpdateReportStatus}
+              showReadOnlyHint={!isClientViewer}
               onStatusChange={(next: ClaimStatus) => {
                 setClaims((prev) =>
                   prev.map((c) =>
@@ -458,22 +453,17 @@ export default function ProjectPageClient() {
               />
             )}
 
-            <ClaimAiPanel
-              claimId={activeClaim.id}
-              projectId={id}
-              timelineRefreshKey={timelineRefreshKey}
-              canGenerate={access.canUpdateClaimInfo}
-              canExportPdf={access.canExportPdf}
-              canExportHtml={access.canExportHtml}
-              exportHasWatermark={access.exportHasWatermark}
-              aiSummariesLimit={access.aiSummariesLimit}
-              aiSummariesUsed={access.aiSummariesUsed}
-            />
-
-            {access.canViewClientPortal && (
-              <ClientPortalPanel
+            {!isClientViewer && (
+              <ClaimAiPanel
+                claimId={activeClaim.id}
                 projectId={id}
-                canApprove={access.canApproveDocuments}
+                timelineRefreshKey={timelineRefreshKey}
+                canGenerate={access.canUpdateClaimInfo}
+                canExportPdf={access.canExportPdf}
+                canExportHtml={access.canExportHtml}
+                exportHasWatermark={access.exportHasWatermark}
+                aiSummariesLimit={access.aiSummariesLimit}
+                aiSummariesUsed={access.aiSummariesUsed}
               />
             )}
 
@@ -534,6 +524,11 @@ export default function ProjectPageClient() {
                   canEdit={access.canEditEvidenceSummary}
                   canDelete={access.canDeleteEvidence}
                   canRescan={access.canUploadEvidence}
+                  emptyMessage={
+                    isClientViewer
+                      ? 'No documents have been shared on this project yet.'
+                      : undefined
+                  }
                   onOpen={openFile}
                   onDelete={deleteFile}
                   onUpdated={() => fetchEvidence(activeClaim.id)}

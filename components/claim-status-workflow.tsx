@@ -13,6 +13,8 @@ type Props = {
   projectId: string
   status: string
   canEdit: boolean
+  /** When false, hides the staff-only read-only footnote (e.g. client portal). */
+  showReadOnlyHint?: boolean
   onStatusChange: (status: ClaimStatus) => void
   onMarkedCompleted?: () => void
 }
@@ -22,6 +24,7 @@ export function ClaimStatusWorkflow({
   projectId,
   status,
   canEdit,
+  showReadOnlyHint = true,
   onStatusChange,
   onMarkedCompleted,
 }: Props) {
@@ -104,7 +107,7 @@ export function ClaimStatusWorkflow({
         </p>
       )}
 
-      {!canEdit && (
+      {!canEdit && showReadOnlyHint && (
         <p className="text-xs text-muted-dim mt-3">
           View only — status updates are for your contractor team.
         </p>

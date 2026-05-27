@@ -141,7 +141,7 @@ export function buildAccess(input: {
     canViewAnalytics,
     canManageBilling: isAdmin,
     canManageSystemSettings: isAdmin,
-    canViewClientPortal: isClient,
+    canViewClientPortal: false,
     canApproveDocuments: isClient,
     canExportPdf,
     canExportHtml,

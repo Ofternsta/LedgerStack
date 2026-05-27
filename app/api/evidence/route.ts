@@ -31,7 +31,8 @@ export async function GET(req: Request) {
       supabase,
       user.id,
       projectId,
-      'can_view_files'
+      'can_view_files',
+      { email: user.email }
     )
     if (!viewGate.ok) {
       return NextResponse.json(
