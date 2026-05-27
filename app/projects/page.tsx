@@ -60,11 +60,7 @@ export default function ProjectsPage() {
     if (a?.canManageBilling) {
       const billingRes = await fetch('/api/billing')
       const billing = await billingRes.json().catch(() => ({}))
-      if (
-        billingRes.ok &&
-        (billing.needsPlanSelection ||
-          billing.subscription?.status === 'pending')
-      ) {
+      if (billingRes.ok && billing.needsPlanSelection) {
         router.push('/onboarding/subscription?renew=1')
         setAccessLoading(false)
         return null

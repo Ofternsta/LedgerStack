@@ -29,6 +29,9 @@ function SubscriptionOnboardingContent() {
   const [stripeConfigured, setStripeConfigured] = useState(true)
   const [trialAvailable, setTrialAvailable] = useState(true)
   const [renewMode, setRenewMode] = useState(false)
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(
+    null
+  )
 
   useEffect(() => {
     async function init() {
@@ -75,8 +78,9 @@ function SubscriptionOnboardingContent() {
 
       setStripeConfigured(Boolean(data.stripeConfigured))
       setTrialAvailable(Boolean(data.trialAvailable))
+      setSubscriptionStatus(data.subscription?.status ?? null)
 
-      if (!data.needsPlanSelection && data.subscription?.status === 'active') {
+      if (!data.needsPlanSelection) {
         router.replace('/projects')
         return
       }
@@ -182,7 +186,11 @@ function SubscriptionOnboardingContent() {
   const subtitle = isRegister
     ? `Create your account for ${orgName || 'your company'} after you select a plan.`
     : renewMode
-      ? 'Your trial ended or subscription is inactive. Pick a paid plan to continue.'
+      ? subscriptionStatus === 'expired'
+        ? 'Your trial or billing period has ended. Choose a plan to sign back in — your existing projects and data are still saved.'
+        : subscriptionStatus === 'canceled'
+          ? 'Your subscription was canceled. Choose a plan to sign back in — your existing projects and data are still saved.'
+          : 'Your subscription is inactive. Choose a plan to sign back in — your existing projects and data are still saved.'
       : orgName
         ? `${orgName} needs an active plan.`
         : 'Select a plan to continue.'

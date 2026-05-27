@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { isActiveSubscriptionStatus } from '@/lib/admin-subscription-status'
 import {
   getPlanEntitlements,
   type PlanEntitlements,
@@ -30,7 +31,7 @@ export async function getOrgPlanContext(
     return null
   }
 
-  if (sub.status === 'expired' || sub.status === 'pending') {
+  if (!isActiveSubscriptionStatus(sub.status)) {
     return null
   }
 

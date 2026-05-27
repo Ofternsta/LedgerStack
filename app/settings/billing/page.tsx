@@ -37,7 +37,7 @@ function BillingContent() {
       .then((r) => r.json())
       .then((payload) => {
         if (payload.needsPlanSelection) {
-          router.replace('/onboarding/subscription')
+          router.replace('/onboarding/subscription?renew=1')
           return
         }
         setData(payload)

@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { adminNeedsSubscription } from '@/lib/admin-subscription-status'
 import { isPublicSignupCheckoutPath } from '@/lib/auth-public-routes'
 
 /** Skip Supabase round-trip when the browser has no session cookies. */
@@ -90,21 +91,51 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  const isRenewOrBilling =
+    pathname.startsWith('/settings/billing') ||
+    pathname.startsWith('/onboarding/') ||
+    pathname === '/checkout'
+
+  async function redirectAfterAuthLanding() {
+    const needsPlan = await adminNeedsSubscription(supabase, user!.id)
+    const url = request.nextUrl.clone()
+    if (needsPlan) {
+      url.pathname = '/onboarding/subscription'
+      url.searchParams.set('renew', '1')
+    } else {
+      url.pathname = '/projects'
+      url.searchParams.delete('renew')
+    }
+    return NextResponse.redirect(url)
+  }
+
   if (
     user &&
     emailConfirmed &&
     pathname === '/login' &&
     !request.nextUrl.searchParams.has('reset')
   ) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/projects'
-    return NextResponse.redirect(url)
+    return redirectAfterAuthLanding()
   }
 
   if (user && emailConfirmed && pathname === '/') {
-    const url = request.nextUrl.clone()
-    url.pathname = '/projects'
-    return NextResponse.redirect(url)
+    return redirectAfterAuthLanding()
+  }
+
+  if (
+    user &&
+    emailConfirmed &&
+    !isPublicRoute &&
+    !isRenewOrBilling &&
+    !pathname.startsWith('/api/')
+  ) {
+    const needsPlan = await adminNeedsSubscription(supabase, user.id)
+    if (needsPlan) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/onboarding/subscription'
+      url.searchParams.set('renew', '1')
+      return NextResponse.redirect(url)
+    }
   }
 
   return supabaseResponse

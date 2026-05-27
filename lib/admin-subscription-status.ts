@@ -1,7 +1,18 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { isTrialExpired } from '@/lib/trial-utils'
 
-/** Admin must pick or renew a plan. */
+/** Subscription statuses that allow using the app (including grace period for failed payment). */
+export function isActiveSubscriptionStatus(
+  status: string | null | undefined
+): boolean {
+  return (
+    status === 'active' ||
+    status === 'trialing' ||
+    status === 'past_due'
+  )
+}
+
+/** Admin must pick or renew a plan (canceled, expired, trial ended, never subscribed). */
 export async function adminNeedsSubscription(
   supabase: SupabaseClient,
   userId: string
@@ -24,15 +35,28 @@ export async function adminNeedsSubscription(
 
   const { data: sub } = await supabase
     .from('subscriptions')
-    .select('status, plan, trial_ends_at')
+    .select('status, plan, trial_ends_at, current_period_end')
     .eq('organization_id', org.id)
     .maybeSingle()
 
-  if (!sub || sub.status === 'pending') return true
-
-  if (sub.status === 'expired') return true
+  if (!sub || !isActiveSubscriptionStatus(sub.status)) return true
 
   if (sub.plan === 'trial' && isTrialExpired(sub.trial_ends_at)) {
+    await supabase
+      .from('subscriptions')
+      .update({
+        status: 'expired',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('organization_id', org.id)
+    return true
+  }
+
+  if (
+    sub.status === 'active' &&
+    sub.current_period_end &&
+    new Date(sub.current_period_end).getTime() < Date.now()
+  ) {
     await supabase
       .from('subscriptions')
       .update({
