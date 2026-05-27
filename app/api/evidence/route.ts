@@ -4,6 +4,7 @@ import {
   isOrganizationAdmin,
   projectIdFromEvidencePath,
 } from '@/lib/org-admin'
+import { assertProjectMemberPermission } from '@/lib/member-permissions-server'
 import { getProjectOrgId } from '@/lib/staff-project-access'
 import { requireAuth } from '@/lib/require-auth'
 import { updateEvidenceMeta } from '@/lib/update-evidence-meta'
@@ -26,6 +27,19 @@ export async function GET(req: Request) {
       )
     }
 
+    const viewGate = await assertProjectMemberPermission(
+      supabase,
+      user.id,
+      projectId,
+      'can_view_files'
+    )
+    if (!viewGate.ok) {
+      return NextResponse.json(
+        { error: viewGate.error },
+        { status: viewGate.status }
+      )
+    }
+
     const evidence = await listEvidence(supabase, projectId, claimId)
     return NextResponse.json({ evidence })
   } catch (err: unknown) {
@@ -33,6 +47,38 @@ export async function GET(req: Request) {
       err instanceof Error ? err.message : 'Failed to load documents'
     return NextResponse.json({ error: message }, { status: 500 })
   }
+}
+
+async function requireEvidenceDeleteAccess(
+  supabase: Awaited<ReturnType<typeof requireAuth>>['supabase'],
+  userId: string,
+  filePath: string
+) {
+  const projectId = projectIdFromEvidencePath(filePath)
+  if (!projectId) {
+    return { ok: false as const, error: 'Invalid file path', status: 400 }
+  }
+
+  const organizationId = await getProjectOrgId(supabase, projectId)
+  if (!organizationId) {
+    return { ok: false as const, error: 'Project not found', status: 404 }
+  }
+
+  if (await isOrganizationAdmin(supabase, organizationId, userId)) {
+    return { ok: true as const }
+  }
+
+  const gate = await assertProjectMemberPermission(
+    supabase,
+    userId,
+    projectId,
+    'can_delete'
+  )
+  if (!gate.ok) {
+    return { ok: false as const, error: gate.error, status: gate.status }
+  }
+
+  return { ok: true as const }
 }
 
 async function requireEvidenceOrgAdmin(
@@ -113,9 +159,9 @@ export async function DELETE(req: Request) {
       )
     }
 
-    const gate = await requireEvidenceOrgAdmin(supabase, user.id, filePath)
+    const gate = await requireEvidenceDeleteAccess(supabase, user.id, filePath)
     if (!gate.ok) {
-      return NextResponse.json({ error: gate.error }, { status: 403 })
+      return NextResponse.json({ error: gate.error }, { status: gate.status })
     }
 
     await deleteEvidence(supabase, filePath)

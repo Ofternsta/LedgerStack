@@ -45,7 +45,7 @@ export default function CalendarPage() {
 
   useEffect(() => {
     loadUserAccess().then(({ access: a }) => {
-      if (!a || a.role === 'client' || !a.canManageSchedule) {
+      if (!a || a.role === 'client' || !a.canViewCalendar) {
         router.replace('/projects')
         return
       }

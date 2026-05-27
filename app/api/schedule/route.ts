@@ -5,6 +5,7 @@ import {
   getProjectOrgId,
 } from '@/lib/staff-project-access'
 import { isScheduleEventType } from '@/lib/schedule-types'
+import { assertProjectMemberPermission } from '@/lib/member-permissions-server'
 import { requireAuth } from '@/lib/require-auth'
 
 export async function GET(req: Request) {
@@ -158,6 +159,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: scheduleWrite.error }, { status: 403 })
     }
 
+    const eventGate = await assertProjectMemberPermission(
+      supabase,
+      user.id,
+      projectId,
+      'can_add_events'
+    )
+    if (!eventGate.ok) {
+      return NextResponse.json(
+        { error: eventGate.error },
+        { status: eventGate.status }
+      )
+    }
+
     const { data, error } = await supabase
       .from('schedule_events')
       .insert({
@@ -207,6 +221,19 @@ export async function PATCH(req: Request) {
 
     if (!(await canAccessStaffProjectFeatures(supabase, projectId, user.id))) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const eventGate = await assertProjectMemberPermission(
+      supabase,
+      user.id,
+      projectId,
+      'can_add_events'
+    )
+    if (!eventGate.ok) {
+      return NextResponse.json(
+        { error: eventGate.error },
+        { status: eventGate.status }
+      )
     }
 
     const updates: Record<string, unknown> = {
@@ -274,6 +301,19 @@ export async function DELETE(req: Request) {
 
     if (!(await canAccessStaffProjectFeatures(supabase, projectId, user.id))) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const eventGate = await assertProjectMemberPermission(
+      supabase,
+      user.id,
+      projectId,
+      'can_add_events'
+    )
+    if (!eventGate.ok) {
+      return NextResponse.json(
+        { error: eventGate.error },
+        { status: eventGate.status }
+      )
     }
 
     const { error } = await supabase

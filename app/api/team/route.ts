@@ -52,7 +52,9 @@ export async function GET() {
 
   const { data: approved } = await supabase
     .from('organization_members')
-    .select('id, user_id, status, created_at')
+    .select(
+      'id, user_id, status, created_at, can_upload, can_delete, can_add_events, can_view_files'
+    )
     .eq('organization_id', org.id)
     .eq('status', 'approved')
     .order('created_at', { ascending: true })
@@ -144,6 +146,62 @@ export async function POST(req: Request) {
       status: action === 'approve' ? 'approved' : 'rejected',
       approved_at: action === 'approve' ? new Date().toISOString() : null,
       approved_by: action === 'approve' ? user.id : null,
+    })
+    .eq('id', memberId)
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  return NextResponse.json({ ok: true })
+}
+
+/** PATCH update worker permissions { member_id, permissions: { can_upload, ... } } */
+export async function PATCH(req: Request) {
+  const { supabase, user } = await requireAuth()
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const body = await req.json().catch(() => ({}))
+  const memberId = String(body.member_id || '').trim()
+  const permissions = body.permissions as Record<string, boolean> | undefined
+
+  if (!memberId || !permissions) {
+    return NextResponse.json(
+      { error: 'member_id and permissions are required' },
+      { status: 400 }
+    )
+  }
+
+  const { data: member } = await supabase
+    .from('organization_members')
+    .select('id, organization_id, status')
+    .eq('id', memberId)
+    .maybeSingle()
+
+  if (!member || member.status !== 'approved') {
+    return NextResponse.json({ error: 'Approved worker not found' }, { status: 404 })
+  }
+
+  const { data: org } = await supabase
+    .from('organizations')
+    .select('id')
+    .eq('id', member.organization_id)
+    .eq('admin_user_id', user.id)
+    .maybeSingle()
+
+  if (!org) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  const { error } = await supabase
+    .from('organization_members')
+    .update({
+      can_upload: Boolean(permissions.can_upload),
+      can_delete: Boolean(permissions.can_delete),
+      can_add_events: Boolean(permissions.can_add_events),
+      can_view_files: Boolean(permissions.can_view_files),
     })
     .eq('id', memberId)
 

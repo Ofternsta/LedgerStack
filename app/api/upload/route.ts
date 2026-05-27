@@ -14,6 +14,7 @@ import {
 } from '@/lib/evidence-storage'
 import { getOrgPlanContext } from '@/lib/org-plan'
 import { validateUploadForPlan } from '@/lib/plan-enforcement'
+import { assertProjectMemberPermission } from '@/lib/member-permissions-server'
 import { requireAuth } from '@/lib/require-auth'
 import { normalizeUploadFile } from '@/lib/file-meta'
 import { validateUploadSize } from '@/lib/upload-limits'
@@ -96,6 +97,19 @@ export async function POST(req: Request) {
 
     if (!project?.organization_id) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
+
+    const uploadGate = await assertProjectMemberPermission(
+      supabase,
+      user.id,
+      projectId,
+      'can_upload'
+    )
+    if (!uploadGate.ok) {
+      return NextResponse.json(
+        { error: uploadGate.error },
+        { status: uploadGate.status }
+      )
     }
 
     const planCtx = await getOrgPlanContext(supabase, project.organization_id)

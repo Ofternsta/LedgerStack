@@ -9,6 +9,7 @@ import {
   type UserAccess,
   type WorkerStatus,
 } from '@/lib/roles'
+import { parseWorkerPermissions } from '@/lib/worker-permissions'
 import { BILLING_PLANS } from '@/lib/stripe-config'
 
 export async function loadUserAccessServer(): Promise<{
@@ -42,6 +43,7 @@ export async function loadUserAccessServer(): Promise<{
   let organizationName: string | null = null
   let inviteCode: string | null = null
   let workerStatus: WorkerStatus = 'none'
+  let workerPermissions = null
 
   if (role === 'admin') {
     const { data: org } = await supabase
@@ -58,7 +60,9 @@ export async function loadUserAccessServer(): Promise<{
   if (role === 'worker') {
     const { data: membership } = await supabase
       .from('organization_members')
-      .select('status, organization_id, organizations(name, invite_code)')
+      .select(
+        'status, organization_id, can_upload, can_delete, can_add_events, can_view_files, organizations(name, invite_code)'
+      )
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -78,6 +82,9 @@ export async function loadUserAccessServer(): Promise<{
         : membership
           ? 'pending'
           : 'none'
+    if (membership?.status === 'approved') {
+      workerPermissions = parseWorkerPermissions(membership)
+    }
   }
 
   if (role === 'client' && !organizationId) {
@@ -114,6 +121,7 @@ export async function loadUserAccessServer(): Promise<{
       entitlements,
       aiSummariesUsed,
       activeProjectCount,
+      workerPermissions,
     }),
   }
 }

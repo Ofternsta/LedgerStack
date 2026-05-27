@@ -90,7 +90,7 @@ export default function ProjectPageClient() {
   async function fetchEvidence(claimId?: string) {
     const targetId = claimId || selectedClaim?.id
 
-    if (!targetId) {
+    if (!targetId || !access?.canViewFiles) {
       setDocuments([])
       return
     }
@@ -205,6 +205,11 @@ export default function ProjectPageClient() {
   }
 
   async function openFile(filePath: string) {
+    if (!access?.canViewFiles) {
+      setConfigError('You do not have permission to view project files.')
+      return
+    }
+
     const { data, error } = await supabase.storage
       .from('project-files')
       .createSignedUrl(filePath, 3600)
@@ -223,10 +228,13 @@ export default function ProjectPageClient() {
   }, [id])
 
   useEffect(() => {
-    if (selectedClaim?.id) {
+    if (selectedClaim?.id && access?.canViewFiles) {
       fetchEvidence(selectedClaim.id)
     }
-  }, [selectedClaim?.id])
+    if (selectedClaim?.id && access && !access.canViewFiles) {
+      setDocuments([])
+    }
+  }, [selectedClaim?.id, access?.canViewFiles])
 
   if (loading || !access) {
     return (
@@ -429,11 +437,11 @@ export default function ProjectPageClient() {
               />
             )}
 
-            {access.canManageSchedule && (
+            {access.canViewCalendar && (
               <ProjectSchedulePanel
                 projectId={id}
                 claimId={activeClaim.id}
-                canEdit={access.canUpdateClaimInfo}
+                canEdit={access.canManageSchedule && access.canUpdateClaimInfo}
               />
             )}
 
@@ -455,24 +463,33 @@ export default function ProjectPageClient() {
               />
             )}
 
-            <input
-              className="input-field w-full"
-              placeholder="Search files, summaries, OCR text…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+            {access.canViewFiles ? (
+              <>
+                <input
+                  className="input-field w-full"
+                  placeholder="Search files, summaries, OCR text…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
 
-            <EvidenceFolders
-              documents={filtered}
-              projectId={id}
-              claimId={activeClaim.id}
-              canEdit={access.canEditEvidenceSummary}
-              canDelete={access.canDeleteEvidence}
-              canRescan={access.canUploadEvidence}
-              onOpen={openFile}
-              onDelete={deleteFile}
-              onUpdated={() => fetchEvidence(activeClaim.id)}
-            />
+                <EvidenceFolders
+                  documents={filtered}
+                  projectId={id}
+                  claimId={activeClaim.id}
+                  canEdit={access.canEditEvidenceSummary}
+                  canDelete={access.canDeleteEvidence}
+                  canRescan={access.canUploadEvidence}
+                  onOpen={openFile}
+                  onDelete={deleteFile}
+                  onUpdated={() => fetchEvidence(activeClaim.id)}
+                />
+              </>
+            ) : (
+              <p className="text-sm text-muted border border-border rounded-xl p-4">
+                Your account cannot view project files. Contact your organization
+                admin if you need access.
+              </p>
+            )}
           </div>
         </div>
       </main>
