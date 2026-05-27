@@ -33,11 +33,26 @@ Trial is free in-app only — no Stripe price needed.
 |-----------------------|----------------------------------------|
 | `STRIPE_SECRET_KEY`   | Secret key (`sk_test_...` or live)     |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Publishable key (`pk_test_...` or live) |
-| `STRIPE_CHECKOUT_DISPLAY_NAME` | Optional. Name at top of Checkout (default: `OfternOS`) |
+| `STRIPE_CHECKOUT_DISPLAY_NAME` | Optional. Name at top of Checkout (default: `LedgerStack`) |
+| `STRIPE_STATEMENT_DESCRIPTOR` | Optional. Text on card statements for subscriptions (default: `LedgerStack`, max 22 chars) |
+| `STRIPE_STATEMENT_DESCRIPTOR_SUFFIX` | Optional. Suffix on card charges from Checkout (default: `LEDGERSTACK`) |
 
 Never commit secret keys. Add them only in `.env.local` and Vercel.
 
-Checkout shows **OfternOS** (not your personal Stripe account name) via `branding_settings.display_name`. To change it, set `STRIPE_CHECKOUT_DISPLAY_NAME` on Vercel or update the default in `lib/stripe-config.ts`.
+Checkout shows **LedgerStack** at the top via `branding_settings.display_name` (not your personal Stripe account name). Override with `STRIPE_CHECKOUT_DISPLAY_NAME` if needed.
+
+### Card statement (“who charged me?”)
+
+Customers should see **LedgerStack**, not your personal name or an old domain (e.g. `PA-OFTERNSTA.ITCH.IO`).
+
+1. **In this app** — Each checkout updates your Stripe **Products** to use `LedgerStack` as the statement descriptor for subscription renewals.
+2. **In Stripe Dashboard (required once per account)** — [Settings → Business](https://dashboard.stripe.com/settings/business-details):
+   - **Business name** (public): `LedgerStack`
+   - **Statement descriptor** (customer-facing): `LEDGERSTACK` or `LedgerStack` (5–22 characters, letters/numbers)
+   - Remove personal names from the public business profile if they appear on receipts.
+3. Use the same settings in **Live** and **Test** mode if you use both.
+
+After changing Dashboard settings, run a new test checkout. Existing subscriptions pick up the product descriptor on the **next** invoice.
 
 ## 4. Webhook
 

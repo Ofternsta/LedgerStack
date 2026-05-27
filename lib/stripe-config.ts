@@ -58,7 +58,24 @@ export function billingAppUrl(): string {
 
 /** Name shown at the top of Stripe Checkout (overrides Dashboard business name). */
 export function stripeCheckoutDisplayName(): string {
-  return process.env.STRIPE_CHECKOUT_DISPLAY_NAME?.trim() || 'OfternOS'
+  return process.env.STRIPE_CHECKOUT_DISPLAY_NAME?.trim() || 'LedgerStack'
+}
+
+/** Card statement text for subscription products (max 22 characters). */
+export function stripeProductStatementDescriptor(): string {
+  const raw =
+    process.env.STRIPE_STATEMENT_DESCRIPTOR?.trim() || 'LedgerStack'
+  return raw.slice(0, 22)
+}
+
+/**
+ * Suffix appended to the account statement-descriptor prefix on card charges.
+ * Keep short; full line is often "PREFIX* SUFFIX" (22 chars total).
+ */
+export function stripeStatementDescriptorSuffix(): string {
+  const raw =
+    process.env.STRIPE_STATEMENT_DESCRIPTOR_SUFFIX?.trim() || 'LEDGERSTACK'
+  return raw.slice(0, 22)
 }
 
 export function stripeCheckoutBranding(): {
@@ -67,6 +84,17 @@ export function stripeCheckoutBranding(): {
   return {
     branding_settings: {
       display_name: stripeCheckoutDisplayName(),
+    },
+  }
+}
+
+/** Card charges from Checkout (trial card verify, etc.). */
+export function stripeCheckoutPaymentIntentBranding(): {
+  payment_intent_data: { statement_descriptor_suffix: string }
+} {
+  return {
+    payment_intent_data: {
+      statement_descriptor_suffix: stripeStatementDescriptorSuffix(),
     },
   }
 }

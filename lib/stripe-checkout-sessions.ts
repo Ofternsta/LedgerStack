@@ -5,8 +5,10 @@ import {
   type BillingPlanId,
   billingAppUrl,
   stripeCheckoutBranding,
+  stripeCheckoutPaymentIntentBranding,
   stripePriceIds,
 } from '@/lib/stripe-config'
+import { ensureStripeProductStatementDescriptor } from '@/lib/stripe-product-branding'
 
 export type CheckoutUiMode = 'hosted' | 'embedded'
 
@@ -60,6 +62,7 @@ export async function createStripeCheckoutSession(
   if (input.plan === 'trial') {
     const session = await stripe.checkout.sessions.create({
       ...base,
+      ...stripeCheckoutPaymentIntentBranding(),
       mode: 'setup',
       payment_method_types: ['card'],
     })
@@ -76,8 +79,11 @@ export async function createStripeCheckoutSession(
     throw new Error(`Stripe price not configured for ${input.plan}.`)
   }
 
+  await ensureStripeProductStatementDescriptor(stripe, input.plan)
+
   const session = await stripe.checkout.sessions.create({
     ...base,
+    ...stripeCheckoutPaymentIntentBranding(),
     mode: 'subscription',
     line_items: [{ price: priceId, quantity: 1 }],
     subscription_data: {
