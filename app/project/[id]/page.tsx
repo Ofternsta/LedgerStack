@@ -389,7 +389,7 @@ export default function ProjectPageClient() {
               claimId={activeClaim.id}
               projectId={id}
               status={activeClaim.status}
-              canEdit={access.canUpdateClaimInfo}
+              canEdit={access.canUpdateReportStatus}
               onStatusChange={(next: ClaimStatus) => {
                 setClaims((prev) =>
                   prev.map((c) =>

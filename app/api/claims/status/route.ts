@@ -11,13 +11,13 @@ export async function PATCH(req: Request) {
     }
 
     const { access } = await loadUserAccessServer()
-    if (!access?.canUpdateClaimInfo) {
+    if (!access?.canUpdateReportStatus) {
       const message = !access?.plan
         ? 'Active subscription required. Open Billing or complete your plan setup.'
         : access.role === 'client'
           ? 'Clients have view-only access.'
-          : access.workerStatus !== 'approved' && access.role === 'worker'
-            ? 'Your worker account must be approved by an admin.'
+          : access.role === 'worker'
+            ? 'Only organization admins can update report status.'
             : 'You do not have permission to update report status.'
       return NextResponse.json({ error: message }, { status: 403 })
     }

@@ -28,7 +28,10 @@ export type UserAccess = {
   canDeleteEvidence: boolean
   canManageTeam: boolean
   canManageProjectClients: boolean
+  /** Staff (admin + approved workers) with plan — AI, notes, schedule, etc. */
   canUpdateClaimInfo: boolean
+  /** Report workflow status (Inspection → Completed) — admins only */
+  canUpdateReportStatus: boolean
   canViewInternalNotes: boolean
   canViewCalendar: boolean
   canManageSchedule: boolean
@@ -131,6 +134,7 @@ export function buildAccess(input: {
     canManageTeam,
     canManageProjectClients,
     canUpdateClaimInfo: staffCapable && hasPlan,
+    canUpdateReportStatus: isAdmin && hasPlan,
     canViewInternalNotes,
     canViewCalendar,
     canManageSchedule,
