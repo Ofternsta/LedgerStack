@@ -7,6 +7,7 @@ import {
 import { assertProjectMemberPermission } from '@/lib/member-permissions-server'
 import { getProjectOrgId } from '@/lib/staff-project-access'
 import { requireAuth } from '@/lib/require-auth'
+import { createServiceClient } from '@/lib/supabase/service'
 import { updateEvidenceMeta } from '@/lib/update-evidence-meta'
 
 export async function GET(req: Request) {
@@ -41,7 +42,9 @@ export async function GET(req: Request) {
       )
     }
 
-    const evidence = await listEvidence(supabase, projectId, claimId)
+    // Service role: storage RLS blocks client list/download even when project access is granted.
+    const storage = createServiceClient()
+    const evidence = await listEvidence(storage, projectId, claimId)
     return NextResponse.json({ evidence })
   } catch (err: unknown) {
     const message =

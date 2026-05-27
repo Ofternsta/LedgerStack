@@ -249,16 +249,24 @@ export default function ProjectPageClient() {
       return
     }
 
-    const { data, error } = await supabase.storage
-      .from('project-files')
-      .createSignedUrl(filePath, 3600)
+    setConfigError(null)
 
-    if (error || !data?.signedUrl) {
-      setConfigError(error?.message || 'Could not open file')
+    const res = await fetch(
+      `/api/evidence/open?file_path=${encodeURIComponent(filePath)}&project_id=${encodeURIComponent(id)}`
+    )
+    const payload = await res.json().catch(() => ({}))
+
+    if (res.status === 401) {
+      window.location.href = '/login'
       return
     }
 
-    window.open(data.signedUrl, '_blank')
+    if (!res.ok || !payload.signedUrl) {
+      setConfigError(payload.error || 'Could not open file')
+      return
+    }
+
+    window.open(payload.signedUrl as string, '_blank')
   }
 
   useEffect(() => {

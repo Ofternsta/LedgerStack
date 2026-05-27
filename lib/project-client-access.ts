@@ -1,15 +1,23 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { createServiceClient } from '@/lib/supabase/service'
 
 /** Approved client on a project (by linked user id or signup email). */
 export async function hasApprovedClientProjectAccess(
-  supabase: SupabaseClient,
+  _supabase: SupabaseClient,
   projectId: string,
   userId: string,
   email?: string | null
 ): Promise<boolean> {
   const normalizedEmail = email?.trim().toLowerCase()
 
-  let query = supabase
+  let db: SupabaseClient
+  try {
+    db = createServiceClient()
+  } catch {
+    return false
+  }
+
+  let query = db
     .from('project_client_access')
     .select('id')
     .eq('project_id', projectId)
