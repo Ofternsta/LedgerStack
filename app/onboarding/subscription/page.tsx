@@ -122,8 +122,37 @@ function SubscriptionOnboardingContent() {
     setLoading(true)
     setMessage(null)
 
+    if (isRegister && draft) {
+      const accountRes = await fetch('/api/auth/register-admin-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: draft.email,
+          password: draft.password,
+          full_name: draft.fullName,
+          organization_name: draft.organizationName,
+          plan: selected,
+        }),
+      })
+      const accountPayload = await accountRes.json().catch(() => ({}))
+
+      if (!accountRes.ok) {
+        setMessage(accountPayload.error || 'Could not prepare account')
+        setLoading(false)
+        return
+      }
+
+      if (!accountPayload.emailVerified) {
+        setMessage(
+          accountPayload.message ||
+            'Check your email and verify your address before payment.'
+        )
+      }
+    }
+
     const checkoutUrl = `/checkout?plan=${encodeURIComponent(selected)}${isRegister ? '&register=1' : ''}`
     router.push(checkoutUrl)
+    setLoading(false)
   }
 
   async function signOut() {
@@ -213,9 +242,7 @@ function SubscriptionOnboardingContent() {
             {loading
               ? 'Please wait…'
               : isRegister
-                ? selected === 'trial'
-                  ? 'Verify card & create account'
-                  : 'Pay and create account'
+                ? 'Verify email & continue to payment'
                 : selected === 'trial'
                   ? 'Verify card to continue'
                   : 'Continue to payment'}
@@ -223,8 +250,8 @@ function SubscriptionOnboardingContent() {
 
           <p className="text-xs text-center text-muted-dim">
             {isRegister
-              ? 'Trial adds a card on file (no charge for 7 days). One trial per email and per card. Account is created after Stripe verification.'
-              : 'Paid plans use secure Stripe Checkout.'}
+              ? 'We email you a confirmation link first. After you verify, you enter card details on the next screen.'
+              : 'Paid plans use secure Stripe Checkout. You must verify your email before checkout.'}
           </p>
 
           {isRegister ? (

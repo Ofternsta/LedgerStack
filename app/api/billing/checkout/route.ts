@@ -5,8 +5,13 @@ import {
   startTrialAdminSignupCheckout,
   type RegisterAdminInput,
 } from '@/lib/register-admin'
+import { isEmailVerifiedAddress, isEmailVerifiedUser } from '@/lib/email-verification'
+import {
+  prepareAdminCheckoutVerification,
+} from '@/lib/register-admin'
 import { requireAuth } from '@/lib/require-auth'
 import { isStripeConfigured } from '@/lib/stripe-config'
+import { normalizeSignupEmail } from '@/lib/trial-eligibility'
 
 export async function POST(req: Request) {
   try {
@@ -46,6 +51,24 @@ export async function POST(req: Request) {
         )
       }
 
+      const normalizedEmail = normalizeSignupEmail(input.email)
+      if (!(await isEmailVerifiedAddress(normalizedEmail))) {
+        const prep = await prepareAdminCheckoutVerification(input)
+        if ('error' in prep) {
+          return NextResponse.json({ error: prep.error }, { status: 400 })
+        }
+        if (!prep.emailVerified) {
+          return NextResponse.json(
+            {
+              needsEmailVerification: true,
+              email: prep.email,
+              message: prep.message,
+            },
+            { status: 403 }
+          )
+        }
+      }
+
       const result =
         planId === 'trial'
           ? await startTrialAdminSignupCheckout(input, uiMode)
@@ -69,6 +92,18 @@ export async function POST(req: Request) {
     const { supabase, user } = await requireAuth()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (!isEmailVerifiedUser(user)) {
+      return NextResponse.json(
+        {
+          needsEmailVerification: true,
+          email: user.email,
+          message:
+            'Verify your email before checkout. Check your inbox for the confirmation link.',
+        },
+        { status: 403 }
+      )
     }
 
     const { data: profile } = await supabase

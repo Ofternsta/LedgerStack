@@ -11,6 +11,6 @@ export function passwordResetRedirectUrl() {
   return authCallbackRedirectUrl('/login/reset-password')
 }
 
-export function emailVerificationRedirectUrl() {
-  return authCallbackRedirectUrl('/login?verified=1')
+export function emailVerificationRedirectUrl(nextPath = '/login?verified=1') {
+  return authCallbackRedirectUrl(nextPath)
 }

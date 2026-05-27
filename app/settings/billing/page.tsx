@@ -61,6 +61,15 @@ function BillingContent() {
     }
     setLoading(plan)
     setMessage(null)
+
+    const statusRes = await fetch('/api/auth/email-verification-status')
+    const statusPayload = await statusRes.json().catch(() => ({}))
+    if (statusRes.ok && !statusPayload.verified) {
+      setMessage(
+        'Verify your email before checkout. Check your inbox, or use Resend on the checkout page.'
+      )
+    }
+
     router.push(`/checkout?plan=${encodeURIComponent(plan)}`)
   }
 

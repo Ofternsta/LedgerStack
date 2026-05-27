@@ -19,7 +19,10 @@ import {
   type CheckoutUiMode,
 } from '@/lib/stripe-checkout-sessions'
 import { sendSignupConfirmationEmail } from '@/lib/auth-email'
-import { getAuthUserIdByEmail } from '@/lib/auth-user-lookup'
+import {
+  getAuthUserIdByEmail,
+  getAuthUserSummaryByEmail,
+} from '@/lib/auth-user-lookup'
 import { createServiceClient } from '@/lib/supabase/service'
 
 export type RegisterAdminInput = {
@@ -110,6 +113,132 @@ async function insertPendingSignup(input: RegisterAdminInput) {
     .neq('id', pending.id)
 
   return { pendingId: pending.id as string, email }
+}
+
+async function upsertPendingSignupRow(input: RegisterAdminInput) {
+  const service = createServiceClient()
+  const email = normalizeSignupEmail(input.email)
+
+  const emailBlock = await trialSignupBlocked({ email })
+  if (input.plan === 'trial' && emailBlock.blocked) {
+    return { error: emailBlock.reason }
+  }
+
+  let passwordEncrypted: string
+  try {
+    passwordEncrypted = encryptSignupPassword(input.password)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Encryption failed'
+    return { error: message }
+  }
+
+  const { data: existingPending } = await service
+    .from('pending_admin_signups')
+    .select('id')
+    .eq('email', email)
+    .is('consumed_at', null)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (existingPending?.id) {
+    const { error } = await service
+      .from('pending_admin_signups')
+      .update({
+        password_encrypted: passwordEncrypted,
+        full_name: input.fullName?.trim() || null,
+        organization_name: input.organizationName.trim() || 'My Company',
+        plan: input.plan,
+        expires_at: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+      })
+      .eq('id', existingPending.id)
+
+    if (error) return { error: error.message }
+    return { pendingId: existingPending.id as string, email }
+  }
+
+  const { data: pending, error: pendingError } = await service
+    .from('pending_admin_signups')
+    .insert({
+      email,
+      password_encrypted: passwordEncrypted,
+      full_name: input.fullName?.trim() || null,
+      organization_name: input.organizationName.trim() || 'My Company',
+      plan: input.plan,
+    })
+    .select('id')
+    .single()
+
+  if (pendingError || !pending) {
+    return { error: pendingError?.message || 'Could not save signup' }
+  }
+
+  return { pendingId: pending.id as string, email }
+}
+
+/** Create account + pending signup if needed; require email verification before Stripe. */
+export async function prepareAdminCheckoutVerification(
+  input: RegisterAdminInput
+): Promise<
+  | { emailVerified: true; email: string }
+  | { emailVerified: false; email: string; message: string }
+  | { error: string }
+> {
+  const email = normalizeSignupEmail(input.email)
+  const service = createServiceClient()
+
+  const summary = await getAuthUserSummaryByEmail(email)
+  if (summary?.emailConfirmed) {
+    return { emailVerified: true, email }
+  }
+
+  if (summary && !summary.emailConfirmed) {
+    const pending = await upsertPendingSignupRow(input)
+    if ('error' in pending && pending.error) {
+      return { error: pending.error }
+    }
+    const sent = await sendSignupConfirmationEmail(email)
+    if (!sent.ok) return { error: sent.error || 'Could not send verification email' }
+    return {
+      emailVerified: false,
+      email,
+      message:
+        'Verify your email before checkout. Open the confirmation link we sent to your inbox.',
+    }
+  }
+
+  const pending = await insertPendingSignup(input)
+  if ('error' in pending && pending.error) {
+    return { error: pending.error }
+  }
+
+  const { data: created, error: createError } =
+    await service.auth.admin.createUser({
+      email,
+      password: input.password,
+      email_confirm: false,
+      user_metadata: {
+        role: 'admin',
+        full_name: input.fullName?.trim() || null,
+        organization_name: input.organizationName.trim() || 'My Company',
+      },
+    })
+
+  if (createError || !created.user) {
+    return { error: createError?.message || 'Could not create account' }
+  }
+
+  const sent = await sendSignupConfirmationEmail(email)
+  if (!sent.ok) {
+    return { error: sent.error || 'Could not send verification email' }
+  }
+
+  return {
+    emailVerified: false,
+    email,
+    message:
+      'Verify your email before checkout. Open the confirmation link we sent to your inbox.',
+  }
 }
 
 export async function startTrialAdminSignupCheckout(
