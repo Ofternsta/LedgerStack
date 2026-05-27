@@ -393,16 +393,18 @@ export default function ProjectPageClient() {
                 )
                 setTimelineRefreshKey((k) => k + 1)
               }}
-              onMarkedCompleted={() => setArchivePrompt(true)}
+              onMarkedCompleted={() => {
+                if (access.canArchiveProject) setArchivePrompt(true)
+              }}
             />
 
-            {access.canArchiveProject && access.role !== 'client' && (
+            {access.canArchiveProject && (
               <ProjectArchivePanel
                 projectId={id}
                 projectName={activeClaim.client_name}
                 reportCompleted={activeStatus === 'Completed'}
                 allReportsCompleted={allReportsCompleted}
-                canArchive={access.canArchiveProject}
+                canArchive
                 promptSave={archivePrompt}
                 onPromptDismiss={() => setArchivePrompt(false)}
               />

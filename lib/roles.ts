@@ -122,7 +122,8 @@ export function buildAccess(input: {
     canUseTeamMessages,
     canUseClaimPacketExport: Boolean(ent?.claimPacketExport),
     canArchiveProject:
-      staffCapable &&
+      isAdmin &&
+      hasPlan &&
       Boolean(
         ent?.claimPacketExport ||
           ent?.standardPdfExport ||

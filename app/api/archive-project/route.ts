@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server'
+import {
+  canAdminArchiveProject,
+  requireExistingProject,
+} from '@/lib/archive-access'
 import { buildProjectArchiveZip } from '@/lib/build-project-archive'
 import { getOrgPlanContext } from '@/lib/org-plan'
-import { canAccessStaffProjectFeatures, getProjectOrgId } from '@/lib/staff-project-access'
 import { requireAuth } from '@/lib/require-auth'
 
 export const maxDuration = 60
@@ -20,16 +23,19 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'project_id is required' }, { status: 400 })
     }
 
-    if (!(await canAccessStaffProjectFeatures(supabase, projectId, user.id))) {
+    if (!(await canAdminArchiveProject(supabase, projectId, user.id))) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const orgId = await getProjectOrgId(supabase, projectId)
-    if (!orgId) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    const projectRef = await requireExistingProject(supabase, projectId)
+    if (!projectRef) {
+      return NextResponse.json(
+        { error: 'Project not found or has been deleted' },
+        { status: 404 }
+      )
     }
 
-    const planCtx = await getOrgPlanContext(supabase, orgId)
+    const planCtx = await getOrgPlanContext(supabase, projectRef.organizationId)
     if (!planCtx) {
       return NextResponse.json(
         { error: 'Active subscription required to save project archives.' },
