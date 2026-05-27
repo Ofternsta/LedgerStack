@@ -48,7 +48,7 @@ export async function GET(_req: Request, context: RouteContext) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    const messages = await enrichConversationMessages(supabase, rows || [])
+    const messages = await enrichConversationMessages(organizationId, rows || [])
     return NextResponse.json({ messages })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to load messages'
@@ -113,7 +113,7 @@ export async function POST(req: Request, context: RouteContext) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    const [message] = await enrichConversationMessages(supabase, [row])
+    const [message] = await enrichConversationMessages(organizationId, [row])
     return NextResponse.json({ message })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to send message'

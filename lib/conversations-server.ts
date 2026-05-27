@@ -5,6 +5,7 @@ import type {
   ConversationListItem,
   ConversationMessage,
 } from '@/lib/conversation-types'
+import { enrichMessageSenders } from '@/lib/message-sender-labels'
 import { loadTeamRoster, type TeamRosterMember } from '@/lib/team-roster'
 import { createServiceClient } from '@/lib/supabase/service'
 
@@ -17,7 +18,7 @@ function directTitle(
 ): string {
   const otherId = participantIds.find((id) => id !== userId)
   const other = roster.find((m) => m.id === otherId)
-  return other?.label || 'Direct message'
+  return other?.display_label || other?.label || 'Direct message'
 }
 
 export async function listConversationsForUser(
@@ -204,7 +205,7 @@ export async function createConversation(
 }
 
 export async function enrichConversationMessages(
-  supabase: SupabaseClient,
+  organizationId: string,
   rows: Array<{
     id: string
     sender_id: string
@@ -212,42 +213,7 @@ export async function enrichConversationMessages(
     created_at: string
   }>
 ): Promise<ConversationMessage[]> {
-  const ids = [...new Set(rows.map((r) => r.sender_id))]
-  let names: Record<string, { full_name: string | null; role: string }> = {}
-
-  if (ids.length) {
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, full_name, role')
-      .in('id', ids)
-
-    names = Object.fromEntries(
-      (profiles || []).map((p) => [
-        p.id,
-        { full_name: p.full_name, role: p.role },
-      ])
-    )
-  }
-
-  return rows.map((r) => {
-    const sender = names[r.sender_id]
-    const roleLabel =
-      sender?.role === 'admin'
-        ? 'Admin'
-        : sender?.role === 'worker'
-          ? 'Worker'
-          : 'User'
-
-    return {
-      id: r.id,
-      sender_id: r.sender_id,
-      body: r.body,
-      created_at: r.created_at,
-      sender_name: sender?.full_name || roleLabel,
-      sender_role: sender?.role || 'unknown',
-      sender_label: `${sender?.full_name || roleLabel} (${roleLabel})`,
-    }
-  })
+  return enrichMessageSenders(organizationId, rows)
 }
 
 export function createConversationService() {

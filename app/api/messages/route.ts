@@ -6,6 +6,7 @@ import {
   canSendProjectMessages,
   type MessageChannel,
 } from '@/lib/message-access'
+import { enrichMessageSenders } from '@/lib/message-sender-labels'
 import { requireOrgPlanFeature } from '@/lib/plan-guard'
 import { requireAuth } from '@/lib/require-auth'
 
@@ -94,7 +95,7 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: error.message }, { status: 500 })
       }
 
-      const messages = await enrichSenders(supabase, rows || [])
+      const messages = await enrichMessageSenders(organizationId, rows || [])
       return NextResponse.json({ messages })
     }
 
@@ -119,8 +120,21 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-      const messages = await enrichSenders(supabase, rows || [])
-      return NextResponse.json({ messages })
+    const { data: project } = await supabase
+      .from('projects')
+      .select('organization_id')
+      .eq('id', projectId)
+      .maybeSingle()
+
+    if (!project?.organization_id) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
+
+    const messages = await enrichMessageSenders(
+      project.organization_id,
+      rows || []
+    )
+    return NextResponse.json({ messages })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to load messages'
     return NextResponse.json({ error: message }, { status: 500 })
@@ -222,7 +236,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: error.message }, { status: 500 })
       }
 
-      const [enriched] = await enrichSenders(supabase, [row])
+      const [enriched] = await enrichMessageSenders(organizationId, [row])
       return NextResponse.json({ message: enriched })
     }
 
@@ -268,59 +282,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    const [enriched] = await enrichSenders(supabase, [row])
+    const [enriched] = await enrichMessageSenders(project.organization_id, [row])
     return NextResponse.json({ message: enriched })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to send message'
     return NextResponse.json({ error: message }, { status: 500 })
   }
-}
-
-async function enrichSenders(
-  supabase: Awaited<ReturnType<typeof requireAuth>>['supabase'],
-  rows: Array<{
-    id: string
-    sender_id: string
-    body: string
-    created_at: string
-  }>
-) {
-  const ids = [...new Set(rows.map((r) => r.sender_id))]
-  let names: Record<string, { full_name: string | null; role: string }> = {}
-
-  if (ids.length) {
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, full_name, role')
-      .in('id', ids)
-
-    names = Object.fromEntries(
-      (profiles || []).map((p) => [
-        p.id,
-        { full_name: p.full_name, role: p.role },
-      ])
-    )
-  }
-
-  return rows.map((r) => {
-    const sender = names[r.sender_id]
-    const roleLabel =
-      sender?.role === 'admin'
-        ? 'Admin'
-        : sender?.role === 'worker'
-          ? 'Worker'
-          : sender?.role === 'client'
-            ? 'Client'
-            : 'User'
-
-    return {
-      id: r.id,
-      sender_id: r.sender_id,
-      body: r.body,
-      created_at: r.created_at,
-      sender_name: sender?.full_name || roleLabel,
-      sender_role: sender?.role || 'unknown',
-      sender_label: `${sender?.full_name || roleLabel} (${roleLabel})`,
-    }
-  })
 }

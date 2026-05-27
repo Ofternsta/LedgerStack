@@ -16,6 +16,8 @@ type RosterMember = {
   full_name: string | null
   role: string
   label: string
+  display_label?: string
+  role_label?: string
 }
 
 type MessagingLauncherProps = {
@@ -165,7 +167,9 @@ export function MessagingLauncher({
     const id = payload.conversation_id as string
     const title =
       selected.size === 1
-        ? roster.find((m) => m.id === [...selected][0])?.label || 'Chat'
+        ? roster.find((m) => m.id === [...selected][0])?.display_label ||
+          roster.find((m) => m.id === [...selected][0])?.label ||
+          'Chat'
         : groupTitle.trim()
 
     setActiveId(id)
@@ -359,10 +363,7 @@ export function MessagingLauncher({
                           onChange={() => toggleMember(m.id)}
                         />
                         <span className="text-sm text-foreground">
-                          {m.label}
-                          <span className="text-xs text-muted-dim ml-1">
-                            ({m.role === 'admin' ? 'Admin' : 'Worker'})
-                          </span>
+                          {m.display_label || m.label}
                         </span>
                       </label>
                     </li>
