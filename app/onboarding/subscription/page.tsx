@@ -112,58 +112,18 @@ function SubscriptionOnboardingContent() {
       return
     }
 
+    if (!stripeConfigured) {
+      setMessage(
+        'Stripe must be configured to start a trial or paid plan.'
+      )
+      return
+    }
+
     setLoading(true)
     setMessage(null)
 
-    if (isRegister && draft) {
-      const res = await fetch('/api/auth/register-admin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: draft.email,
-          password: draft.password,
-          full_name: draft.fullName,
-          organization_name: draft.organizationName,
-          plan: selected,
-        }),
-      })
-      const payload = await res.json().catch(() => ({}))
-
-      if (payload.checkoutUrl) {
-        clearAdminSignupDraft()
-        window.location.href = payload.checkoutUrl as string
-        return
-      }
-
-      setMessage(payload.error || 'Could not start checkout.')
-      setLoading(false)
-      return
-    }
-
-    const res = await fetch('/api/billing', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        plan: selected,
-        success_path: '/?welcome=1',
-        cancel_path: '/onboarding/subscription?renew=1&canceled=1',
-      }),
-    })
-    const payload = await res.json().catch(() => ({}))
-
-    if (payload.checkoutUrl) {
-      window.location.href = payload.checkoutUrl as string
-      return
-    }
-
-    if (!res.ok) {
-      setMessage(payload.error || 'Could not update subscription.')
-      setLoading(false)
-      return
-    }
-
-    router.replace('/?welcome=1')
-    router.refresh()
+    const checkoutUrl = `/checkout?plan=${encodeURIComponent(selected)}${isRegister ? '&register=1' : ''}`
+    router.push(checkoutUrl)
   }
 
   async function signOut() {

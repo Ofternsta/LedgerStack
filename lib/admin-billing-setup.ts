@@ -1,16 +1,18 @@
 import 'server-only'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
-import Stripe from 'stripe'
 import { emailHasUsedTrial } from '@/lib/trial-eligibility'
 import {
   BILLING_PLANS,
   type BillingPlanId,
   billingAppUrl,
   isStripeConfigured,
-  stripeCheckoutBranding,
-  stripePriceIds,
 } from '@/lib/stripe-config'
+import {
+  createStripeCheckoutSession,
+  createStripeClient,
+  type CheckoutUiMode,
+} from '@/lib/stripe-checkout-sessions'
 
 export function parseBillingPlan(raw: unknown): BillingPlanId | null {
   if (typeof raw !== 'string') return null
@@ -27,44 +29,56 @@ export async function setupAdminSubscription(
     successPath?: string
     cancelPath?: string
     allowTrial?: boolean
+    uiMode?: CheckoutUiMode
   }
-): Promise<{ checkoutUrl?: string | null; error?: string | null }> {
+): Promise<{
+  checkoutUrl?: string | null
+  clientSecret?: string | null
+  sessionId?: string
+  error?: string | null
+}> {
   const { organizationId, email, plan } = input
-  const appUrl = billingAppUrl()
-  const successPath = input.successPath ?? '/?welcome=1'
-  const cancelPath =
-    input.cancelPath ?? '/onboarding/subscription?canceled=1'
+  const uiMode = input.uiMode ?? 'hosted'
+  const successPath = input.successPath ?? '/settings/billing?success=1'
+  const cancelPath = input.cancelPath ?? '/settings/billing?canceled=1'
 
   if (plan === 'trial') {
-    return {
-      error:
-        'Free trial requires a payment method on file. Use the subscription page during signup.',
+    if (!input.allowTrial) {
+      return {
+        error:
+          'Free trial is not available for this email. Choose a paid plan.',
+      }
     }
   }
 
   if (!isStripeConfigured()) {
     return {
       error:
-        'Paid plans require Stripe. Choose Trial or configure Stripe — see STRIPE.md.',
+        'Card payments require Stripe. Add keys in Vercel — see STRIPE.md.',
     }
   }
 
-  const stripeKey = process.env.STRIPE_SECRET_KEY!
-  const priceId = stripePriceIds()[plan]
-  if (!priceId) {
-    return { error: `Stripe price not configured for ${plan}.` }
-  }
-
-  const stripe = new Stripe(stripeKey)
+  const stripe = createStripeClient()
 
   const { data: existing } = await supabase
     .from('subscriptions')
-    .select('stripe_customer_id, status')
+    .select('stripe_customer_id, status, plan')
     .eq('organization_id', organizationId)
     .maybeSingle()
 
-  if (existing?.status === 'active') {
-    return { error: 'Subscription is already active. Change plan from Billing settings.' }
+  if (
+    existing?.status === 'active' &&
+    plan !== 'trial' &&
+    existing.plan === plan
+  ) {
+    return { error: 'You are already on this plan.' }
+  }
+
+  if (existing?.status === 'active' && plan !== 'trial') {
+    return {
+      error:
+        'To change plans, use Manage payment method or contact support. Cancel in the portal first if needed.',
+    }
   }
 
   let customerId = existing?.stripe_customer_id
@@ -77,24 +91,22 @@ export async function setupAdminSubscription(
     customerId = customer.id
   }
 
-  const session = await stripe.checkout.sessions.create({
-    ...stripeCheckoutBranding(),
-    customer: customerId,
-    mode: 'subscription',
-    line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${appUrl}${successPath.startsWith('/') ? successPath : `/${successPath}`}`,
-    cancel_url: `${appUrl}${cancelPath.startsWith('/') ? cancelPath : `/${cancelPath}`}`,
+  const session = await createStripeCheckoutSession(stripe, {
+    uiMode,
+    plan,
+    customerId,
+    customerEmail: customerId ? undefined : email,
+    successUrl: successPath,
+    cancelUrl: cancelPath,
     metadata: { organization_id: organizationId, plan },
-    subscription_data: {
-      metadata: { organization_id: organizationId, plan },
-    },
+    subscriptionMetadata: { organization_id: organizationId, plan },
   })
 
   const { error } = await supabase.from('subscriptions').upsert(
     {
       organization_id: organizationId,
       plan,
-      status: 'pending',
+      status: plan === 'trial' ? 'pending' : 'pending',
       stripe_customer_id: customerId,
       updated_at: new Date().toISOString(),
     },
@@ -103,5 +115,39 @@ export async function setupAdminSubscription(
 
   if (error) return { error: error.message }
 
-  return { checkoutUrl: session.url, error: null }
+  return {
+    checkoutUrl: session.checkoutUrl,
+    clientSecret: session.clientSecret,
+    sessionId: session.sessionId,
+    error: null,
+  }
+}
+
+export async function createBillingPortalSession(
+  supabase: SupabaseClient,
+  organizationId: string,
+  returnPath = '/settings/billing'
+): Promise<{ url?: string; error?: string }> {
+  if (!isStripeConfigured()) {
+    return { error: 'Stripe is not configured.' }
+  }
+
+  const { data: sub } = await supabase
+    .from('subscriptions')
+    .select('stripe_customer_id')
+    .eq('organization_id', organizationId)
+    .maybeSingle()
+
+  if (!sub?.stripe_customer_id) {
+    return { error: 'No payment profile yet. Subscribe to a plan first.' }
+  }
+
+  const stripe = createStripeClient()
+  const appUrl = billingAppUrl()
+  const session = await stripe.billingPortal.sessions.create({
+    customer: sub.stripe_customer_id,
+    return_url: `${appUrl}${returnPath.startsWith('/') ? returnPath : `/${returnPath}`}`,
+  })
+
+  return { url: session.url }
 }

@@ -34,10 +34,15 @@ export function planFromStripePriceId(priceId: string): BillingPlanId | null {
   return null
 }
 
+export function stripePublishableKey(): string | undefined {
+  return process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() || undefined
+}
+
 export function isStripeConfigured(): boolean {
   const prices = stripePriceIds()
   return Boolean(
     process.env.STRIPE_SECRET_KEY &&
+      stripePublishableKey() &&
       prices.starter &&
       prices.professional &&
       prices.enterprise

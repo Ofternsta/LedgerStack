@@ -1,7 +1,6 @@
 import 'server-only'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
-import Stripe from 'stripe'
 import { setupAdminOrganizationAfterStripe } from '@/lib/admin-signup-setup'
 import {
   decryptSignupPassword,
@@ -13,13 +12,12 @@ import {
   registerEmailTrial,
   trialSignupBlocked,
 } from '@/lib/trial-eligibility'
+import { type BillingPlanId, isStripeConfigured } from '@/lib/stripe-config'
 import {
-  type BillingPlanId,
-  billingAppUrl,
-  isStripeConfigured,
-  stripeCheckoutBranding,
-  stripePriceIds,
-} from '@/lib/stripe-config'
+  createStripeCheckoutSession,
+  createStripeClient,
+  type CheckoutUiMode,
+} from '@/lib/stripe-checkout-sessions'
 import { sendSignupConfirmationEmail } from '@/lib/auth-email'
 import { getAuthUserIdByEmail } from '@/lib/auth-user-lookup'
 import { createServiceClient } from '@/lib/supabase/service'
@@ -114,47 +112,56 @@ async function insertPendingSignup(input: RegisterAdminInput) {
   return { pendingId: pending.id as string, email }
 }
 
-export async function startTrialAdminSignupCheckout(input: RegisterAdminInput) {
+export async function startTrialAdminSignupCheckout(
+  input: RegisterAdminInput,
+  uiMode: CheckoutUiMode = 'hosted'
+) {
   if (!isStripeConfigured()) {
     return {
       error:
-        'Free trial requires Stripe (to verify a payment method). Configure Stripe or choose a paid plan.',
+        'Free trial requires Stripe (to verify a card). Configure Stripe or choose a paid plan.',
     }
   }
 
   const pending = await insertPendingSignup(input)
   if ('error' in pending) return { error: pending.error }
 
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
-  const appUrl = billingAppUrl()
-
-  const session = await stripe.checkout.sessions.create({
-    ...stripeCheckoutBranding(),
-    mode: 'setup',
-    customer_email: pending.email,
-    payment_method_types: ['card'],
-    success_url: `${appUrl}/login?registered=1&trial=1&email=${encodeURIComponent(pending.email)}`,
-    cancel_url: `${appUrl}/onboarding/subscription?register=1&canceled=1`,
+  const stripe = createStripeClient()
+  const session = await createStripeCheckoutSession(stripe, {
+    uiMode,
+    plan: 'trial',
+    customerEmail: pending.email,
+    successUrl: `/login?registered=1&trial=1&email=${encodeURIComponent(pending.email)}`,
+    cancelUrl: '/onboarding/subscription?register=1&canceled=1',
     metadata: {
       pending_signup_id: pending.pendingId,
       plan: 'trial',
     },
   })
 
-  if (session.id) {
-    const { error: sessionIdError } = await createServiceClient()
-      .from('pending_admin_signups')
-      .update({ stripe_session_id: session.id })
-      .eq('id', pending.pendingId)
-    if (sessionIdError) {
-      console.error('pending_admin_signups stripe_session_id update:', sessionIdError)
-    }
-  }
+  await savePendingStripeSession(pending.pendingId, session.sessionId)
 
-  return { checkoutUrl: session.url }
+  return {
+    checkoutUrl: session.checkoutUrl,
+    clientSecret: session.clientSecret,
+    sessionId: session.sessionId,
+  }
 }
 
-export async function startPaidAdminSignupCheckout(input: RegisterAdminInput) {
+async function savePendingStripeSession(pendingId: string, sessionId: string) {
+  const { error: sessionIdError } = await createServiceClient()
+    .from('pending_admin_signups')
+    .update({ stripe_session_id: sessionId })
+    .eq('id', pendingId)
+  if (sessionIdError) {
+    console.error('pending_admin_signups stripe_session_id update:', sessionIdError)
+  }
+}
+
+export async function startPaidAdminSignupCheckout(
+  input: RegisterAdminInput,
+  uiMode: CheckoutUiMode = 'hosted'
+) {
   if (input.plan === 'trial') {
     return { error: 'Use trial checkout for free trial.' }
   }
@@ -163,47 +170,33 @@ export async function startPaidAdminSignupCheckout(input: RegisterAdminInput) {
     return { error: 'Paid plans require Stripe configuration.' }
   }
 
-  const priceId = stripePriceIds()[input.plan]
-  if (!priceId) {
-    return { error: `Stripe price not configured for ${input.plan}.` }
-  }
-
   const pending = await insertPendingSignup(input)
   if ('error' in pending) return { error: pending.error }
 
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
-  const appUrl = billingAppUrl()
-
-  const session = await stripe.checkout.sessions.create({
-    ...stripeCheckoutBranding(),
-    mode: 'subscription',
-    customer_email: pending.email,
-    line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${appUrl}/login?registered=1&email=${encodeURIComponent(pending.email)}`,
-    cancel_url: `${appUrl}/onboarding/subscription?register=1&canceled=1`,
+  const stripe = createStripeClient()
+  const session = await createStripeCheckoutSession(stripe, {
+    uiMode,
+    plan: input.plan,
+    customerEmail: pending.email,
+    successUrl: `/login?registered=1&email=${encodeURIComponent(pending.email)}`,
+    cancelUrl: '/onboarding/subscription?register=1&canceled=1',
     metadata: {
       pending_signup_id: pending.pendingId,
       plan: input.plan,
     },
-    subscription_data: {
-      metadata: {
-        pending_signup_id: pending.pendingId,
-        plan: input.plan,
-      },
+    subscriptionMetadata: {
+      pending_signup_id: pending.pendingId,
+      plan: input.plan,
     },
   })
 
-  if (session.id) {
-    const { error: sessionIdError } = await createServiceClient()
-      .from('pending_admin_signups')
-      .update({ stripe_session_id: session.id })
-      .eq('id', pending.pendingId)
-    if (sessionIdError) {
-      console.error('pending_admin_signups stripe_session_id update:', sessionIdError)
-    }
-  }
+  await savePendingStripeSession(pending.pendingId, session.sessionId)
 
-  return { checkoutUrl: session.url }
+  return {
+    checkoutUrl: session.checkoutUrl,
+    clientSecret: session.clientSecret,
+    sessionId: session.sessionId,
+  }
 }
 
 export async function fulfillPendingAdminSignup(

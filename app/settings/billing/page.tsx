@@ -20,6 +20,7 @@ type BillingData = {
   plans: Record<string, PlanInfo>
   subscription: { plan: string; status: string } | null
   needsPlanSelection?: boolean
+  trialAvailable?: boolean
   projectCount: number
   stripeConfigured: boolean
 }
@@ -54,25 +55,29 @@ function BillingContent() {
   }, [searchParams])
 
   async function selectPlan(plan: string) {
-    setLoading(plan)
-    setMessage(null)
-    const res = await fetch('/api/billing', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ plan }),
-    })
-    const payload = await res.json().catch(() => ({}))
-    if (payload.checkoutUrl) {
-      window.location.href = payload.checkoutUrl
+    if (!data?.stripeConfigured) {
+      setMessage('Stripe is not configured. See STRIPE.md.')
       return
     }
-    if (!res.ok) {
-      setMessage(payload.error || 'Could not update plan')
-    } else {
-      setMessage(`Plan set to ${plan}.`)
-      const refreshed = await fetch('/api/billing').then((r) => r.json())
-      setData(refreshed)
+    setLoading(plan)
+    setMessage(null)
+    router.push(`/checkout?plan=${encodeURIComponent(plan)}`)
+  }
+
+  async function openPortal() {
+    setLoading('portal')
+    setMessage(null)
+    const res = await fetch('/api/billing/portal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    })
+    const payload = await res.json().catch(() => ({}))
+    if (payload.url) {
+      window.location.href = payload.url as string
+      return
     }
+    setMessage(payload.error || 'Could not open billing portal')
     setLoading(null)
   }
 
@@ -102,11 +107,24 @@ function BillingContent() {
 
       {!data.stripeConfigured && (
         <p className="text-xs text-amber-800 bg-amber-50 border border-amber-100 p-3 rounded-xl">
-          Stripe is not configured. Paid plans need API keys and price IDs — see{' '}
-          <code className="text-[11px]">STRIPE.md</code> in the repo. Trial still
-          works locally without Stripe.
+          Card payments are not configured. Add Stripe keys and price IDs — see{' '}
+          <code className="text-[11px]">STRIPE.md</code>.
         </p>
       )}
+
+      {data.stripeConfigured &&
+        (data.subscription?.status === 'active' ||
+          data.subscription?.status === 'trialing' ||
+          data.subscription?.status === 'past_due') && (
+          <button
+            type="button"
+            disabled={loading !== null}
+            onClick={openPortal}
+            className="w-full border border-border py-3 rounded-xl text-sm font-medium min-h-[48px] disabled:opacity-50"
+          >
+            {loading === 'portal' ? 'Opening…' : 'Manage card & billing (Stripe)'}
+          </button>
+        )}
 
       <div className="space-y-3">
         {Object.entries(data.plans).map(([key, plan]) => (
@@ -137,7 +155,7 @@ function BillingContent() {
                   onClick={() => selectPlan(key)}
                   className="shrink-0 btn-primary text-[#052e16] text-sm px-4 py-2 rounded-lg min-h-[40px] disabled:opacity-50"
                 >
-                  {loading === key ? '…' : 'Select'}
+                  {loading === key ? '…' : key === 'trial' ? 'Verify card' : 'Pay with card'}
                 </button>
               )}
             </div>

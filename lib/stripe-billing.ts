@@ -6,6 +6,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import {
   type BillingPlanId,
   planFromStripePriceId,
+  trialEndsAtFromNow,
 } from '@/lib/stripe-config'
 
 type SubscriptionStatus =
@@ -29,6 +30,7 @@ export async function upsertSubscriptionFromStripe(input: {
   stripeCustomerId?: string | null
   stripeSubscriptionId?: string | null
   currentPeriodEnd?: string | null
+  trialEndsAt?: string | null
 }) {
   const supabase = createServiceClient()
 
@@ -40,6 +42,7 @@ export async function upsertSubscriptionFromStripe(input: {
       stripe_customer_id: input.stripeCustomerId ?? null,
       stripe_subscription_id: input.stripeSubscriptionId ?? null,
       current_period_end: input.currentPeriodEnd ?? null,
+      trial_ends_at: input.trialEndsAt ?? null,
       updated_at: new Date().toISOString(),
     },
     { onConflict: 'organization_id' }
@@ -154,11 +157,14 @@ export async function handleCheckoutSessionCompleted(
       ? session.subscription
       : session.subscription?.id
 
+  const isTrial = plan === 'trial'
+
   await upsertSubscriptionFromStripe({
     organizationId,
     plan,
-    status: 'active',
+    status: isTrial ? 'trialing' : 'active',
     stripeCustomerId: customerId ?? null,
     stripeSubscriptionId: subscriptionId ?? null,
+    trialEndsAt: isTrial ? trialEndsAtFromNow() : null,
   })
 }
