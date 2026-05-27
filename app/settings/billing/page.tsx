@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { AppHeader } from '@/components/app-header'
 import { AppFooter } from '@/components/app-footer'
 import { AppNav } from '@/components/app-nav'
+import { BackupSettingsPanel } from '@/components/backup-settings-panel'
 import { loadUserAccess } from '@/lib/load-access'
 import type { UserAccess } from '@/lib/roles'
 import { supabase } from '@/lib/supabase'
@@ -191,6 +192,7 @@ export default function BillingPage() {
         <Suspense fallback={<p className="text-muted">Loading billing…</p>}>
           <BillingContent />
         </Suspense>
+        <BackupSettingsPanel canManage={access.canArchiveProject} />
         <AppFooter />
       </main>
     </div>

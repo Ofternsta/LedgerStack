@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { isClaimStatus, normalizeClaimStatus } from '@/lib/claim-status'
 import { loadUserAccessServer } from '@/lib/load-access-server'
+import { triggerProjectCompletedBackup } from '@/lib/organization-backups'
+import { getProjectOrgId } from '@/lib/staff-project-access'
 import { requireAuth } from '@/lib/require-auth'
 
 export async function PATCH(req: Request) {
@@ -70,6 +72,15 @@ export async function PATCH(req: Request) {
         event_date: new Date().toISOString().slice(0, 10),
         source: 'manual',
       })
+    }
+
+    if (rawStatus === 'Completed' && previousStatus !== 'Completed') {
+      const organizationId = await getProjectOrgId(supabase, projectId)
+      if (organizationId) {
+        void triggerProjectCompletedBackup(organizationId, projectId).catch(
+          () => {}
+        )
+      }
     }
 
     return NextResponse.json({ claim: updated })
