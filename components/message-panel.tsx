@@ -130,33 +130,45 @@ export function MessagePanel({
 
         {messages.map((m) => {
           const mine = m.sender_id === currentUserId
+          const isProject = channel === 'project'
+
+          const bubbleClass = isProject
+            ? mine
+              ? 'bg-sky-500/45 border border-sky-300/60 text-white shadow-sm'
+              : 'bg-sky-600/35 border border-sky-400/50 text-white shadow-sm'
+            : mine
+              ? 'btn-primary text-[#052e16]'
+              : 'bg-surface-elevated border border-border text-foreground'
+
+          const nameClass = isProject
+            ? 'text-white'
+            : mine
+              ? 'text-[#052e16]/70'
+              : 'text-muted-dim'
+
+          const timeClass = isProject
+            ? 'text-white/75'
+            : mine
+              ? 'text-[#052e16]/60'
+              : 'text-muted-dim'
+
+          const bodyClass = isProject ? 'text-white' : ''
+
           return (
             <div
               key={m.id}
               className={`flex ${mine ? 'justify-end' : 'justify-start'}`}
             >
-              <div
-                className={`max-w-[85%] rounded-xl px-3 py-2 ${
-                  mine
-                    ? 'btn-primary text-[#052e16]'
-                    : 'bg-surface-elevated border border-border text-foreground'
-                }`}
-              >
-                <p
-                  className={`text-xs font-medium mb-1 ${
-                    mine ? 'text-[#052e16]/70' : 'text-muted-dim'
-                  }`}
-                >
+              <div className={`max-w-[85%] rounded-xl px-3 py-2 ${bubbleClass}`}>
+                <p className={`text-xs font-medium mb-1 ${nameClass}`}>
                   {m.sender_label}
                 </p>
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                <p
+                  className={`text-sm leading-relaxed whitespace-pre-wrap ${bodyClass}`}
+                >
                   {m.body}
                 </p>
-                <p
-                  className={`text-[10px] mt-1 ${
-                    mine ? 'text-[#052e16]/60' : 'text-muted-dim'
-                  }`}
-                >
+                <p className={`text-[10px] mt-1 ${timeClass}`}>
                   {new Date(m.created_at).toLocaleString()}
                 </p>
               </div>

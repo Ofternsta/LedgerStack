@@ -14,6 +14,7 @@ import {
 import { ClientPortalPanel } from '@/components/client-portal-panel'
 import { EvidenceUpload } from '@/components/evidence-upload'
 import { InternalNotesPanel } from '@/components/internal-notes-panel'
+import { MessagePanel } from '@/components/message-panel'
 import { ProjectSchedulePanel } from '@/components/project-schedule-panel'
 import { PlanUpgradeBanner } from '@/components/plan-upgrade-banner'
 import { ProjectClientPanel } from '@/components/project-client-panel'
@@ -442,6 +443,21 @@ export default function ProjectPageClient() {
                 projectId={id}
                 claimId={activeClaim.id}
                 canEdit={access.canManageSchedule && access.canUpdateClaimInfo}
+              />
+            )}
+
+            {access.canUseTeamMessages && access.role !== 'client' && (
+              <MessagePanel
+                channel="project"
+                projectId={id}
+                currentUserId={userId}
+                title="Project messages"
+                subtitle="Chat scoped to this job — admins and approved workers only."
+                canSend={
+                  access.role === 'admin' ||
+                  (access.role === 'worker' &&
+                    access.workerStatus === 'approved')
+                }
               />
             )}
 

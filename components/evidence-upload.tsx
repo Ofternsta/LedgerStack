@@ -83,7 +83,7 @@ export function EvidenceUpload({
           type="button"
           disabled={uploading}
           onClick={() => inputRef.current?.click()}
-          className="w-full border-2 border-black text-black py-3 rounded-xl font-medium min-h-[48px] disabled:opacity-50"
+          className="w-full border-2 border-white/90 text-white py-3 rounded-xl font-medium min-h-[48px] hover:bg-white/10 disabled:opacity-50"
         >
           {uploading ? 'Processing…' : 'Browse files (multi-select)'}
         </button>
@@ -123,7 +123,7 @@ export function EvidenceUpload({
           </label>
         )}
 
-        <label className="flex items-center justify-center gap-2 border-2 border-black text-black py-4 px-4 rounded-xl font-medium cursor-pointer active:scale-[0.98] transition-transform min-h-[52px]">
+        <label className="flex items-center justify-center gap-2 border-2 border-white/90 text-white py-4 px-4 rounded-xl font-medium cursor-pointer hover:bg-white/10 active:scale-[0.98] transition-transform min-h-[52px]">
           <span aria-hidden>📎</span>
           {uploading ? 'Processing…' : 'Choose File'}
           <input
