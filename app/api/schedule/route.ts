@@ -19,6 +19,7 @@ export async function GET(req: Request) {
     const projectId = params.get('project_id')
     const claimId = params.get('claim_id')
     const orgCalendar = params.get('org') === '1'
+    const includeCompleted = params.get('include_completed') === '1'
     const from = params.get('from')
     const to = params.get('to')
 
@@ -64,6 +65,7 @@ export async function GET(req: Request) {
 
       if (from) query = query.gte('starts_at', from)
       if (to) query = query.lte('starts_at', to)
+      if (!includeCompleted) query = query.is('completed_at', null)
 
       const { data, error } = await query
       if (error) {
@@ -103,6 +105,7 @@ export async function GET(req: Request) {
       .order('starts_at', { ascending: true })
 
     if (claimId) query = query.eq('claim_id', claimId)
+    if (!includeCompleted) query = query.is('completed_at', null)
 
     const { data, error } = await query
     if (error) {

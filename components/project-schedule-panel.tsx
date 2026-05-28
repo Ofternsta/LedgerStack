@@ -53,6 +53,7 @@ export function ProjectSchedulePanel({ projectId, claimId, canEdit }: Props) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
+  const [showCompleted, setShowCompleted] = useState(false)
 
   const [eventType, setEventType] = useState<ScheduleEventType>('inspection')
   const [title, setTitle] = useState('')
@@ -66,6 +67,7 @@ export function ProjectSchedulePanel({ projectId, claimId, canEdit }: Props) {
     setLoading(true)
     const params = new URLSearchParams({ project_id: projectId })
     if (claimId) params.set('claim_id', claimId)
+    if (showCompleted) params.set('include_completed', '1')
     const res = await fetch(`/api/schedule?${params}`)
     const payload = await res.json().catch(() => ({}))
     if (!res.ok) {
@@ -76,7 +78,7 @@ export function ProjectSchedulePanel({ projectId, claimId, canEdit }: Props) {
       setEvents(payload.events || [])
     }
     setLoading(false)
-  }, [projectId, claimId])
+  }, [projectId, claimId, showCompleted])
 
   useEffect(() => {
     load()
@@ -164,15 +166,24 @@ export function ProjectSchedulePanel({ projectId, claimId, canEdit }: Props) {
         </p>
       )}
 
-      {canEdit && (
+      <div className="flex flex-wrap gap-2">
+        {canEdit && (
+          <button
+            type="button"
+            onClick={() => setShowForm((v) => !v)}
+            className="text-sm font-medium border border-border rounded-xl px-4 py-2 min-h-[44px]"
+          >
+            {showForm ? 'Cancel' : 'Add event'}
+          </button>
+        )}
         <button
           type="button"
-          onClick={() => setShowForm((v) => !v)}
+          onClick={() => setShowCompleted((v) => !v)}
           className="text-sm font-medium border border-border rounded-xl px-4 py-2 min-h-[44px]"
         >
-          {showForm ? 'Cancel' : 'Add event'}
+          {showCompleted ? 'Hide completed events' : 'Completed events'}
         </button>
-      )}
+      </div>
 
       {showForm && canEdit && (
         <form onSubmit={addEvent} className="space-y-3 border border-gray-100 rounded-xl p-3 bg-surface">
@@ -302,19 +313,23 @@ export function ProjectSchedulePanel({ projectId, claimId, canEdit }: Props) {
               </ul>
             )}
           </div>
-          {done.length > 0 && (
+          {showCompleted && (
             <div>
               <h3 className="text-sm font-semibold text-muted mb-2">Completed</h3>
-              <ul className="space-y-2 opacity-75">
-                {done.map((ev) => (
-                  <li
-                    key={ev.id}
-                    className="border border-gray-100 rounded-lg p-3 text-sm line-through"
-                  >
-                    {ev.title} · {formatWhen(ev.starts_at)}
-                  </li>
-                ))}
-              </ul>
+              {done.length === 0 ? (
+                <p className="text-sm text-muted-dim">No completed events.</p>
+              ) : (
+                <ul className="space-y-2 opacity-75">
+                  {done.map((ev) => (
+                    <li
+                      key={ev.id}
+                      className="border border-gray-100 rounded-lg p-3 text-sm line-through"
+                    >
+                      {ev.title} · {formatWhen(ev.starts_at)}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           )}
         </>
