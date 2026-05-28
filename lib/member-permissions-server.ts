@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { isOrganizationAdmin } from '@/lib/org-admin'
-import { hasApprovedClientProjectAccess } from '@/lib/project-client-access'
+import { clientCanAccessProject } from '@/lib/project-client-access'
 import {
   type WorkerPermissionKey,
   parseWorkerPermissions,
@@ -39,15 +39,27 @@ export async function assertProjectMemberPermission(
     return { ok: true }
   }
 
-  if (permission === 'can_view_files') {
-    const clientOk = await hasApprovedClientProjectAccess(
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', userId)
+    .maybeSingle()
+
+  if (permission === 'can_view_files' && profile?.role === 'client') {
+    const allowed = await clientCanAccessProject(
       supabase,
       projectId,
       userId,
       options?.email
     )
-    if (clientOk) {
+    if (allowed) {
       return { ok: true }
+    }
+    return {
+      ok: false,
+      error:
+        'You do not have access to this project. Sign in with the same email your contractor invited, or ask them to grant access again.',
+      status: 403,
     }
   }
 

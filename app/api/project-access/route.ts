@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireOrgPlanFeature } from '@/lib/plan-guard'
 import { requireAuth } from '@/lib/require-auth'
+import { grantClientProjectAccessServer } from '@/lib/link-client-access-server'
 import { createServiceClient } from '@/lib/supabase/service'
 
 /** GET client access rows for a project (admin only) */
@@ -99,26 +100,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: portalCheck.error }, { status: 403 })
   }
 
-  const { data: row, error } = await supabase
-    .from('project_client_access')
-    .upsert(
-      {
-        project_id: projectId,
-        client_email: clientEmail,
-        status: 'approved',
-        approved_at: new Date().toISOString(),
-        approved_by: user.id,
-      },
-      { onConflict: 'project_id,client_email' }
-    )
-    .select('id')
-    .single()
+  const granted = await grantClientProjectAccessServer({
+    projectId,
+    clientEmail,
+    approvedBy: user.id,
+  })
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  if (!granted.ok) {
+    return NextResponse.json({ error: granted.error }, { status: 500 })
   }
 
-  return NextResponse.json({ ok: true, access_id: row.id })
+  return NextResponse.json({ ok: true, access_id: granted.accessId })
 }
 
 /** DELETE revoke access { access_id } */

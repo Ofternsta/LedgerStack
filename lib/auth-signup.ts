@@ -68,9 +68,5 @@ export async function linkClientAccessByEmail() {
 
   if (!user?.email) return
 
-  await supabase
-    .from('project_client_access')
-    .update({ user_id: user.id })
-    .eq('client_email', user.email.toLowerCase())
-    .is('user_id', null)
+  await fetch('/api/auth/link-client-access', { method: 'POST' })
 }

@@ -99,6 +99,9 @@ export default function ProjectPageClient() {
       }
 
       setAccess(base)
+      if (base.role === 'client') {
+        void fetch('/api/auth/link-client-access', { method: 'POST' })
+      }
     }
 
     void loadAccessForProject()
@@ -302,7 +305,9 @@ export default function ProjectPageClient() {
         />
         <div className="safe-x px-4 py-6 max-w-5xl mx-auto">
           <p className="text-gray-600">
-            You do not have access to this project, or it has no reports yet.
+            {access.role === 'client'
+              ? 'There are no reports on this project yet. Your contractor will add progress here.'
+              : 'You do not have access to this project, or it has no reports yet.'}
           </p>
         </div>
       </div>
