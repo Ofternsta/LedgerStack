@@ -5,6 +5,12 @@ export type ConversationListItem = {
   last_message_at: string
   participant_ids: string[]
   last_message_preview: string | null
+  unread_count: number
+}
+
+export type ConversationUnreadSummary = {
+  total_unread_messages: number
+  unread_conversation_count: number
 }
 
 export type ConversationMessage = {

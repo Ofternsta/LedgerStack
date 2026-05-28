@@ -7,6 +7,7 @@ import {
   createConversation,
   createConversationService,
   listConversationsForUser,
+  summarizeConversationUnread,
 } from '@/lib/conversations-server'
 import { requireOrgPlanFeature } from '@/lib/plan-guard'
 import { requireAuth } from '@/lib/require-auth'
@@ -44,7 +45,10 @@ export async function GET() {
       user.id
     )
 
-    return NextResponse.json({ conversations })
+    return NextResponse.json({
+      conversations,
+      unread: summarizeConversationUnread(conversations),
+    })
   } catch (err: unknown) {
     const message =
       err instanceof Error ? err.message : 'Failed to load conversations'

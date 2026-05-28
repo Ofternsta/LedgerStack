@@ -1,4 +1,5 @@
 -- Direct messages and group chats (participants only). Run after roles-and-orgs.sql.
+-- Then run chat-unread.sql for read receipts / notification badges.
 -- Project channel messages stay on public.messages (channel = 'project').
 
 CREATE TABLE IF NOT EXISTS public.conversations (

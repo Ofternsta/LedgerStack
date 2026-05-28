@@ -4,12 +4,50 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type {
   ConversationListItem,
   ConversationMessage,
+  ConversationUnreadSummary,
 } from '@/lib/conversation-types'
 import { enrichMessageSenders } from '@/lib/message-sender-labels'
 import { loadTeamRoster, type TeamRosterMember } from '@/lib/team-roster'
 import { createServiceClient } from '@/lib/supabase/service'
 
-export type { ConversationListItem, ConversationMessage }
+export type { ConversationListItem, ConversationMessage, ConversationUnreadSummary }
+
+async function unreadCountForConversation(
+  supabase: SupabaseClient,
+  conversationId: string,
+  userId: string,
+  lastReadAt: string | null
+): Promise<number> {
+  let query = supabase
+    .from('conversation_messages')
+    .select('id', { count: 'exact', head: true })
+    .eq('conversation_id', conversationId)
+    .neq('sender_id', userId)
+
+  if (lastReadAt) {
+    query = query.gt('created_at', lastReadAt)
+  }
+
+  const { count, error } = await query
+  if (error) return 0
+  return count ?? 0
+}
+
+export async function markConversationRead(
+  supabase: SupabaseClient,
+  conversationId: string,
+  userId: string
+): Promise<void> {
+  const { error } = await supabase
+    .from('conversation_participants')
+    .update({ last_read_at: new Date().toISOString() })
+    .eq('conversation_id', conversationId)
+    .eq('user_id', userId)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+}
 
 function directTitle(
   roster: TeamRosterMember[],
@@ -28,11 +66,14 @@ export async function listConversationsForUser(
 ): Promise<ConversationListItem[]> {
   const { data: memberships, error } = await supabase
     .from('conversation_participants')
-    .select('conversation_id')
+    .select('conversation_id, last_read_at')
     .eq('user_id', userId)
 
   if (error || !memberships?.length) return []
 
+  const lastReadByConv = Object.fromEntries(
+    memberships.map((m) => [m.conversation_id, m.last_read_at as string | null])
+  )
   const conversationIds = memberships.map((m) => m.conversation_id)
 
   const { data: conversations } = await supabase
@@ -71,6 +112,18 @@ export async function listConversationsForUser(
     }
   }
 
+  const unreadByConv: Record<string, number> = {}
+  await Promise.all(
+    conversations.map(async (c) => {
+      unreadByConv[c.id] = await unreadCountForConversation(
+        supabase,
+        c.id,
+        userId,
+        lastReadByConv[c.id] ?? null
+      )
+    })
+  )
+
   return conversations.map((c) => {
     const participantIds = participantsByConv[c.id] || []
     const title =
@@ -85,8 +138,25 @@ export async function listConversationsForUser(
       last_message_at: c.last_message_at,
       participant_ids: participantIds,
       last_message_preview: previewByConv[c.id] ?? null,
+      unread_count: unreadByConv[c.id] ?? 0,
     }
   })
+}
+
+export function summarizeConversationUnread(
+  conversations: ConversationListItem[]
+): ConversationUnreadSummary {
+  let total_unread_messages = 0
+  let unread_conversation_count = 0
+
+  for (const c of conversations) {
+    if (c.unread_count > 0) {
+      total_unread_messages += c.unread_count
+      unread_conversation_count += 1
+    }
+  }
+
+  return { total_unread_messages, unread_conversation_count }
 }
 
 async function findExistingDirectConversation(

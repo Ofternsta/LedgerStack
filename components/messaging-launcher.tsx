@@ -9,6 +9,12 @@ type ConversationRow = {
   title: string
   last_message_at: string
   last_message_preview: string | null
+  unread_count: number
+}
+
+type UnreadSummary = {
+  total_unread_messages: number
+  unread_conversation_count: number
 }
 
 type RosterMember = {
@@ -24,6 +30,9 @@ type MessagingLauncherProps = {
   currentUserId: string | null
   canSend: boolean
 }
+
+const POLL_CLOSED_MS = 15000
+const POLL_THREAD_MS = 12000
 
 function ChatIcon({ className }: { className?: string }) {
   return (
@@ -44,6 +53,20 @@ function ChatIcon({ className }: { className?: string }) {
   )
 }
 
+function formatBadgeCount(count: number): string {
+  if (count > 99) return '99+'
+  return String(count)
+}
+
+function UnreadDot({ className }: { className?: string }) {
+  return (
+    <span
+      className={`absolute w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-background ${className ?? ''}`}
+      aria-hidden
+    />
+  )
+}
+
 export function MessagingLauncher({
   currentUserId,
   canSend,
@@ -51,6 +74,10 @@ export function MessagingLauncher({
   const [open, setOpen] = useState(false)
   const [view, setView] = useState<'list' | 'compose' | 'thread'>('list')
   const [conversations, setConversations] = useState<ConversationRow[]>([])
+  const [unread, setUnread] = useState<UnreadSummary>({
+    total_unread_messages: 0,
+    unread_conversation_count: 0,
+  })
   const [roster, setRoster] = useState<RosterMember[]>([])
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [groupTitle, setGroupTitle] = useState('')
@@ -62,6 +89,11 @@ export function MessagingLauncher({
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
+  const activeIdRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    activeIdRef.current = activeId
+  }, [activeId])
 
   const loadConversations = useCallback(async () => {
     const res = await fetch('/api/conversations')
@@ -74,7 +106,39 @@ export function MessagingLauncher({
       return
     }
     setError(null)
-    setConversations(payload.conversations || [])
+    const list = (payload.conversations || []) as ConversationRow[]
+    setConversations(list)
+    setUnread(
+      payload.unread || {
+        total_unread_messages: list.reduce((n, c) => n + (c.unread_count || 0), 0),
+        unread_conversation_count: list.filter((c) => c.unread_count > 0).length,
+      }
+    )
+  }, [])
+
+  const markRead = useCallback(async (conversationId: string) => {
+    await fetch(`/api/conversations/${encodeURIComponent(conversationId)}/read`, {
+      method: 'POST',
+    })
+    setConversations((prev) => {
+      let removed = 0
+      let hadUnread = false
+      const next = prev.map((c) => {
+        if (c.id === conversationId && c.unread_count > 0) {
+          removed = c.unread_count
+          hadUnread = true
+          return { ...c, unread_count: 0 }
+        }
+        return c
+      })
+      if (hadUnread) {
+        setUnread((u) => ({
+          total_unread_messages: Math.max(0, u.total_unread_messages - removed),
+          unread_conversation_count: Math.max(0, u.unread_conversation_count - 1),
+        }))
+      }
+      return next
+    })
   }, [])
 
   const loadRoster = useCallback(async () => {
@@ -97,6 +161,13 @@ export function MessagingLauncher({
     }
     setError(null)
     setMessages(payload.messages || [])
+    if (activeIdRef.current === conversationId) {
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === conversationId ? { ...c, unread_count: 0 } : c
+        )
+      )
+    }
     const list = listRef.current
     if (list) {
       requestAnimationFrame(() => {
@@ -104,6 +175,16 @@ export function MessagingLauncher({
       })
     }
   }, [])
+
+  useEffect(() => {
+    void loadConversations()
+    const interval = setInterval(() => {
+      if (!open || view === 'list') {
+        void loadConversations()
+      }
+    }, POLL_CLOSED_MS)
+    return () => clearInterval(interval)
+  }, [loadConversations, open, view])
 
   useEffect(() => {
     if (!open) return
@@ -115,16 +196,18 @@ export function MessagingLauncher({
 
   useEffect(() => {
     if (!open || view !== 'thread' || !activeId) return
-    loadMessages(activeId)
-    const interval = setInterval(() => loadMessages(activeId), 12000)
+    void loadMessages(activeId)
+    const interval = setInterval(() => loadMessages(activeId), POLL_THREAD_MS)
     return () => clearInterval(interval)
   }, [open, view, activeId, loadMessages])
 
-  function openThread(conv: ConversationRow) {
+  async function openThread(conv: ConversationRow) {
     setActiveId(conv.id)
     setActiveTitle(conv.title)
     setView('thread')
     setDraft('')
+    await markRead(conv.id)
+    void loadMessages(conv.id)
   }
 
   async function startCompose() {
@@ -176,6 +259,7 @@ export function MessagingLauncher({
     setActiveTitle(title)
     setView('thread')
     setDraft('')
+    await markRead(id)
     await loadMessages(id)
   }
 
@@ -218,8 +302,17 @@ export function MessagingLauncher({
     setView('list')
     setActiveId(null)
     setError(null)
+    void loadConversations()
   }
 
+  function backToList() {
+    setView('list')
+    setActiveId(null)
+    void loadConversations()
+  }
+
+  const totalUnread = unread.total_unread_messages
+  const hasUnread = totalUnread > 0
   const isGroupCompose = selected.size > 1
 
   return (
@@ -228,10 +321,22 @@ export function MessagingLauncher({
         type="button"
         onClick={() => setOpen(true)}
         className="relative flex items-center justify-center w-11 h-11 rounded-full border border-border bg-surface-elevated text-brand-bright hover:bg-surface shadow-sm"
-        aria-label="Open messages"
-        title="Messages"
+        aria-label={
+          hasUnread
+            ? `Open messages, ${totalUnread} unread`
+            : 'Open messages'
+        }
+        title={hasUnread ? `${totalUnread} unread message(s)` : 'Messages'}
       >
         <ChatIcon className="w-5 h-5" />
+        {hasUnread && (
+          <>
+            <UnreadDot className="top-0 right-0" />
+            <span className="absolute -top-1 -right-1 min-w-[1.125rem] h-[1.125rem] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">
+              {formatBadgeCount(totalUnread)}
+            </span>
+          </>
+        )}
       </button>
 
       {open && (
@@ -252,13 +357,8 @@ export function MessagingLauncher({
                 <button
                   type="button"
                   onClick={() => {
-                    if (view === 'thread') {
-                      setView('list')
-                      setActiveId(null)
-                      loadConversations()
-                    } else {
-                      setView('list')
-                    }
+                    if (view === 'thread') backToList()
+                    else setView('list')
                   }}
                   className="text-sm text-brand-bright font-medium min-h-[44px] px-1"
                 >
@@ -313,28 +413,55 @@ export function MessagingLauncher({
                       No chats yet. Start a conversation with a teammate.
                     </p>
                   )}
-                  {conversations.map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => openThread(c)}
-                      className="w-full text-left border border-border rounded-xl p-3 bg-surface-elevated hover:bg-surface"
-                    >
-                      <p className="font-medium text-sm text-foreground truncate">
-                        {c.title}
-                        {c.conversation_type === 'group' && (
-                          <span className="text-xs text-muted-dim ml-1">
-                            (group)
-                          </span>
+                  {conversations.map((c) => {
+                    const hasChatUnread = c.unread_count > 0
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => openThread(c)}
+                        className={`relative w-full text-left border rounded-xl p-3 hover:bg-surface ${
+                          hasChatUnread
+                            ? 'border-brand-bright/40 bg-surface-elevated'
+                            : 'border-border bg-surface-elevated'
+                        }`}
+                      >
+                        {hasChatUnread && (
+                          <>
+                            <UnreadDot className="top-2 right-2" />
+                            <span className="absolute top-1.5 right-2 min-w-[1.125rem] h-[1.125rem] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">
+                              {formatBadgeCount(c.unread_count)}
+                            </span>
+                          </>
                         )}
-                      </p>
-                      {c.last_message_preview && (
-                        <p className="text-xs text-muted-dim mt-1 truncate">
-                          {c.last_message_preview}
+                        <p
+                          className={`text-sm truncate pr-8 ${
+                            hasChatUnread
+                              ? 'font-semibold text-foreground'
+                              : 'font-medium text-foreground'
+                          }`}
+                        >
+                          {c.title}
+                          {c.conversation_type === 'group' && (
+                            <span className="text-xs text-muted-dim ml-1 font-normal">
+                              (group)
+                            </span>
+                          )}
                         </p>
-                      )}
-                    </button>
-                  ))}
+                        {c.last_message_preview && (
+                          <p
+                            className={`text-xs mt-1 truncate pr-8 ${
+                              hasChatUnread
+                                ? 'text-foreground/90'
+                                : 'text-muted-dim'
+                            }`}
+                          >
+                            {c.last_message_preview}
+                          </p>
+                        )}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             )}

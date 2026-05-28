@@ -4,7 +4,10 @@ import {
   isConversationParticipant,
   resolveMessagingOrganizationId,
 } from '@/lib/conversation-access'
-import { enrichConversationMessages } from '@/lib/conversations-server'
+import {
+  enrichConversationMessages,
+  markConversationRead,
+} from '@/lib/conversations-server'
 import { requireOrgPlanFeature } from '@/lib/plan-guard'
 import { requireAuth } from '@/lib/require-auth'
 
@@ -49,6 +52,7 @@ export async function GET(_req: Request, context: RouteContext) {
     }
 
     const messages = await enrichConversationMessages(organizationId, rows || [])
+    await markConversationRead(supabase, conversationId, user.id)
     return NextResponse.json({ messages })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to load messages'
