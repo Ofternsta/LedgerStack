@@ -34,7 +34,12 @@ export default function ProjectsPage() {
   const [signingOut, setSigningOut] = useState(false)
 
   async function refreshAccess() {
-    await linkClientAccessByEmail()
+    const linkRes = await fetch('/api/auth/link-client-access', {
+      method: 'POST',
+    })
+    if (!linkRes.ok) {
+      await linkClientAccessByEmail()
+    }
     let { access: a, needsProfileSetup } = await loadUserAccess()
 
     if (needsProfileSetup) {
@@ -72,7 +77,19 @@ export default function ProjectsPage() {
     return a
   }
 
-  async function fetchProjects() {
+  async function fetchProjects(role: UserAccess['role']) {
+    if (role === 'client') {
+      const res = await fetch('/api/projects')
+      const payload = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        console.error(payload.error || 'Failed to load projects')
+        setProjects([])
+        return
+      }
+      setProjects((payload.projects || []) as Project[])
+      return
+    }
+
     const { data, error } = await supabase.from('projects').select('*')
     if (error) {
       console.error(error)
@@ -119,7 +136,7 @@ export default function ProjectsPage() {
     setCustomerName('')
     setProjectAddress('')
     setNotes('')
-    await fetchProjects()
+    await fetchProjects(access.role)
     setCreating(false)
   }
 
@@ -134,18 +151,20 @@ export default function ProjectsPage() {
     if (err) {
       alert(err)
     } else {
-      await fetchProjects()
+      if (access) await fetchProjects(access.role)
     }
     setDeletingId(null)
   }
 
   useEffect(() => {
     refreshAccess().then((a) => {
-      if (a && (a.role !== 'worker' || a.workerStatus === 'approved')) {
-        fetchProjects()
-      }
-      if (a?.role === 'client') {
-        fetchProjects()
+      if (!a) return
+      if (
+        a.role === 'client' ||
+        a.role !== 'worker' ||
+        a.workerStatus === 'approved'
+      ) {
+        void fetchProjects(a.role)
       }
     })
   }, [])
@@ -186,7 +205,9 @@ export default function ProjectsPage() {
           </p>
           <button
             type="button"
-            onClick={() => refreshAccess().then(() => fetchProjects())}
+            onClick={() =>
+              refreshAccess().then((a) => a && fetchProjects(a.role))
+            }
             className="btn-primary text-[#052e16] px-6 py-3 rounded-xl font-medium min-h-[48px]"
           >
             Check again
