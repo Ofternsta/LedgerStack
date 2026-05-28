@@ -99,6 +99,9 @@ export function MarketingHome() {
                   Built for restoration &amp; insurance contractors
                 </p>
                 <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1] max-w-3xl">
+                  <span className="block text-2xl sm:text-3xl text-brand-bright mb-2">
+                    LedgerStack
+                  </span>
                   <span className="text-white">Reports, documents, and teams</span>
                   <span className="brand-gradient-text"> — in one stack.</span>
                 </h1>

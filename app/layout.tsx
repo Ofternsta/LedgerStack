@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { AppMessagingRoot } from '@/components/app-messaging-root'
+import { rootSiteMetadata, SITE_NAME } from '@/lib/site-seo'
 import './globals.css'
 
 const geistSans = Geist({
@@ -21,9 +22,7 @@ const geistMono = Geist_Mono({
 const FAVICON_VERSION = '2'
 
 export const metadata: Metadata = {
-  title: 'LedgerStack',
-  description: 'Manage restoration projects, reports, and documents in the field',
-  applicationName: 'LedgerStack',
+  ...rootSiteMetadata(),
   icons: {
     icon: [
       {
@@ -43,7 +42,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'LedgerStack',
+    title: SITE_NAME,
   },
   formatDetection: {
     telephone: false,
