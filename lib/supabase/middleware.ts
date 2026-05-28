@@ -1,7 +1,10 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { adminNeedsSubscription } from '@/lib/admin-subscription-status'
-import { isPublicSignupCheckoutPath } from '@/lib/auth-public-routes'
+import {
+  isPublicSeoPath,
+  isPublicSignupCheckoutPath,
+} from '@/lib/auth-public-routes'
 
 /** Skip Supabase round-trip when the browser has no session cookies. */
 function hasSupabaseSessionCookies(request: NextRequest): boolean {
@@ -24,13 +27,15 @@ export async function updateSession(request: NextRequest) {
   const isPublicOnboarding = pathname.startsWith('/onboarding/')
   const isPublicSignupCheckout = isPublicSignupCheckoutPath(pathname)
   const isPublicMarketing = pathname === '/'
+  const isPublicSeo = isPublicSeoPath(pathname)
 
   const isPublicRoute =
     isAuthRoute ||
     isPublicApi ||
     isPublicOnboarding ||
     isPublicSignupCheckout ||
-    isPublicMarketing
+    isPublicMarketing ||
+    isPublicSeo
 
   if (!hasSupabaseSessionCookies(request)) {
     if (!isPublicRoute) {

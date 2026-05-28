@@ -14,8 +14,8 @@ NEXT_PUBLIC_APP_URL=https://ledgerstack.org
 
 Redeploy. Confirm:
 
-- https://ledgerstack.org/robots.txt
-- https://ledgerstack.org/sitemap.xml
+- https://ledgerstack.org/robots.txt (should be plain text, not the login page)
+- https://ledgerstack.org/sitemap.xml (should be XML, not the login page)
 
 ## 2. Google Search Console
 
