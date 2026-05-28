@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { ClientSharedFilesEditor } from '@/components/client-shared-files-editor'
 
 type AccessRow = {
   id: string
@@ -15,6 +16,7 @@ export function ProjectClientPanel({ projectId }: { projectId: string }) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const [expandedAccessId, setExpandedAccessId] = useState<string | null>(null)
 
   async function load() {
     setLoading(true)
@@ -64,8 +66,15 @@ export function ProjectClientPanel({ projectId }: { projectId: string }) {
       return
     }
 
+    if (expandedAccessId === accessId) {
+      setExpandedAccessId(null)
+    }
     setMessage('Client access revoked.')
     await load()
+  }
+
+  function toggleClientFiles(accessId: string) {
+    setExpandedAccessId((current) => (current === accessId ? null : accessId))
   }
 
   useEffect(() => {
@@ -76,9 +85,8 @@ export function ProjectClientPanel({ projectId }: { projectId: string }) {
     <section className="border border-border rounded-xl p-4 bg-surface-elevated space-y-3">
       <h2 className="font-bold text-lg">Client access</h2>
       <p className="text-sm text-muted leading-relaxed">
-        Clients must sign up as <strong>Client</strong> and use this email. You
-        grant <strong>one-time view access</strong> to this project only (documents
-        and invoices — not internal team messages).
+        Clients must sign up as <strong>Client</strong> and use this email. Click a
+        client&apos;s name to choose which files they can view in each category.
       </p>
 
       <form onSubmit={grantAccess} className="flex flex-col sm:flex-row gap-2">
@@ -118,26 +126,53 @@ export function ProjectClientPanel({ projectId }: { projectId: string }) {
         <p className="text-sm text-muted-dim">No clients have access yet.</p>
       ) : (
         <ul className="space-y-2">
-          {rows.map((r) => (
-            <li
-              key={r.id}
-              className="flex items-center justify-between gap-2 border border-gray-100 rounded-lg p-3 text-sm"
-            >
-              <span className="min-w-0">
-                <span className="break-all">{r.client_email}</span>
-                <span className="text-green-700 ml-2 text-xs font-medium capitalize">
-                  {r.status}
-                </span>
-              </span>
-              <button
-                type="button"
-                onClick={() => revoke(r.id)}
-                className="text-red-600 font-medium min-h-[44px] px-2"
+          {rows.map((r) => {
+            const isExpanded = expandedAccessId === r.id
+
+            return (
+              <li
+                key={r.id}
+                className="border border-gray-100 rounded-lg text-sm overflow-hidden"
               >
-                Revoke
-              </button>
-            </li>
-          ))}
+                <div className="flex items-center justify-between gap-2 p-3">
+                  <button
+                    type="button"
+                    onClick={() => toggleClientFiles(r.id)}
+                    className="min-w-0 flex-1 text-left min-h-[44px]"
+                  >
+                    <span className="break-all font-medium text-foreground">
+                      {r.client_email}
+                    </span>
+                    <span className="text-green-700 ml-2 text-xs font-medium capitalize">
+                      {r.status}
+                    </span>
+                    <span className="block text-xs text-muted-dim mt-0.5">
+                      {isExpanded
+                        ? 'Hide shared files'
+                        : 'Choose shared files →'}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => revoke(r.id)}
+                    className="text-red-600 font-medium min-h-[44px] px-2 shrink-0"
+                  >
+                    Revoke
+                  </button>
+                </div>
+
+                {isExpanded && r.status === 'approved' && (
+                  <div className="px-3 pb-3">
+                    <ClientSharedFilesEditor
+                      projectId={projectId}
+                      accessId={r.id}
+                      clientEmail={r.client_email}
+                    />
+                  </div>
+                )}
+              </li>
+            )
+          })}
         </ul>
       )}
     </section>

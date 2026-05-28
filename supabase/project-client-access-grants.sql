@@ -6,6 +6,10 @@ GRANT USAGE ON SCHEMA public TO authenticated, service_role;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.project_client_access TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.project_client_access TO service_role;
 
+-- Per-client file sharing (run project-client-shared-files.sql first)
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.project_client_shared_files TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.project_client_shared_files TO service_role;
+
 -- Admin: full manage for projects in their organization
 DROP POLICY IF EXISTS "admin manage project clients" ON public.project_client_access;
 CREATE POLICY "admin manage project clients"

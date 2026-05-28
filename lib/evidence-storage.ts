@@ -78,6 +78,39 @@ export async function listEvidence(
   return enrichEvidenceRecords(supabase, sorted)
 }
 
+/** All evidence files across every report on a project (admin client-sharing UI). */
+export async function listAllProjectEvidence(
+  supabase: SupabaseClient,
+  projectId: string
+): Promise<EvidenceRecord[]> {
+  const { data: claims, error } = await supabase
+    .from('claims')
+    .select('id')
+    .eq('project_id', projectId)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  const merged: EvidenceRecord[] = []
+  const seen = new Set<string>()
+
+  for (const claim of claims || []) {
+    const claimId = claim.id as string
+    const batch = await listEvidence(supabase, projectId, claimId)
+    for (const record of batch) {
+      if (seen.has(record.file_path)) continue
+      seen.add(record.file_path)
+      merged.push(record)
+    }
+  }
+
+  return merged.sort(
+    (a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  )
+}
+
 export async function readEvidenceMeta(
   supabase: SupabaseClient,
   filePath: string

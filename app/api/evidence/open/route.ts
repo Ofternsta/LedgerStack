@@ -1,4 +1,8 @@
 import { NextResponse } from 'next/server'
+import {
+  getApprovedClientAccessRow,
+  getSharedFilePaths,
+} from '@/lib/client-shared-files'
 import { projectIdFromEvidencePath } from '@/lib/org-admin'
 import { assertProjectMemberPermission } from '@/lib/member-permissions-server'
 import { requireAuth } from '@/lib/require-auth'
@@ -43,6 +47,34 @@ export async function GET(req: Request) {
         { error: viewGate.error },
         { status: viewGate.status }
       )
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (profile?.role === 'client') {
+      const access = await getApprovedClientAccessRow(
+        supabase,
+        projectId,
+        user.id,
+        user.email
+      )
+      if (!access) {
+        return NextResponse.json(
+          { error: 'You do not have access to this project.' },
+          { status: 403 }
+        )
+      }
+      const sharedPaths = await getSharedFilePaths(access.id)
+      if (!sharedPaths.has(filePath)) {
+        return NextResponse.json(
+          { error: 'This file has not been shared with you.' },
+          { status: 403 }
+        )
+      }
     }
 
     const service = createServiceClient()

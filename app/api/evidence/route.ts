@@ -1,4 +1,9 @@
 import { NextResponse } from 'next/server'
+import {
+  filterEvidenceForClient,
+  getApprovedClientAccessRow,
+  getSharedFilePaths,
+} from '@/lib/client-shared-files'
 import { deleteEvidence, listEvidence } from '@/lib/evidence-storage'
 import {
   isOrganizationAdmin,
@@ -42,9 +47,33 @@ export async function GET(req: Request) {
       )
     }
 
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle()
+
     // Service role: storage RLS blocks client list/download even when project access is granted.
     const storage = createServiceClient()
-    const evidence = await listEvidence(storage, projectId, claimId)
+    let evidence = await listEvidence(storage, projectId, claimId)
+
+    if (profile?.role === 'client') {
+      const access = await getApprovedClientAccessRow(
+        supabase,
+        projectId,
+        user.id,
+        user.email
+      )
+      if (!access) {
+        return NextResponse.json(
+          { error: 'You do not have access to this project.' },
+          { status: 403 }
+        )
+      }
+      const sharedPaths = await getSharedFilePaths(access.id)
+      evidence = filterEvidenceForClient(evidence, sharedPaths)
+    }
+
     return NextResponse.json({ evidence })
   } catch (err: unknown) {
     const message =

@@ -539,7 +539,7 @@ export default function ProjectPageClient() {
                   canRescan={access.canUploadEvidence}
                   emptyMessage={
                     isClientViewer
-                      ? 'No documents have been shared on this project yet.'
+                      ? 'No documents have been shared with you yet. Your contractor will select files for you to view.'
                       : undefined
                   }
                   onOpen={openFile}
