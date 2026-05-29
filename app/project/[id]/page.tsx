@@ -8,13 +8,12 @@ import { ClaimAiPanel } from '@/components/claim-ai-panel'
 import { ClaimStatusWorkflow } from '@/components/claim-status-workflow'
 import { ProjectArchivePanel } from '@/components/project-archive-panel'
 import {
-  normalizeClaimStatus,
-  type ClaimStatus,
-} from '@/lib/claim-status'
-import {
-  defaultClaimStatusLabels,
-  type ClaimStatusLabels,
-} from '@/lib/org-status-labels'
+  DEFAULT_STATUS_WORKFLOW,
+  isCompletedStatus,
+  normalizeStatusKey,
+  statusLabel,
+  type StatusStage,
+} from '@/lib/project-status-workflow'
 import { EvidenceUpload } from '@/components/evidence-upload'
 import { InternalNotesPanel } from '@/components/internal-notes-panel'
 import { MessagePanel } from '@/components/message-panel'
@@ -65,8 +64,8 @@ export default function ProjectPageClient() {
   const [userId, setUserId] = useState<string | null>(null)
   const [timelineRefreshKey, setTimelineRefreshKey] = useState(0)
   const [archivePrompt, setArchivePrompt] = useState(false)
-  const [statusLabels, setStatusLabels] = useState<ClaimStatusLabels>(
-    defaultClaimStatusLabels()
+  const [statusWorkflow, setStatusWorkflow] = useState<StatusStage[]>(
+    DEFAULT_STATUS_WORKFLOW.map((s) => ({ ...s }))
   )
 
   function mergeWorkerProjectAccess(
@@ -115,15 +114,15 @@ export default function ProjectPageClient() {
   }, [id])
 
   useEffect(() => {
-    async function loadLabels() {
-      const res = await fetch('/api/org/settings')
+    async function loadWorkflow() {
+      const res = await fetch(`/api/projects/${id}/workflow`)
       const payload = await res.json().catch(() => ({}))
-      if (res.ok && payload.claim_status_labels) {
-        setStatusLabels(payload.claim_status_labels)
+      if (res.ok && payload.workflow) {
+        setStatusWorkflow(payload.workflow as StatusStage[])
       }
     }
-    void loadLabels()
-  }, [])
+    void loadWorkflow()
+  }, [id])
 
   async function fetchClaims() {
     setLoading(true)
@@ -334,12 +333,12 @@ export default function ProjectPageClient() {
 
   const activeClaim = selectedClaim ?? claims[0]
   const isClientViewer = access.role === 'client'
-  const activeStatus = activeClaim
-    ? normalizeClaimStatus(activeClaim.status)
+  const activeStatusKey = activeClaim
+    ? normalizeStatusKey(activeClaim.status, statusWorkflow)
     : null
   const allReportsCompleted =
     claims.length > 0 &&
-    claims.every((c) => normalizeClaimStatus(c.status) === 'Completed')
+    claims.every((c) => isCompletedStatus(c.status, statusWorkflow))
 
   if (!activeClaim) {
     return (
@@ -417,7 +416,7 @@ export default function ProjectPageClient() {
           >
             {claims.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.client_name} — {c.status}
+                {c.client_name} — {statusLabel(c.status, statusWorkflow)}
               </option>
             ))}
           </select>
@@ -438,7 +437,9 @@ export default function ProjectPageClient() {
                 }`}
               >
                 <p className="font-bold">{c.client_name}</p>
-                <p className="text-xs opacity-80">{c.status}</p>
+                <p className="text-xs opacity-80">
+                  {statusLabel(c.status, statusWorkflow)}
+                </p>
               </button>
             ))}
           </aside>
@@ -454,10 +455,10 @@ export default function ProjectPageClient() {
               claimId={activeClaim.id}
               projectId={id}
               status={activeClaim.status}
-              statusLabels={statusLabels}
+              workflow={statusWorkflow}
               canEdit={access.canUpdateReportStatus}
               showReadOnlyHint={!isClientViewer}
-              onStatusChange={(next: ClaimStatus) => {
+              onStatusChange={(next: string) => {
                 setClaims((prev) =>
                   prev.map((c) =>
                     c.id === activeClaim.id ? { ...c, status: next } : c
@@ -477,7 +478,10 @@ export default function ProjectPageClient() {
               <ProjectArchivePanel
                 projectId={id}
                 projectName={activeClaim.client_name}
-                reportCompleted={activeStatus === 'Completed'}
+                reportCompleted={
+                  activeStatusKey !== null &&
+                  isCompletedStatus(activeStatusKey, statusWorkflow)
+                }
                 allReportsCompleted={allReportsCompleted}
                 canArchive
                 promptSave={archivePrompt}

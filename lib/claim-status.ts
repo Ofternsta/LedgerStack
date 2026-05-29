@@ -1,38 +1,40 @@
-export const CLAIM_STATUSES = [
-  'Inspection',
-  'Documentation',
-  'Estimate Sent',
-  'Approved',
-  'In Progress',
-  'Completed',
-] as const
+/**
+ * Backwards-compatible helpers; workflows are per-project (see project-status-workflow).
+ */
+import {
+  COMPLETED_STATUS_KEY,
+  DEFAULT_STATUS_WORKFLOW,
+  isStatusInWorkflow,
+  normalizeStatusKey,
+  statusIndex,
+  type StatusStage,
+} from '@/lib/project-status-workflow'
 
-export type ClaimStatus = (typeof CLAIM_STATUSES)[number]
+export const CLAIM_STATUSES = DEFAULT_STATUS_WORKFLOW.map((s) => s.label)
 
-export const DEFAULT_CLAIM_STATUS: ClaimStatus = 'Inspection'
+export type ClaimStatus = string
 
-const LEGACY_STATUS_MAP: Record<string, ClaimStatus> = {
-  inspection: 'Inspection',
-  documentation: 'Documentation',
-  'estimate sent': 'Estimate Sent',
-  approved: 'Approved',
-  'in progress': 'In Progress',
-  completed: 'Completed',
-}
+export const DEFAULT_CLAIM_STATUS = DEFAULT_STATUS_WORKFLOW[0].key
 
 export function normalizeClaimStatus(
-  raw: string | null | undefined
-): ClaimStatus {
-  if (!raw?.trim()) return DEFAULT_CLAIM_STATUS
-  if (CLAIM_STATUSES.includes(raw as ClaimStatus)) return raw as ClaimStatus
-  const mapped = LEGACY_STATUS_MAP[raw.trim().toLowerCase()]
-  return mapped ?? DEFAULT_CLAIM_STATUS
+  raw: string | null | undefined,
+  workflow: StatusStage[] = DEFAULT_STATUS_WORKFLOW
+): string {
+  return normalizeStatusKey(raw, workflow)
 }
 
-export function claimStatusIndex(status: ClaimStatus): number {
-  return CLAIM_STATUSES.indexOf(status)
+export function claimStatusIndex(
+  status: string,
+  workflow: StatusStage[] = DEFAULT_STATUS_WORKFLOW
+): number {
+  return statusIndex(status, workflow)
 }
 
-export function isClaimStatus(value: string): value is ClaimStatus {
-  return CLAIM_STATUSES.includes(value as ClaimStatus)
+export function isClaimStatus(
+  value: string,
+  workflow: StatusStage[] = DEFAULT_STATUS_WORKFLOW
+): boolean {
+  return isStatusInWorkflow(value, workflow)
 }
+
+export { COMPLETED_STATUS_KEY }

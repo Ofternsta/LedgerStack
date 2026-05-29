@@ -2,18 +2,15 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { ProjectClientPanel } from '@/components/project-client-panel'
+import { ProjectStatusWorkflowEditor } from '@/components/project-status-workflow-editor'
 import { ProjectWorkerPanel } from '@/components/project-worker-panel'
 import { LegalNotice } from '@/components/legal-notice'
-import { CLAIM_STATUSES } from '@/lib/claim-status'
 import {
   COMPLETED_PROJECT_RETENTION_DAYS,
   INACTIVE_PROJECT_RETENTION_MONTHS,
 } from '@/lib/data-retention'
 import { LEGAL_CONTACT_EMAIL } from '@/lib/legal-meta'
-import {
-  defaultClaimStatusLabels,
-  type ClaimStatusLabels,
-} from '@/lib/org-status-labels'
+import { parseDefaultWorkerPermissions } from '@/lib/org-status-labels'
 import { supportMailtoUrl } from '@/lib/support'
 import {
   DEFAULT_WORKER_PERMISSIONS,
@@ -34,9 +31,6 @@ const PERM_KEYS = Object.keys(
 ) as WorkerPermissionKey[]
 
 export function OrganizationSettingsPanel() {
-  const [statusLabels, setStatusLabels] = useState<ClaimStatusLabels>(
-    defaultClaimStatusLabels()
-  )
   const [workerDefaults, setWorkerDefaults] = useState<WorkerPermissions>({
     ...DEFAULT_WORKER_PERMISSIONS,
   })
@@ -46,7 +40,6 @@ export function OrganizationSettingsPanel() {
     Record<string, { customer_name: string; project_address: string }>
   >({})
   const [loading, setLoading] = useState(true)
-  const [savingLabels, setSavingLabels] = useState(false)
   const [savingWorkers, setSavingWorkers] = useState(false)
   const [savingProjectId, setSavingProjectId] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
@@ -69,11 +62,8 @@ export function OrganizationSettingsPanel() {
       return
     }
 
-    setStatusLabels(
-      settingsPayload.claim_status_labels ?? defaultClaimStatusLabels()
-    )
     setWorkerDefaults(
-      settingsPayload.default_worker_permissions ?? DEFAULT_WORKER_PERMISSIONS
+      parseDefaultWorkerPermissions(settingsPayload.default_worker_permissions)
     )
 
     const rows = (projectsPayload.projects || []) as ProjectRow[]
@@ -95,28 +85,6 @@ export function OrganizationSettingsPanel() {
   useEffect(() => {
     void load()
   }, [load])
-
-  async function saveStatusLabels(e: React.FormEvent) {
-    e.preventDefault()
-    setSavingLabels(true)
-    setMessage(null)
-    setError(null)
-
-    const res = await fetch('/api/org/settings', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ claim_status_labels: statusLabels }),
-    })
-    const payload = await res.json().catch(() => ({}))
-
-    if (!res.ok) {
-      setError(payload.error || 'Could not save status labels')
-    } else {
-      setStatusLabels(payload.claim_status_labels ?? statusLabels)
-      setMessage('Report status labels saved.')
-    }
-    setSavingLabels(false)
-  }
 
   async function saveWorkerDefaults(e: React.FormEvent) {
     e.preventDefault()
@@ -214,47 +182,6 @@ export function OrganizationSettingsPanel() {
         <LegalNotice id="data-retention" showLegalLinks />
       </section>
 
-      <form onSubmit={saveStatusLabels} className="card p-4 space-y-4">
-        <h2 className="font-bold text-foreground">Report status labels</h2>
-        <p className="text-sm text-muted">
-          Customize how workflow stages appear to your team. Completed stays last
-          and cannot be renamed.
-        </p>
-        <div className="space-y-3">
-          {CLAIM_STATUSES.map((status, index) => {
-            const locked = status === 'Completed'
-            return (
-              <label key={status} className="block">
-                <span className="text-xs text-muted-dim uppercase tracking-wide">
-                  Stage {index + 1}
-                  {locked ? ' (fixed)' : ''}
-                </span>
-                <input
-                  type="text"
-                  value={statusLabels[status]}
-                  disabled={locked}
-                  onChange={(e) =>
-                    setStatusLabels((prev) => ({
-                      ...prev,
-                      [status]: e.target.value,
-                    }))
-                  }
-                  className="input mt-1 w-full"
-                  maxLength={48}
-                />
-              </label>
-            )
-          })}
-        </div>
-        <button
-          type="submit"
-          disabled={savingLabels}
-          className="btn-primary px-4 py-2 text-sm min-h-[44px]"
-        >
-          {savingLabels ? 'Saving…' : 'Save status labels'}
-        </button>
-      </form>
-
       <form onSubmit={saveWorkerDefaults} className="card p-4 space-y-4">
         <h2 className="font-bold text-foreground">Default worker access</h2>
         <p className="text-sm text-muted">
@@ -300,7 +227,8 @@ export function OrganizationSettingsPanel() {
       <section className="card p-4 space-y-4">
         <h2 className="font-bold text-foreground">Projects</h2>
         <p className="text-sm text-muted">
-          Rename projects and manage client and worker access.
+          Rename projects, customize report status stages per project, and manage
+          client and worker access.
         </p>
 
         {projects.length === 0 ? (
@@ -381,6 +309,7 @@ export function OrganizationSettingsPanel() {
                         </button>
                       </div>
 
+                      <ProjectStatusWorkflowEditor projectId={p.id} />
                       <ProjectClientPanel projectId={p.id} />
                       <ProjectWorkerPanel projectId={p.id} />
                     </div>

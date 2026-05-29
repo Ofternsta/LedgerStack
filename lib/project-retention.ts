@@ -5,7 +5,10 @@ import {
   inactiveRetentionCutoff,
 } from '@/lib/data-retention'
 import { deleteProjectServer } from '@/lib/delete-project-server'
-import { normalizeClaimStatus } from '@/lib/claim-status'
+import {
+  isCompletedStatus,
+  parseProjectStatusWorkflow,
+} from '@/lib/project-status-workflow'
 import { createServiceClient } from '@/lib/supabase/service'
 
 type ClaimRow = {
@@ -18,12 +21,16 @@ type ProjectRow = {
   id: string
   organization_id: string | null
   last_activity_at: string | null
+  status_workflow: unknown
   claims: ClaimRow[] | null
 }
 
-function allClaimsCompleted(claims: ClaimRow[]): boolean {
+function allClaimsCompleted(
+  claims: ClaimRow[],
+  workflow: ReturnType<typeof parseProjectStatusWorkflow>
+): boolean {
   if (!claims.length) return false
-  return claims.every((c) => normalizeClaimStatus(c.status) === 'Completed')
+  return claims.every((c) => isCompletedStatus(c.status, workflow))
 }
 
 function latestCompletedAt(claims: ClaimRow[]): Date | null {
@@ -51,7 +58,7 @@ export async function runProjectRetention(): Promise<ProjectRetentionResult> {
   const { data: projects, error } = await service
     .from('projects')
     .select(
-      'id, organization_id, last_activity_at, claims(id, status, completed_at)'
+      'id, organization_id, last_activity_at, status_workflow, claims(id, status, completed_at)'
     )
 
   if (error) {
@@ -72,10 +79,12 @@ export async function runProjectRetention(): Promise<ProjectRetentionResult> {
     const claims = row.claims || []
     if (!claims.length) continue
 
+    const workflow = parseProjectStatusWorkflow(row.status_workflow)
+
     let shouldDelete = false
     let reason: 'completed' | 'inactive' | null = null
 
-    if (allClaimsCompleted(claims)) {
+    if (allClaimsCompleted(claims, workflow)) {
       const completedAt = latestCompletedAt(claims)
       if (completedAt && completedAt <= completedCutoff) {
         shouldDelete = true

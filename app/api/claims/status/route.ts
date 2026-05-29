@@ -1,7 +1,14 @@
 import { NextResponse } from 'next/server'
-import { isClaimStatus, normalizeClaimStatus } from '@/lib/claim-status'
 import { loadUserAccessServer } from '@/lib/load-access-server'
 import { triggerProjectCompletedBackup } from '@/lib/organization-backups'
+import {
+  COMPLETED_STATUS_KEY,
+  isCompletedStatus,
+  isStatusInWorkflow,
+  normalizeStatusKey,
+  parseProjectStatusWorkflow,
+  statusLabel,
+} from '@/lib/project-status-workflow'
 import { getProjectOrgId } from '@/lib/staff-project-access'
 import { requireAuth } from '@/lib/require-auth'
 import { touchProjectActivity } from '@/lib/touch-project-activity'
@@ -37,9 +44,23 @@ export async function PATCH(req: Request) {
       )
     }
 
-    if (!isClaimStatus(rawStatus)) {
+    const { data: project, error: projectError } = await supabase
+      .from('projects')
+      .select('status_workflow')
+      .eq('id', projectId)
+      .maybeSingle()
+
+    if (projectError || !project) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
+
+    const workflow = parseProjectStatusWorkflow(project.status_workflow)
+
+    if (!isStatusInWorkflow(rawStatus, workflow)) {
       return NextResponse.json({ error: 'Invalid report status' }, { status: 400 })
     }
+
+    const nextKey = normalizeStatusKey(rawStatus, workflow)
 
     const { data: claim, error: fetchError } = await supabase
       .from('claims')
@@ -52,14 +73,17 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: 'Report not found' }, { status: 404 })
     }
 
-    const previousStatus = normalizeClaimStatus(claim.status)
+    const previousKey = normalizeStatusKey(claim.status, workflow)
 
     const claimPatch: { status: string; completed_at?: string | null } = {
-      status: rawStatus,
+      status: nextKey,
     }
-    if (rawStatus === 'Completed' && previousStatus !== 'Completed') {
+    if (
+      isCompletedStatus(nextKey, workflow) &&
+      !isCompletedStatus(previousKey, workflow)
+    ) {
       claimPatch.completed_at = new Date().toISOString()
-    } else if (rawStatus !== 'Completed') {
+    } else if (!isCompletedStatus(nextKey, workflow)) {
       claimPatch.completed_at = null
     }
 
@@ -74,11 +98,13 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: updateError.message }, { status: 500 })
     }
 
-    if (previousStatus !== rawStatus) {
+    if (previousKey !== nextKey) {
+      const fromLabel = statusLabel(previousKey, workflow)
+      const toLabel = statusLabel(nextKey, workflow)
       await supabase.from('claim_timeline_events').insert({
         claim_id: claimId,
         title: 'Status updated',
-        description: `${previousStatus} → ${rawStatus}`,
+        description: `${fromLabel} → ${toLabel}`,
         event_date: new Date().toISOString().slice(0, 10),
         source: 'manual',
       })
@@ -86,7 +112,10 @@ export async function PATCH(req: Request) {
 
     await touchProjectActivity(supabase, projectId)
 
-    if (rawStatus === 'Completed' && previousStatus !== 'Completed') {
+    if (
+      isCompletedStatus(nextKey, workflow) &&
+      !isCompletedStatus(previousKey, workflow)
+    ) {
       const organizationId = await getProjectOrgId(supabase, projectId)
       if (organizationId) {
         void triggerProjectCompletedBackup(organizationId, projectId).catch(

@@ -1,6 +1,10 @@
 import 'server-only'
 
-import { DEFAULT_CLAIM_STATUS } from '@/lib/claim-status'
+import {
+  defaultFirstStatusKey,
+  DEFAULT_STATUS_WORKFLOW,
+  serializeProjectStatusWorkflow,
+} from '@/lib/project-status-workflow'
 import { assertCanCreateProject } from '@/lib/plan-enforcement'
 import { createServiceClient } from '@/lib/supabase/service'
 
@@ -49,6 +53,9 @@ export async function createProjectForUser(
     return { error: projectCheck.error }
   }
 
+  const workflow = DEFAULT_STATUS_WORKFLOW.map((s) => ({ ...s }))
+  const initialStatus = defaultFirstStatusKey(workflow)
+
   const { data: project, error: projectError } = await service
     .from('projects')
     .insert({
@@ -57,6 +64,7 @@ export async function createProjectForUser(
       notes,
       user_id: userId,
       organization_id: organizationId,
+      status_workflow: serializeProjectStatusWorkflow(workflow),
     })
     .select('id, customer_name, project_address, notes')
     .single()
@@ -78,7 +86,7 @@ export async function createProjectForUser(
       loss_type: 'Property',
       insurance_company: 'Unknown',
       claim_number: `AUTO-${Date.now()}`,
-      status: DEFAULT_CLAIM_STATUS,
+      status: initialStatus,
       notes: 'Auto claim',
     })
     .select('id')

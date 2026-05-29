@@ -40,6 +40,7 @@ export function BackupSettingsPanel({ canManage }: { canManage: boolean }) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [running, setRunning] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -111,6 +112,34 @@ export function BackupSettingsPanel({ canManage }: { canManage: boolean }) {
         ? `Backed up ${payload.projects_backed_up} project(s).`
         : 'No projects to back up.'
     )
+    await load()
+  }
+
+  async function removeBackup(id: string, filename: string) {
+    if (
+      !window.confirm(
+        `Remove backup "${filename}"? This frees space in your 30-backup limit and cannot be undone.`
+      )
+    ) {
+      return
+    }
+
+    setDeletingId(id)
+    setError(null)
+    setMessage(null)
+
+    const res = await fetch(`/api/backups/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    })
+    const payload = await res.json().catch(() => ({}))
+    setDeletingId(null)
+
+    if (!res.ok) {
+      setError(payload.error || 'Could not remove backup')
+      return
+    }
+
+    setMessage('Backup removed.')
     await load()
   }
 
@@ -260,15 +289,25 @@ export function BackupSettingsPanel({ canManage }: { canManage: boolean }) {
                     </p>
                   )}
                 </div>
-                {b.status === 'completed' && (
+                <div className="flex flex-wrap gap-2 shrink-0">
+                  {b.status === 'completed' && (
+                    <button
+                      type="button"
+                      onClick={() => downloadBackup(b.id, b.filename)}
+                      className="text-sm text-brand-bright font-medium min-h-[40px]"
+                    >
+                      Download
+                    </button>
+                  )}
                   <button
                     type="button"
-                    onClick={() => downloadBackup(b.id, b.filename)}
-                    className="text-sm text-brand-bright font-medium shrink-0 min-h-[40px]"
+                    disabled={deletingId === b.id}
+                    onClick={() => removeBackup(b.id, b.filename)}
+                    className="text-sm text-red-600 font-medium min-h-[40px] disabled:opacity-50"
                   >
-                    Download
+                    {deletingId === b.id ? 'Removing…' : 'Remove'}
                   </button>
-                )}
+                </div>
               </li>
             ))}
           </ul>

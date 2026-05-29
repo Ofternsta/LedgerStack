@@ -4,29 +4,26 @@ import { useState } from 'react'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { LegalNotice } from '@/components/legal-notice'
 import {
-  CLAIM_STATUSES,
-  type ClaimStatus,
-  claimStatusIndex,
-  normalizeClaimStatus,
-} from '@/lib/claim-status'
-import {
   COMPLETED_PROJECT_RETENTION_DAYS,
   INACTIVE_PROJECT_RETENTION_MONTHS,
 } from '@/lib/data-retention'
 import {
-  defaultClaimStatusLabels,
-  displayClaimStatus,
-  type ClaimStatusLabels,
-} from '@/lib/org-status-labels'
+  COMPLETED_STATUS_KEY,
+  isCompletedStatus,
+  normalizeStatusKey,
+  statusIndex,
+  statusLabel,
+  type StatusStage,
+} from '@/lib/project-status-workflow'
 
 type Props = {
   claimId: string
   projectId: string
   status: string
+  workflow: StatusStage[]
   canEdit: boolean
-  statusLabels?: ClaimStatusLabels | null
   showReadOnlyHint?: boolean
-  onStatusChange: (status: ClaimStatus) => void
+  onStatusChange: (statusKey: string) => void
   onMarkedCompleted?: () => void
 }
 
@@ -34,20 +31,19 @@ export function ClaimStatusWorkflow({
   claimId,
   projectId,
   status,
+  workflow,
   canEdit,
-  statusLabels,
   showReadOnlyHint = true,
   onStatusChange,
   onMarkedCompleted,
 }: Props) {
-  const labels = statusLabels ?? defaultClaimStatusLabels()
-  const current = normalizeClaimStatus(status)
-  const currentIndex = claimStatusIndex(current)
+  const currentKey = normalizeStatusKey(status, workflow)
+  const currentIndex = statusIndex(currentKey, workflow)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [pendingStatus, setPendingStatus] = useState<ClaimStatus | null>(null)
+  const [pendingKey, setPendingKey] = useState<string | null>(null)
 
-  async function applyStatus(next: ClaimStatus) {
+  async function applyStatus(nextKey: string) {
     setSaving(true)
     setError(null)
 
@@ -57,7 +53,7 @@ export function ClaimStatusWorkflow({
       body: JSON.stringify({
         claim_id: claimId,
         project_id: projectId,
-        status: next,
+        status: nextKey,
       }),
     })
     const payload = await res.json().catch(() => ({}))
@@ -68,39 +64,39 @@ export function ClaimStatusWorkflow({
       return
     }
 
-    onStatusChange(next)
-    if (next === 'Completed') {
+    onStatusChange(nextKey)
+    if (isCompletedStatus(nextKey, workflow)) {
       onMarkedCompleted?.()
     }
     setSaving(false)
   }
 
-  function requestStatus(next: ClaimStatus) {
-    if (!canEdit || next === current || saving) return
+  function requestStatus(nextKey: string) {
+    if (!canEdit || nextKey === currentKey || saving) return
 
-    if (next === 'Completed') {
-      setPendingStatus(next)
+    if (nextKey === COMPLETED_STATUS_KEY) {
+      setPendingKey(nextKey)
       return
     }
 
-    void applyStatus(next)
+    void applyStatus(nextKey)
   }
 
-  const currentLabel = displayClaimStatus(current, labels)
+  const currentLabel = statusLabel(currentKey, workflow)
 
   return (
     <section className="border border-border rounded-xl p-4 bg-surface-elevated">
       <ConfirmDialog
-        open={pendingStatus === 'Completed'}
+        open={pendingKey === COMPLETED_STATUS_KEY}
         title="Mark report as completed?"
         description={`This project and all of its files and messages will be permanently deleted in ${COMPLETED_PROJECT_RETENTION_DAYS} days unless you change the status before then.\n\nSave an archive or backup first if you need to keep records.`}
         confirmLabel="Mark completed"
         destructive
         busy={saving}
-        onCancel={() => setPendingStatus(null)}
+        onCancel={() => setPendingKey(null)}
         onConfirm={() => {
-          const next = pendingStatus
-          setPendingStatus(null)
+          const next = pendingKey
+          setPendingKey(null)
           if (next) void applyStatus(next)
         }}
       />
@@ -110,18 +106,18 @@ export function ClaimStatusWorkflow({
         <span className="text-sm font-medium text-muted">{currentLabel}</span>
       </div>
 
-      <ol className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-        {CLAIM_STATUSES.map((stage, index) => {
+      <ol className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+        {workflow.map((stage, index) => {
           const isPast = index < currentIndex
           const isCurrent = index === currentIndex
-          const label = displayClaimStatus(stage, labels)
+          const label = stage.label
 
           return (
-            <li key={stage}>
+            <li key={stage.key} className="sm:col-span-1">
               <button
                 type="button"
                 disabled={!canEdit || saving || isCurrent}
-                onClick={() => requestStatus(stage)}
+                onClick={() => requestStatus(stage.key)}
                 className={`w-full text-left rounded-lg px-2 py-2 text-xs sm:text-sm border transition min-h-[52px] ${
                   isCurrent
                     ? 'btn-primary text-[#052e16] border-black font-semibold'
