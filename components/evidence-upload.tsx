@@ -142,8 +142,6 @@ export function EvidenceUpload({
         Photos, PDFs, and Word docs — AI categorizes and summarizes after upload.
       </p>
 
-      <LegalNotice id="file-responsibility" className="mt-3" />
-
       {uploading && (
         <p className="mt-3 text-sm font-medium">
           Uploading, extracting text, categorizing, and summarizing…
@@ -161,6 +159,8 @@ export function EvidenceUpload({
           {uploadMessage}
         </p>
       )}
+
+      <LegalNotice id="file-responsibility" className="mt-3" />
     </div>
   )
 }

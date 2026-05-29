@@ -121,8 +121,6 @@ export default function PlatformUsersPage() {
           can use this page. Deletions are permanent.
         </p>
 
-        <LegalNotice id="data-retention" showLegalLinks />
-
         {error && (
           <p className="text-sm alert-error">
             {error}
@@ -163,6 +161,8 @@ export default function PlatformUsersPage() {
             </li>
           ))}
         </ul>
+
+        <LegalNotice id="data-retention" showLegalLinks />
 
         <AppFooter />
       </main>

@@ -157,7 +157,6 @@ export function AdminTeamPanel() {
 
   return (
     <div className="space-y-6">
-      <LegalNotice id="worker-audit" />
       {loadError && (
         <p className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg p-3">
           {loadError}
@@ -352,6 +351,8 @@ export function AdminTeamPanel() {
           </ul>
         )}
       </section>
+
+      <LegalNotice id="worker-audit" />
     </div>
   )
 }

@@ -5,7 +5,6 @@ import { LegalNotice } from '@/components/legal-notice'
 export function AppFooter() {
   return (
     <footer className="mt-10 pt-6 border-t border-border text-sm text-muted space-y-4">
-      <LegalNotice id="security" />
       <p>
         Questions? <SupportLink />
       </p>
@@ -18,6 +17,7 @@ export function AppFooter() {
           Terms of Service
         </Link>
       </p>
+      <LegalNotice id="security" />
     </footer>
   )
 }

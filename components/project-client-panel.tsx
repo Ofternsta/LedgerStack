@@ -90,8 +90,6 @@ export function ProjectClientPanel({ projectId }: { projectId: string }) {
         client&apos;s name to choose which files they can view in each category.
       </p>
 
-      <LegalNotice id="client-access" />
-
       <form onSubmit={grantAccess} className="flex flex-col sm:flex-row gap-2">
         <input
           type="email"
@@ -178,6 +176,8 @@ export function ProjectClientPanel({ projectId }: { projectId: string }) {
           })}
         </ul>
       )}
+
+      <LegalNotice id="client-access" />
     </section>
   )
 }

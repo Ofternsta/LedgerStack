@@ -132,7 +132,6 @@ export function InternalNotesPanel({
           Worker notes, @mentions, status updates, and communication history.
           Clients cannot see this.
         </p>
-        <LegalNotice id="worker-audit" className="mt-3" />
       </div>
 
       {error && (
@@ -247,6 +246,8 @@ export function InternalNotesPanel({
       >
         Refresh log
       </button>
+
+      <LegalNotice id="worker-audit" />
     </section>
   )
 }

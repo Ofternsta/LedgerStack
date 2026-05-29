@@ -286,9 +286,6 @@ export function ClaimAiPanel({
         </p>
       )}
 
-      <LegalNotice id="ai" />
-      {(canExportPdf || canExportHtml) && <LegalNotice id="export-backup" />}
-
       {error && (
         <p className="text-sm alert-error rounded-lg p-2">{error}</p>
       )}
@@ -381,6 +378,9 @@ export function ClaimAiPanel({
           </div>
         )}
       </div>
+
+      <LegalNotice id="ai" />
+      {(canExportPdf || canExportHtml) && <LegalNotice id="export-backup" />}
     </section>
   )
 }

@@ -146,8 +146,6 @@ export function BackupSettingsPanel({ canManage }: { canManage: boolean }) {
           saved to secure cloud storage. Admins can download them anytime. The last{' '}
           {30} backups per organization are kept.
         </p>
-        <LegalNotice id="export-backup" className="mt-3" />
-        <LegalNotice id="data-retention" className="mt-2" />
       </div>
 
       {error && (
@@ -276,6 +274,9 @@ export function BackupSettingsPanel({ canManage }: { canManage: boolean }) {
           </ul>
         )}
       </div>
+
+      <LegalNotice id="export-backup" />
+      <LegalNotice id="data-retention" />
     </section>
   )
 }

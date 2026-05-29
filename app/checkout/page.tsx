@@ -329,6 +329,10 @@ function CheckoutContent() {
 
         {clientSecret && publishableKey && (
           <>
+            <StripeEmbeddedCheckout
+              clientSecret={clientSecret}
+              publishableKey={publishableKey}
+            />
             <p className="text-xs text-muted leading-relaxed">
               By completing payment you agree to our{' '}
               <Link href="/terms" className="text-brand-bright hover:underline">
@@ -340,10 +344,6 @@ function CheckoutContent() {
               </Link>
               . Subscriptions renew until canceled in billing settings.
             </p>
-            <StripeEmbeddedCheckout
-              clientSecret={clientSecret}
-              publishableKey={publishableKey}
-            />
           </>
         )}
 

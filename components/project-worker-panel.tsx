@@ -195,7 +195,6 @@ export function ProjectWorkerPanel({ projectId }: { projectId: string }) {
             Assign workers to this job and set what each person can do on this
             project only.
           </p>
-          <LegalNotice id="worker-audit" className="mt-3" />
         </div>
         {mode === 'view' && assignedWorkers.length > 0 && (
           <button
@@ -380,6 +379,8 @@ export function ProjectWorkerPanel({ projectId }: { projectId: string }) {
           </div>
         </>
       )}
+
+      <LegalNotice id="worker-audit" />
     </section>
   )
 }
