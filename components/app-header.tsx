@@ -35,7 +35,7 @@ export function AppHeader({
                 <BrandLogo href="/projects" size="sm" />
               </div>
             )}
-            <h1 className="text-xl sm:text-2xl font-bold leading-tight text-white">
+            <h1 className="text-xl sm:text-2xl font-bold leading-tight text-[var(--header-title)]">
               {title}
             </h1>
             {subtitle && (

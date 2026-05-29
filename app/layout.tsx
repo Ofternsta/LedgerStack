@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { AppMessagingRoot } from '@/components/app-messaging-root'
+import { ThemeProvider } from '@/components/theme-provider'
+import { ThemeScript } from '@/components/theme-script'
 import { rootSiteMetadata, SITE_NAME } from '@/lib/site-seo'
 import './globals.css'
 
@@ -71,12 +73,15 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
+        <ThemeScript />
         <link rel="icon" href={iconHref} type="image/png" sizes="512x512" />
         <link rel="shortcut icon" href={iconHref} type="image/png" />
       </head>
       <body className="min-h-dvh flex flex-col bg-background text-foreground">
-        <AppMessagingRoot />
-        {children}
+        <ThemeProvider>
+          <AppMessagingRoot />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   )
