@@ -4,6 +4,11 @@ import {
   LegalSection,
 } from '@/components/legal-document-layout'
 import {
+  COMPLETED_PROJECT_RETENTION_DAYS,
+  INACTIVE_PROJECT_RETENTION_MONTHS,
+  MAX_ORGANIZATION_BACKUPS,
+} from '@/lib/legal-policy-constants'
+import {
   LEGAL_CONTACT_EMAIL,
   LEGAL_OPERATOR_NAME,
   LEGAL_PRODUCT_NAME,
@@ -27,7 +32,8 @@ export function PrivacyContent() {
         </p>
         <p>
           <strong className="text-foreground">Project and job data:</strong>{' '}
-          client names, property addresses, report status, schedules, messages,
+          client names, property addresses, per-project report workflow stages
+          (custom labels you configure), report status, schedules, messages,
           internal notes, and files you upload (photos, PDFs, videos, and related
           metadata).
         </p>
@@ -49,6 +55,7 @@ export function PrivacyContent() {
             'Provide and operate the Service (accounts, projects, messaging, client sharing).',
             'Process subscriptions and send transactional emails (verification, invites, account notices).',
             'Run AI-assisted features you request (summaries, categorization, timelines) on your uploaded content.',
+            'Run automatic backups and data retention according to your organization settings and this Policy.',
             'Improve reliability, security, and support.',
             'Comply with law and enforce our Terms.',
           ]}
@@ -78,25 +85,46 @@ export function PrivacyContent() {
 
       <LegalSection title="Data retention and deletion">
         <p>
+          We apply automated retention to project data in the Service. You are
+          responsible for exporting or downloading records you need before retention
+          runs. Retention does not replace your own record-keeping obligations.
+        </p>
+        <p>
           <strong className="text-foreground">Completed projects:</strong> when
-          all reports on a project are marked Completed, the project (including
-          files and messages) is automatically deleted after 7 days unless the
-          status is changed before then.
+          all reports on a project reach the final completed stage in that
+          project&apos;s workflow, the project — including uploaded files, project
+          messages, and related project data — is automatically deleted after{' '}
+          {COMPLETED_PROJECT_RETENTION_DAYS} days unless the status is changed
+          before then.
         </p>
         <p>
           <strong className="text-foreground">Inactive projects:</strong>{' '}
-          projects that are not completed and have no activity for 12 months are
-          automatically deleted.
+          projects that are not in the completed stage and have no qualifying
+          activity for {INACTIVE_PROJECT_RETENTION_MONTHS} months are automatically
+          deleted.
         </p>
         <p>
-          <strong className="text-foreground">Account deletion:</strong> to
-          delete your entire account and organization, email{' '}
-          {LEGAL_CONTACT_EMAIL}. We verify ownership before processing. Scheduled
-          org backups may be kept up to the backup limit configured in Billing.
+          <strong className="text-foreground">Organization backups:</strong> if
+          your plan includes backups, we may store ZIP copies of projects in secure
+          cloud storage (on a schedule, when a report is completed, or when you run
+          a manual backup). We retain up to {MAX_ORGANIZATION_BACKUPS} completed
+          backups per organization; older backups are removed automatically.
+          Organization admins may delete individual backups in billing settings to
+          free space. Backup ZIPs may still exist for a deleted project until pruned
+          or removed. Backups are not a guarantee of recovery.
         </p>
         <p>
-          If you revoke client access or delete content, copies already
-          downloaded by a client may remain outside our control.
+          <strong className="text-foreground">Account and organization deletion:</strong>{' '}
+          we do not offer self-service deletion of an entire account or organization
+          in the app. To request deletion of your account and associated organization
+          data, email {LEGAL_CONTACT_EMAIL} from the address on the account. We will
+          verify ownership before processing. Some information may remain in backups,
+          logs, or payment records for a limited period as described above or as
+          required by law.
+        </p>
+        <p>
+          If you revoke client access or delete content, copies already downloaded
+          by a client or stored outside the Service may remain outside our control.
         </p>
       </LegalSection>
 
@@ -112,10 +140,12 @@ export function PrivacyContent() {
       <LegalSection title="Your choices">
         <LegalList
           items={[
-            'Access and update profile information in the Service.',
+            'Access and update profile information in account settings.',
+            'Organization admins: configure per-project workflow stages, client access, worker access, and default worker permissions in organization settings.',
+            'Organization admins: enable, schedule, download, or remove organization backups in billing settings.',
             'Control client access and shared files per project.',
-            'Cancel your subscription through billing settings or Stripe customer portal.',
-            'Contact us to request access, correction, or deletion where applicable.',
+            'Cancel your subscription through billing settings or the Stripe customer portal.',
+            'Contact us to request access, correction, or account deletion where applicable.',
           ]}
         />
       </LegalSection>

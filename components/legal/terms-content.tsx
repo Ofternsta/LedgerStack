@@ -5,6 +5,12 @@ import {
 } from '@/components/legal-document-layout'
 import Link from 'next/link'
 import {
+  COMPLETED_PROJECT_RETENTION_DAYS,
+  INACTIVE_PROJECT_RETENTION_MONTHS,
+  MAX_ORGANIZATION_BACKUPS,
+  MAX_PROJECT_STATUS_STAGES,
+} from '@/lib/legal-policy-constants'
+import {
   LEGAL_CONTACT_EMAIL,
   LEGAL_OPERATOR_NAME,
   LEGAL_PRODUCT_NAME,
@@ -38,9 +44,12 @@ export function TermsContent() {
 
       <LegalSection title="Accounts and roles">
         <p>
-          Organization admins manage billing, team members, and client access.
-          Workers and clients receive only the permissions assigned by an admin.
-          You are responsible for invitations, role assignments, and what data
+          Organization admins manage billing, team members, client access, and
+          per-project settings (including project names and customizable report
+          workflow stages). Each project may define its own sequence of status
+          stages, with a required final completed stage. Workers and clients
+          receive only the permissions assigned by an admin. You are responsible
+          for invitations, role assignments, workflow configuration, and what data
           you share with clients.
         </p>
       </LegalSection>
@@ -59,9 +68,10 @@ export function TermsContent() {
         <p>
           You retain ownership of content you upload. You grant us a limited
           license to host, store, process, and display your content solely to
-          operate the Service (including AI features you request). You represent
-          that you have the rights to upload and share your content and that it
-          does not violate law or third-party rights.
+          operate the Service (including AI features you request and automated
+          retention or backup described in these Terms and our Privacy Policy).
+          You represent that you have the rights to upload and share your content
+          and that it does not violate law or third-party rights.
         </p>
       </LegalSection>
 
@@ -96,21 +106,52 @@ export function TermsContent() {
         </p>
       </LegalSection>
 
+      <LegalSection title="Report workflow and data retention">
+        <p>
+          Admins may configure report status stages per project (up to{' '}
+          {MAX_PROJECT_STATUS_STAGES} stages, including a required final completed
+          stage). Marking a report completed may trigger a confirmation that project
+          data will be deleted after {COMPLETED_PROJECT_RETENTION_DAYS} days.
+        </p>
+        <p>
+          Unless you change status or export data before retention applies:
+        </p>
+        <LegalList
+          items={[
+            `Projects where all reports are completed are deleted after ${COMPLETED_PROJECT_RETENTION_DAYS} days.`,
+            `Projects that remain incomplete and inactive for ${INACTIVE_PROJECT_RETENTION_MONTHS} months are deleted.`,
+          ]}
+        />
+        <p>
+          You are solely responsible for saving archives, exports, or backups of
+          records you must keep. We are not liable for loss of data removed by
+          automated retention.
+        </p>
+      </LegalSection>
+
+      <LegalSection title="Exports and backups">
+        <p>
+          Export and automatic backup features (where included in your plan) are
+          provided as a convenience. Backups are stored as ZIP files; we keep up to{' '}
+          {MAX_ORGANIZATION_BACKUPS} completed backups per organization and remove
+          older ones automatically. Admins may delete individual backups in billing
+          settings. Backups may still contain data from projects later deleted by
+          retention.
+        </p>
+        <p>
+          You are responsible for maintaining your own copies of critical records,
+          reviewing backup contents, and downloading backups before projects are
+          removed. We are not liable for data loss due to deletion, retention,
+          misconfiguration, failure to export or back up, or removal of backups.
+        </p>
+      </LegalSection>
+
       <LegalSection title="Availability and support">
         <p>
           We strive to keep the Service available but do not guarantee
           uninterrupted access. Maintenance, outages, and third-party failures
           may occur. Support is provided on a reasonable-effort basis via{' '}
           {LEGAL_CONTACT_EMAIL}.
-        </p>
-      </LegalSection>
-
-      <LegalSection title="Exports and backups">
-        <p>
-          Export and backup features are provided as a convenience. You are
-          responsible for maintaining your own copies of critical records. We
-          are not liable for data loss due to deletion, misconfiguration, or
-          failure to export or back up.
         </p>
       </LegalSection>
 
@@ -131,11 +172,17 @@ export function TermsContent() {
 
       <LegalSection title="Termination">
         <p>
-          You may stop using the Service and cancel your subscription at any time.
+          You may stop using the Service and cancel your subscription at any time
+          through billing settings. To request deletion of your account and
+          organization data, contact {LEGAL_CONTACT_EMAIL}; we will verify your
+          request before processing.
+        </p>
+        <p>
           We may suspend or terminate access for violation of these Terms or for
-          risk to the Service or other users. Upon termination, your right to
-          use the Service ends; some provisions survive (disclaimers, liability
-          limits, dispute terms).
+          risk to the Service or other users. Upon termination, your right to use
+          the Service ends; automated retention and backup policies may continue to
+          apply until data is removed. Some provisions survive (disclaimers,
+          liability limits, dispute terms).
         </p>
       </LegalSection>
 
