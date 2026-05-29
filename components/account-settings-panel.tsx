@@ -7,6 +7,7 @@ import { passwordResetRedirectUrl } from '@/lib/auth-redirect'
 import {
   PASSWORD_REQUIREMENTS_TEXT,
 } from '@/lib/password-policy'
+import { totpQrImageSrc } from '@/lib/mfa-totp'
 import type { ThemePreference } from '@/lib/theme'
 import { supabase } from '@/lib/supabase'
 
@@ -35,6 +36,8 @@ export function AccountSettingsPanel() {
   const [enrolling, setEnrolling] = useState(false)
   const [enrollFactorId, setEnrollFactorId] = useState<string | null>(null)
   const [qrCode, setQrCode] = useState<string | null>(null)
+  const [totpSecret, setTotpSecret] = useState<string | null>(null)
+  const [secretCopied, setSecretCopied] = useState(false)
   const [mfaCode, setMfaCode] = useState('')
   const [mfaMessage, setMfaMessage] = useState<string | null>(null)
   const [mfaBusy, setMfaBusy] = useState(false)
@@ -149,7 +152,12 @@ export function AccountSettingsPanel() {
       return
     }
     setEnrollFactorId(data.id)
-    setQrCode(data.totp?.qr_code || null)
+    setQrCode(totpQrImageSrc(data.totp?.qr_code) || null)
+    setTotpSecret(data.totp?.secret || null)
+    setSecretCopied(false)
+    if (!data.totp?.qr_code && !data.totp?.secret) {
+      setMfaMessage('Setup started but no QR code was returned. Try again or use manual entry below.')
+    }
   }
 
   async function confirmMfaEnroll(e: React.FormEvent) {
@@ -177,6 +185,7 @@ export function AccountSettingsPanel() {
     setEnrolling(false)
     setEnrollFactorId(null)
     setQrCode(null)
+    setTotpSecret(null)
     setMfaCode('')
     setMfaMessage('Two-factor authentication is enabled.')
     await loadMfa()
@@ -189,9 +198,21 @@ export function AccountSettingsPanel() {
     setEnrolling(false)
     setEnrollFactorId(null)
     setQrCode(null)
+    setTotpSecret(null)
     setMfaCode('')
     setMfaMessage(null)
     await loadMfa()
+  }
+
+  async function copyTotpSecret() {
+    if (!totpSecret) return
+    try {
+      await navigator.clipboard.writeText(totpSecret)
+      setSecretCopied(true)
+      setTimeout(() => setSecretCopied(false), 2000)
+    } catch {
+      setMfaMessage('Could not copy. Select the secret and copy manually.')
+    }
   }
 
   async function disableMfa(factorId: string) {
@@ -395,14 +416,47 @@ export function AccountSettingsPanel() {
         {enrolling && (
           <form onSubmit={confirmMfaEnroll} className="space-y-4">
             {qrCode && (
-              <div className="flex flex-col items-center gap-2 p-4 bg-surface rounded-xl border border-border">
-                <p className="text-xs text-muted text-center">
-                  Scan with your authenticator app
+              <div className="flex flex-col items-center gap-3 p-4 bg-white rounded-xl border border-border">
+                <p className="text-xs text-gray-700 text-center font-medium">
+                  Scan with Google Authenticator, 1Password, Authy, etc.
                 </p>
-                <div
-                  className="bg-white p-2 rounded-lg [&_svg]:max-w-[200px] [&_svg]:h-auto"
-                  dangerouslySetInnerHTML={{ __html: qrCode }}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={qrCode}
+                  alt="Authenticator QR code for LedgerStack"
+                  width={256}
+                  height={256}
+                  className="w-64 h-64 max-w-full object-contain"
                 />
+                <p className="text-xs text-gray-600 text-center">
+                  Hold your phone steady and increase screen brightness if the scan
+                  fails.
+                </p>
+              </div>
+            )}
+
+            {totpSecret && (
+              <div className="rounded-xl border border-border bg-surface p-3 space-y-2">
+                <p className="text-sm font-medium text-foreground">
+                  Can&apos;t scan the QR code?
+                </p>
+                <p className="text-xs text-muted leading-relaxed">
+                  In your authenticator app, choose <strong>Enter setup key</strong>{' '}
+                  (or manual entry) and paste this secret. Account name: LedgerStack
+                  ({email}).
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <code className="flex-1 min-w-0 text-xs break-all bg-surface-elevated border border-border rounded-lg px-3 py-2 font-mono text-foreground">
+                    {totpSecret}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={copyTotpSecret}
+                    className="text-sm border border-border px-3 py-2 rounded-lg font-medium min-h-[40px] shrink-0"
+                  >
+                    {secretCopied ? 'Copied' : 'Copy secret'}
+                  </button>
+                </div>
               </div>
             )}
             <div>
