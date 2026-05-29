@@ -23,6 +23,8 @@ export type PlanEntitlements = {
   teamMessages: boolean
   analyticsDashboard: boolean
   advancedAnalytics: boolean
+  /** Completed ZIP backups retained per organization */
+  maxOrganizationBackups: number
 }
 
 export const PLAN_ENTITLEMENTS: Record<BillingPlanId, PlanEntitlements> = {
@@ -44,6 +46,7 @@ export const PLAN_ENTITLEMENTS: Record<BillingPlanId, PlanEntitlements> = {
     teamMessages: false,
     analyticsDashboard: false,
     advancedAnalytics: false,
+    maxOrganizationBackups: 5,
   },
   starter: {
     tagline: 'Solo contractor — organized documentation for one-person shops',
@@ -63,6 +66,7 @@ export const PLAN_ENTITLEMENTS: Record<BillingPlanId, PlanEntitlements> = {
     teamMessages: false,
     analyticsDashboard: false,
     advancedAnalytics: false,
+    maxOrganizationBackups: 5,
   },
   professional: {
     tagline: 'Real team operations — the software runs your workflow',
@@ -82,6 +86,7 @@ export const PLAN_ENTITLEMENTS: Record<BillingPlanId, PlanEntitlements> = {
     teamMessages: true,
     analyticsDashboard: true,
     advancedAnalytics: false,
+    maxOrganizationBackups: 15,
   },
   enterprise: {
     tagline: 'Business infrastructure — scale, analytics, and company control',
@@ -101,6 +106,7 @@ export const PLAN_ENTITLEMENTS: Record<BillingPlanId, PlanEntitlements> = {
     teamMessages: true,
     analyticsDashboard: true,
     advancedAnalytics: true,
+    maxOrganizationBackups: 30,
   },
 }
 
@@ -133,6 +139,7 @@ export const PLAN_FEATURE_COPY: Record<
       'Full report workflow, timeline & AI summaries',
       'Standard PDF export · mobile uploads',
       '25 MB uploads (photos, PDFs & video)',
+      'Automatic backups (5 retained per organization)',
     ],
     excludes: [
       'Worker & client logins',
@@ -148,6 +155,7 @@ export const PLAN_FEATURE_COPY: Record<
       'Calendar, internal notes & team messages',
       'Branded exports, claim packets & analytics',
       'Higher AI limits (250 summaries/month)',
+      'Automatic backups (15 retained per organization)',
     ],
   },
   enterprise: {
@@ -157,6 +165,7 @@ export const PLAN_FEATURE_COPY: Record<
       'White-label / branded export templates',
       'Priority support & dedicated onboarding',
       'Enterprise options: SSO, API & integrations (contact us)',
+      'Automatic backups (30 retained per organization)',
     ],
   },
 }

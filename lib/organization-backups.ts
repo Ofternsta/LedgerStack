@@ -3,10 +3,19 @@ import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { buildProjectArchiveZip } from '@/lib/build-project-archive'
 import { getOrgPlanContext } from '@/lib/org-plan'
+import { PLAN_ENTITLEMENTS } from '@/lib/plan-entitlements'
 import { createServiceClient } from '@/lib/supabase/service'
 
 const BACKUP_BUCKET = 'org-backups'
-const MAX_BACKUPS_PER_ORG = 30
+
+export async function getOrganizationBackupLimit(
+  service: SupabaseClient,
+  organizationId: string
+): Promise<number> {
+  const planCtx = await getOrgPlanContext(service, organizationId)
+  if (!planCtx) return PLAN_ENTITLEMENTS.starter.maxOrganizationBackups
+  return planCtx.entitlements.maxOrganizationBackups
+}
 
 export type BackupType = 'scheduled' | 'report_completed' | 'manual'
 
@@ -62,9 +71,19 @@ function backupDue(settings: BackupSettings): boolean {
   return Date.now() - last >= hours * 60 * 60 * 1000
 }
 
-async function pruneOldBackups(
+/** Drop completed backups over the org's current plan limit (e.g. after downgrade). */
+export async function enforceOrganizationBackupLimit(
   service: SupabaseClient,
   organizationId: string
+): Promise<void> {
+  const maxBackups = await getOrganizationBackupLimit(service, organizationId)
+  await pruneOldBackups(service, organizationId, maxBackups)
+}
+
+async function pruneOldBackups(
+  service: SupabaseClient,
+  organizationId: string,
+  maxBackups: number
 ) {
   const { data: rows } = await service
     .from('organization_backups')
@@ -73,7 +92,7 @@ async function pruneOldBackups(
     .eq('status', 'completed')
     .order('created_at', { ascending: false })
 
-  const excess = (rows || []).slice(MAX_BACKUPS_PER_ORG)
+  const excess = (rows || []).slice(maxBackups)
   if (!excess.length) return
 
   const paths = excess.map((r) => r.storage_path)
@@ -144,7 +163,8 @@ export async function backupProject(
     })
     .eq('id', backupId)
 
-  await pruneOldBackups(service, organizationId)
+  const maxBackups = await getOrganizationBackupLimit(service, organizationId)
+  await pruneOldBackups(service, organizationId, maxBackups)
 
   return { backupId }
 }

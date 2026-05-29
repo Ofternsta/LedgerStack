@@ -5,7 +5,7 @@ const BACKUP_BUCKET = 'org-backups'
 
 type RouteContext = { params: Promise<{ id: string }> }
 
-/** Admin: delete a backup ZIP and free a slot in the 30-backup limit. */
+/** Admin: delete a backup ZIP and free a slot in the plan backup limit. */
 export async function DELETE(_req: Request, context: RouteContext) {
   try {
     const { id: backupId } = await context.params

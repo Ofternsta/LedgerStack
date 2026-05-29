@@ -42,6 +42,7 @@ export function BackupSettingsPanel({ canManage }: { canManage: boolean }) {
   const [running, setRunning] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [maxBackups, setMaxBackups] = useState(5)
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
@@ -55,6 +56,9 @@ export function BackupSettingsPanel({ canManage }: { canManage: boolean }) {
 
     if (settingsRes.ok) {
       setSettings(settingsPayload.settings || null)
+      if (typeof settingsPayload.max_backups === 'number') {
+        setMaxBackups(settingsPayload.max_backups)
+      }
     } else {
       setError(
         settingsPayload.error ||
@@ -91,6 +95,9 @@ export function BackupSettingsPanel({ canManage }: { canManage: boolean }) {
     }
 
     setSettings(payload.settings)
+    if (typeof payload.max_backups === 'number') {
+      setMaxBackups(payload.max_backups)
+    }
     setMessage('Backup settings saved.')
   }
 
@@ -118,7 +125,7 @@ export function BackupSettingsPanel({ canManage }: { canManage: boolean }) {
   async function removeBackup(id: string, filename: string) {
     if (
       !window.confirm(
-        `Remove backup "${filename}"? This frees space in your 30-backup limit and cannot be undone.`
+        `Remove backup "${filename}"? This frees space in your ${maxBackups}-backup limit and cannot be undone.`
       )
     ) {
       return
@@ -172,8 +179,9 @@ export function BackupSettingsPanel({ canManage }: { canManage: boolean }) {
         <h2 className="font-bold text-lg">Automatic backups</h2>
         <p className="text-sm text-muted mt-1 leading-relaxed">
           ZIP copies of each project (reports, documents, messages, exports) are
-          saved to secure cloud storage. Admins can download them anytime. The last{' '}
-          {30} backups per organization are kept.
+          saved to secure cloud storage. Admins can download them anytime. Your plan
+          keeps the last {maxBackups} completed backups (older ones are removed
+          automatically).
         </p>
       </div>
 

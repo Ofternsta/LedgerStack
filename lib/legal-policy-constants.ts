@@ -5,6 +5,6 @@ export {
   INACTIVE_PROJECT_RETENTION_MONTHS,
 } from '@/lib/data-retention'
 
-export const MAX_ORGANIZATION_BACKUPS = 30
+export { BACKUP_LIMITS_DISPLAY } from '@/lib/backup-limits'
 
 export const MAX_PROJECT_STATUS_STAGES = 20

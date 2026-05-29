@@ -1,5 +1,11 @@
 import { NextResponse } from 'next/server'
-import { loadBackupSettings } from '@/lib/organization-backups'
+import {
+  createBackupServiceClient,
+  enforceOrganizationBackupLimit,
+  getOrganizationBackupLimit,
+  loadBackupSettings,
+} from '@/lib/organization-backups'
+import { getOrgPlanContext } from '@/lib/org-plan'
 import { requireAuth } from '@/lib/require-auth'
 
 async function requireOrgAdmin(supabase: Awaited<ReturnType<typeof requireAuth>>['supabase'], userId: string) {
@@ -24,8 +30,17 @@ export async function GET() {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
+    const service = createBackupServiceClient()
+    await enforceOrganizationBackupLimit(service, organizationId)
+
     const settings = await loadBackupSettings(supabase, organizationId)
-    return NextResponse.json({ settings })
+    const maxBackups = await getOrganizationBackupLimit(service, organizationId)
+    const planCtx = await getOrgPlanContext(supabase, organizationId)
+    return NextResponse.json({
+      settings,
+      max_backups: maxBackups,
+      plan: planCtx?.plan ?? null,
+    })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to load settings'
     return NextResponse.json({ error: message }, { status: 500 })
@@ -71,7 +86,8 @@ export async function PATCH(req: Request) {
     }
 
     const settings = await loadBackupSettings(supabase, organizationId)
-    return NextResponse.json({ settings })
+    const maxBackups = await getOrganizationBackupLimit(supabase, organizationId)
+    return NextResponse.json({ settings, max_backups: maxBackups })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to save settings'
     return NextResponse.json({ error: message }, { status: 500 })

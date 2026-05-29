@@ -5,9 +5,9 @@ import {
 } from '@/components/legal-document-layout'
 import Link from 'next/link'
 import {
+  BACKUP_LIMITS_DISPLAY,
   COMPLETED_PROJECT_RETENTION_DAYS,
   INACTIVE_PROJECT_RETENTION_MONTHS,
-  MAX_ORGANIZATION_BACKUPS,
   MAX_PROJECT_STATUS_STAGES,
 } from '@/lib/legal-policy-constants'
 import {
@@ -132,8 +132,10 @@ export function TermsContent() {
       <LegalSection title="Exports and backups">
         <p>
           Export and automatic backup features (where included in your plan) are
-          provided as a convenience. Backups are stored as ZIP files; we keep up to{' '}
-          {MAX_ORGANIZATION_BACKUPS} completed backups per organization and remove
+          provided as a convenience. Backups are stored as ZIP files; we keep up to
+          your plan limit of completed backups per organization ({' '}
+          {BACKUP_LIMITS_DISPLAY.starter} Starter, {BACKUP_LIMITS_DISPLAY.professional}{' '}
+          Professional, {BACKUP_LIMITS_DISPLAY.enterprise} Enterprise) and remove
           older ones automatically. Admins may delete individual backups in billing
           settings. Backups may still contain data from projects later deleted by
           retention.

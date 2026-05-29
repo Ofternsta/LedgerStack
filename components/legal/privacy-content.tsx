@@ -4,9 +4,9 @@ import {
   LegalSection,
 } from '@/components/legal-document-layout'
 import {
+  BACKUP_LIMITS_DISPLAY,
   COMPLETED_PROJECT_RETENTION_DAYS,
   INACTIVE_PROJECT_RETENTION_MONTHS,
-  MAX_ORGANIZATION_BACKUPS,
 } from '@/lib/legal-policy-constants'
 import {
   LEGAL_CONTACT_EMAIL,
@@ -107,8 +107,11 @@ export function PrivacyContent() {
           <strong className="text-foreground">Organization backups:</strong> if
           your plan includes backups, we may store ZIP copies of projects in secure
           cloud storage (on a schedule, when a report is completed, or when you run
-          a manual backup). We retain up to {MAX_ORGANIZATION_BACKUPS} completed
-          backups per organization; older backups are removed automatically.
+          a manual backup). We retain up to a plan-based number of completed
+          backups per organization ({BACKUP_LIMITS_DISPLAY.starter} on Starter,{' '}
+          {BACKUP_LIMITS_DISPLAY.professional} on Professional,{' '}
+          {BACKUP_LIMITS_DISPLAY.enterprise} on Enterprise); older backups are
+          removed automatically.
           Organization admins may delete individual backups in billing settings to
           free space. Backup ZIPs may still exist for a deleted project until pruned
           or removed. Backups are not a guarantee of recovery.
