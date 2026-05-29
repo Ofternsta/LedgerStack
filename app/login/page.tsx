@@ -22,6 +22,11 @@ import { BrandLogo } from '@/components/brand-logo'
 import { SupportLink } from '@/components/support-link'
 import { SUPPORT_EMAIL } from '@/lib/support'
 import {
+  getVerifiedTotpFactorId,
+  needsMfaVerification,
+  verifyMfaLoginCode,
+} from '@/lib/mfa-auth-client'
+import {
   finishAccountSetup,
   getAccountSetupStatus,
   resendVerificationEmail,
@@ -29,7 +34,9 @@ import {
 
 export default function LoginPage() {
   const router = useRouter()
-  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin')
+  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot' | 'mfa'>(
+    'signin'
+  )
   const [role, setRole] = useState<AppRole>('admin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -46,6 +53,37 @@ export default function LoginPage() {
   const [needsVerification, setNeedsVerification] = useState(false)
   const [resendingEmail, setResendingEmail] = useState(false)
   const [acceptedLegal, setAcceptedLegal] = useState(false)
+  const [mfaCode, setMfaCode] = useState('')
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null)
+  const [verifyingMfa, setVerifyingMfa] = useState(false)
+
+  const completeLoginAfterAuth = useCallback(async () => {
+    const setupRes = await fetch('/api/auth/complete-signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    })
+    const setupPayload = await setupRes.json().catch(() => ({}))
+
+    if (!setupRes.ok) {
+      setMessage(
+        setupPayload.error ||
+          `Signed in but profile setup failed. Try signing up again or email ${SUPPORT_EMAIL}.`
+      )
+      return false
+    }
+
+    if (setupPayload.needsSubscription) {
+      router.push('/onboarding/subscription?renew=1')
+      router.refresh()
+      return true
+    }
+
+    await linkClientAccessByEmail()
+    router.push('/projects')
+    router.refresh()
+    return true
+  }, [router])
 
   const runFinishSignup = useCallback(async (targetEmail: string) => {
     const normalized = targetEmail.trim().toLowerCase()
@@ -152,6 +190,22 @@ export default function LoginPage() {
       )
     }
 
+    void (async () => {
+      if (params.get('mfa') !== '1') return
+      const needs = await needsMfaVerification(supabase)
+      if (!needs) return
+      const factorId = await getVerifiedTotpFactorId(supabase)
+      if (!factorId) {
+        setMessage(
+          'Two-factor authentication is required but no authenticator is set up. Check Settings or contact support.'
+        )
+        return
+      }
+      setMfaFactorId(factorId)
+      setMode('mfa')
+      setMessage('Enter the 6-digit code from your authenticator app.')
+    })()
+
     if (params.get('reset') === '1') {
       setMode('signin')
       setMessage('Password updated. Sign in with your new password.')
@@ -206,10 +260,47 @@ export default function LoginPage() {
     setInviteValid(true)
   }, [])
 
+  async function handleMfaVerify(e: React.FormEvent) {
+    e.preventDefault()
+    if (!mfaFactorId || mfaCode.length < 6) return
+    setVerifyingMfa(true)
+    setMessage(null)
+    const { error } = await verifyMfaLoginCode(supabase, mfaFactorId, mfaCode)
+    if (error) {
+      setMessage(error)
+      setVerifyingMfa(false)
+      return
+    }
+    const stillNeeds = await needsMfaVerification(supabase)
+    if (stillNeeds) {
+      setMessage('Verification incomplete. Try again with a fresh code.')
+      setVerifyingMfa(false)
+      return
+    }
+    setMfaCode('')
+    await completeLoginAfterAuth()
+    setVerifyingMfa(false)
+  }
+
+  async function cancelMfaSignIn() {
+    await supabase.auth.signOut()
+    setMfaFactorId(null)
+    setMfaCode('')
+    setMode('signin')
+    setMessage(null)
+    router.replace('/login')
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setMessage(null)
+
+    if (mode === 'mfa') {
+      setLoading(false)
+      await handleMfaVerify(e)
+      return
+    }
 
     if (mode === 'forgot') {
       const target = email.trim().toLowerCase()
@@ -410,32 +501,24 @@ export default function LoginPage() {
       return
     }
 
-    const setupRes = await fetch('/api/auth/complete-signup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({}),
-    })
-    const setupPayload = await setupRes.json().catch(() => ({}))
-
-    if (!setupRes.ok) {
-      setMessage(
-        setupPayload.error ||
-          `Signed in but profile setup failed. Try signing up again or email ${SUPPORT_EMAIL}.`
-      )
+    if (await needsMfaVerification(supabase)) {
+      const factorId = await getVerifiedTotpFactorId(supabase)
+      if (!factorId) {
+        setMessage(
+          'Two-factor authentication is required but no authenticator is configured. Contact support.'
+        )
+        setLoading(false)
+        return
+      }
+      setMfaFactorId(factorId)
+      setMode('mfa')
+      setMfaCode('')
+      setMessage('Enter the 6-digit code from your authenticator app.')
       setLoading(false)
       return
     }
 
-    if (setupPayload.needsSubscription) {
-      router.push('/onboarding/subscription?renew=1')
-      router.refresh()
-      setLoading(false)
-      return
-    }
-
-    await linkClientAccessByEmail()
-    router.push('/projects')
-    router.refresh()
+    await completeLoginAfterAuth()
     setLoading(false)
   }
 
@@ -453,7 +536,17 @@ export default function LoginPage() {
           onSubmit={handleSubmit}
           className="card-elevated p-5 space-y-4"
         >
-          {mode === 'forgot' ? (
+          {mode === 'mfa' ? (
+            <div className="space-y-2">
+              <h2 className="font-bold text-lg text-[var(--header-title)]">
+                Two-factor authentication
+              </h2>
+              <p className="text-sm text-muted leading-relaxed">
+                Your password was accepted. Enter the current 6-digit code from
+                your authenticator app to finish signing in.
+              </p>
+            </div>
+          ) : mode === 'forgot' ? (
             <p className="text-sm text-muted">
               Enter your account email. We&apos;ll send a link to reset your password.
             </p>
@@ -608,26 +701,50 @@ export default function LoginPage() {
             </>
           )}
 
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-muted mb-1"
-            >
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="input-field"
-              placeholder="you@company.com"
-            />
-          </div>
+          {mode !== 'mfa' && (
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-muted mb-1"
+              >
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="input-field"
+                placeholder="you@company.com"
+              />
+            </div>
+          )}
 
-          {mode !== 'forgot' && (
+          {mode === 'mfa' && (
+            <div>
+              <label
+                htmlFor="mfa-login-code"
+                className="block text-sm font-medium text-muted mb-1"
+              >
+                Authenticator code
+              </label>
+              <input
+                id="mfa-login-code"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                autoFocus
+                maxLength={6}
+                value={mfaCode}
+                onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
+                className="input-field tracking-widest text-center text-lg"
+                placeholder="000000"
+              />
+            </div>
+          )}
+
+          {mode !== 'forgot' && mode !== 'mfa' && (
             <div>
               <div className="flex items-center justify-between gap-2 mb-1">
                 <label
@@ -769,26 +886,41 @@ export default function LoginPage() {
             </button>
           )}
 
+          {mode === 'mfa' && (
+            <button
+              type="button"
+              onClick={cancelMfaSignIn}
+              className="w-full btn-secondary py-3 font-medium min-h-[48px]"
+            >
+              Cancel and sign out
+            </button>
+          )}
+
           <button
             type="submit"
             disabled={
               loading ||
+              verifyingMfa ||
               finishingAccount ||
-              !email.trim() ||
-              (mode !== 'forgot' && !password) ||
-              (mode === 'signup' && !confirmPassword) ||
-              (mode === 'signup' && !acceptedLegal) ||
-              (mode === 'signup' && role === 'worker' && !inviteValid)
+              (mode === 'mfa'
+                ? mfaCode.length < 6
+                : !email.trim() ||
+                  (mode !== 'forgot' && !password) ||
+                  (mode === 'signup' && !confirmPassword) ||
+                  (mode === 'signup' && !acceptedLegal) ||
+                  (mode === 'signup' && role === 'worker' && !inviteValid))
             }
             className="w-full btn-primary py-4 font-semibold disabled:opacity-50 min-h-[52px]"
           >
-            {loading
+            {loading || verifyingMfa
               ? 'Please wait…'
-              : mode === 'forgot'
-                ? 'Send reset link'
-                : mode === 'signup'
-                  ? 'Create account'
-                  : 'Sign in'}
+              : mode === 'mfa'
+                ? 'Verify and continue'
+                : mode === 'forgot'
+                  ? 'Send reset link'
+                  : mode === 'signup'
+                    ? 'Create account'
+                    : 'Sign in'}
           </button>
         </form>
 

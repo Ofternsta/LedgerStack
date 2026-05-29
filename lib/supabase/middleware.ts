@@ -6,6 +6,7 @@ import {
   isPublicSeoPath,
   isPublicSignupCheckoutPath,
 } from '@/lib/auth-public-routes'
+import { needsMfaVerificationServer } from '@/lib/mfa-auth-server'
 
 /** Skip Supabase round-trip when the browser has no session cookies. */
 function hasSupabaseSessionCookies(request: NextRequest): boolean {
@@ -84,6 +85,18 @@ export async function updateSession(request: NextRequest) {
 
   const emailConfirmed = Boolean(user?.email_confirmed_at)
 
+  let requiresMfaStep = false
+  if (user && emailConfirmed) {
+    requiresMfaStep = await needsMfaVerificationServer(supabase)
+  }
+
+  if (requiresMfaStep && !isAuthRoute) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    url.searchParams.set('mfa', '1')
+    return NextResponse.redirect(url)
+  }
+
   if (
     user &&
     !emailConfirmed &&
@@ -121,7 +134,8 @@ export async function updateSession(request: NextRequest) {
     user &&
     emailConfirmed &&
     pathname === '/login' &&
-    !request.nextUrl.searchParams.has('reset')
+    !request.nextUrl.searchParams.has('reset') &&
+    !requiresMfaStep
   ) {
     return redirectAfterAuthLanding()
   }
