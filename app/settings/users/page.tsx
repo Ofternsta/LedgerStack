@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AppHeader } from '@/components/app-header'
 import { AppFooter } from '@/components/app-footer'
+import { LegalNotice } from '@/components/legal-notice'
 import { AppNav } from '@/components/app-nav'
 import { loadUserAccess } from '@/lib/load-access'
 import type { UserAccess } from '@/lib/roles'
@@ -119,6 +120,8 @@ export default function PlatformUsersPage() {
           Only the email set in <code className="text-xs">PLATFORM_OWNER_EMAIL</code>{' '}
           can use this page. Deletions are permanent.
         </p>
+
+        <LegalNotice id="data-retention" showLegalLinks />
 
         {error && (
           <p className="text-sm alert-error">

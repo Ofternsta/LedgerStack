@@ -7,6 +7,7 @@ import {
   type WorkerPermissionKey,
   type WorkerPermissions,
 } from '@/lib/worker-permissions'
+import { LegalNotice } from '@/components/legal-notice'
 import { formatWorkerListLabel } from '@/lib/sort-team-members'
 
 type WorkerRow = {
@@ -194,6 +195,7 @@ export function ProjectWorkerPanel({ projectId }: { projectId: string }) {
             Assign workers to this job and set what each person can do on this
             project only.
           </p>
+          <LegalNotice id="worker-audit" className="mt-3" />
         </div>
         {mode === 'view' && assignedWorkers.length > 0 && (
           <button

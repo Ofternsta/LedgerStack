@@ -328,10 +328,23 @@ function CheckoutContent() {
         )}
 
         {clientSecret && publishableKey && (
-          <StripeEmbeddedCheckout
-            clientSecret={clientSecret}
-            publishableKey={publishableKey}
-          />
+          <>
+            <p className="text-xs text-muted leading-relaxed">
+              By completing payment you agree to our{' '}
+              <Link href="/terms" className="text-brand-bright hover:underline">
+                Terms of Service
+              </Link>{' '}
+              and{' '}
+              <Link href="/privacy" className="text-brand-bright hover:underline">
+                Privacy Policy
+              </Link>
+              . Subscriptions renew until canceled in billing settings.
+            </p>
+            <StripeEmbeddedCheckout
+              clientSecret={clientSecret}
+              publishableKey={publishableKey}
+            />
+          </>
         )}
 
         {!loading && !error && !showVerifyGate && clientSecret && (

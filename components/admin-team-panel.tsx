@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { compareByWorkerName, formatWorkerListLabel } from '@/lib/sort-team-members'
+import { LegalNotice } from '@/components/legal-notice'
 import { WORKER_JOB_TITLE_SUGGESTIONS } from '@/lib/worker-job-titles'
 
 type MemberRow = {
@@ -156,6 +157,7 @@ export function AdminTeamPanel() {
 
   return (
     <div className="space-y-6">
+      <LegalNotice id="worker-audit" />
       {loadError && (
         <p className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg p-3">
           {loadError}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { LegalNotice } from '@/components/legal-notice'
 import { isNativeApp, takeNativePhoto } from '@/lib/native-photo'
 
 type EvidenceUploadProps = {
@@ -140,6 +141,8 @@ export function EvidenceUpload({
       <p className="text-sm text-muted mt-3 leading-relaxed">
         Photos, PDFs, and Word docs — AI categorizes and summarizes after upload.
       </p>
+
+      <LegalNotice id="file-responsibility" className="mt-3" />
 
       {uploading && (
         <p className="mt-3 text-sm font-medium">

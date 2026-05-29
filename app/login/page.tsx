@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { linkClientAccessByEmail } from '@/lib/auth-signup'
@@ -39,6 +40,7 @@ export default function LoginPage() {
   const [finishingAccount, setFinishingAccount] = useState(false)
   const [needsVerification, setNeedsVerification] = useState(false)
   const [resendingEmail, setResendingEmail] = useState(false)
+  const [acceptedLegal, setAcceptedLegal] = useState(false)
 
   const runFinishSignup = useCallback(async (targetEmail: string) => {
     const normalized = targetEmail.trim().toLowerCase()
@@ -229,6 +231,12 @@ export default function LoginPage() {
     }
 
     if (mode === 'signup') {
+      if (!acceptedLegal) {
+        setMessage('Please agree to the Terms of Service and Privacy Policy.')
+        setLoading(false)
+        return
+      }
+
       if (password !== confirmPassword) {
         setMessage('Passwords do not match.')
         setLoading(false)
@@ -680,6 +688,38 @@ export default function LoginPage() {
             </div>
           )}
 
+          {mode === 'signup' && (
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={acceptedLegal}
+                onChange={(e) => setAcceptedLegal(e.target.checked)}
+                className="mt-1 shrink-0"
+              />
+              <span className="text-sm text-muted leading-relaxed">
+                I agree to the{' '}
+                <Link
+                  href="/terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-brand-bright hover:underline"
+                >
+                  Terms of Service
+                </Link>{' '}
+                and{' '}
+                <Link
+                  href="/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-brand-bright hover:underline"
+                >
+                  Privacy Policy
+                </Link>
+                .
+              </span>
+            </label>
+          )}
+
           {message && (
             <p
               className={`text-sm leading-relaxed ${
@@ -730,6 +770,7 @@ export default function LoginPage() {
               !email.trim() ||
               (mode !== 'forgot' && !password) ||
               (mode === 'signup' && !confirmPassword) ||
+              (mode === 'signup' && !acceptedLegal) ||
               (mode === 'signup' && role === 'worker' && !inviteValid)
             }
             className="w-full btn-primary py-4 font-semibold disabled:opacity-50 min-h-[52px]"
@@ -746,6 +787,15 @@ export default function LoginPage() {
 
         <p className="mt-8 text-center text-sm text-muted">
           Need help? <SupportLink className="text-brand-bright hover:underline" />
+        </p>
+        <p className="mt-3 text-center text-xs text-muted-dim">
+          <Link href="/privacy" className="hover:text-brand-bright">
+            Privacy Policy
+          </Link>
+          {' · '}
+          <Link href="/terms" className="hover:text-brand-bright">
+            Terms of Service
+          </Link>
         </p>
       </main>
     </div>

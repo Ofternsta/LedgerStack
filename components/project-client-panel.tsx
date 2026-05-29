@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { ClientSharedFilesEditor } from '@/components/client-shared-files-editor'
+import { LegalNotice } from '@/components/legal-notice'
 
 type AccessRow = {
   id: string
@@ -88,6 +89,8 @@ export function ProjectClientPanel({ projectId }: { projectId: string }) {
         Clients must sign up as <strong>Client</strong> and use this email. Click a
         client&apos;s name to choose which files they can view in each category.
       </p>
+
+      <LegalNotice id="client-access" />
 
       <form onSubmit={grantAccess} className="flex flex-col sm:flex-row gap-2">
         <input

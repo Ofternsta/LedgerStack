@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { LegalNotice } from '@/components/legal-notice'
 import { isUnlimited } from '@/lib/plan-entitlements'
 
 type TimelineEvent = {
@@ -284,6 +285,9 @@ export function ClaimAiPanel({
           exports.
         </p>
       )}
+
+      <LegalNotice id="ai" />
+      {(canExportPdf || canExportHtml) && <LegalNotice id="export-backup" />}
 
       {error && (
         <p className="text-sm alert-error rounded-lg p-2">{error}</p>

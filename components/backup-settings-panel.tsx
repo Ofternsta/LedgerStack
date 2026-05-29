@@ -1,5 +1,6 @@
 'use client'
 
+import { LegalNotice } from '@/components/legal-notice'
 import { useCallback, useEffect, useState } from 'react'
 
 type BackupSettings = {
@@ -145,6 +146,8 @@ export function BackupSettingsPanel({ canManage }: { canManage: boolean }) {
           saved to secure cloud storage. Admins can download them anytime. The last{' '}
           {30} backups per organization are kept.
         </p>
+        <LegalNotice id="export-backup" className="mt-3" />
+        <LegalNotice id="data-retention" className="mt-2" />
       </div>
 
       {error && (

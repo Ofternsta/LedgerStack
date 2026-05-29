@@ -7,3 +7,8 @@ export function isPublicSignupCheckoutPath(pathname: string): boolean {
 export function isPublicSeoPath(pathname: string): boolean {
   return pathname === '/robots.txt' || pathname === '/sitemap.xml'
 }
+
+/** Legal pages — public without login. */
+export function isPublicLegalPath(pathname: string): boolean {
+  return pathname === '/privacy' || pathname === '/terms'
+}

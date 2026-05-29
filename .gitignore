@@ -49,3 +49,5 @@ ios/DerivedData/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+.vercel

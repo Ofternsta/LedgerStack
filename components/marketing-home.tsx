@@ -292,6 +292,12 @@ export function MarketingHome() {
           <BrandLogo href="/" size="sm" showWordmark />
           <div className="flex flex-wrap items-center justify-center sm:justify-end gap-4 sm:gap-6">
             <SupportLink className="hover:text-brand-bright" />
+            <Link href="/privacy" className="hover:text-brand-bright">
+              Privacy
+            </Link>
+            <Link href="/terms" className="hover:text-brand-bright">
+              Terms
+            </Link>
             <Link href="/login" className="hover:text-brand-bright">
               Sign in
             </Link>

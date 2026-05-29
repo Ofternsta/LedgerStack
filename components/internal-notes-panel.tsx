@@ -1,5 +1,6 @@
 'use client'
 
+import { LegalNotice } from '@/components/legal-notice'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 type Note = {
@@ -131,6 +132,7 @@ export function InternalNotesPanel({
           Worker notes, @mentions, status updates, and communication history.
           Clients cannot see this.
         </p>
+        <LegalNotice id="worker-audit" className="mt-3" />
       </div>
 
       {error && (

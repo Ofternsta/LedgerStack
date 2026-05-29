@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { adminNeedsSubscription } from '@/lib/admin-subscription-status'
 import {
+  isPublicLegalPath,
   isPublicSeoPath,
   isPublicSignupCheckoutPath,
 } from '@/lib/auth-public-routes'
@@ -28,6 +29,7 @@ export async function updateSession(request: NextRequest) {
   const isPublicSignupCheckout = isPublicSignupCheckoutPath(pathname)
   const isPublicMarketing = pathname === '/'
   const isPublicSeo = isPublicSeoPath(pathname)
+  const isPublicLegal = isPublicLegalPath(pathname)
 
   const isPublicRoute =
     isAuthRoute ||
@@ -35,7 +37,8 @@ export async function updateSession(request: NextRequest) {
     isPublicOnboarding ||
     isPublicSignupCheckout ||
     isPublicMarketing ||
-    isPublicSeo
+    isPublicSeo ||
+    isPublicLegal
 
   if (!hasSupabaseSessionCookies(request)) {
     if (!isPublicRoute) {

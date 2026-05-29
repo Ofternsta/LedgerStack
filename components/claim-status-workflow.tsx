@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { LegalNotice } from '@/components/legal-notice'
 import {
   CLAIM_STATUSES,
   type ClaimStatus,
@@ -117,6 +118,8 @@ export function ClaimStatusWorkflow({
         <p className="text-sm text-muted mt-2">Updating status…</p>
       )}
       {error && <p className="text-sm text-red-400 mt-2">{error}</p>}
+
+      <LegalNotice id="no-guarantee" className="mt-3" />
     </section>
   )
 }
