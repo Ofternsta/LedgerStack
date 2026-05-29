@@ -11,6 +11,10 @@ import {
   normalizeClaimStatus,
   type ClaimStatus,
 } from '@/lib/claim-status'
+import {
+  defaultClaimStatusLabels,
+  type ClaimStatusLabels,
+} from '@/lib/org-status-labels'
 import { EvidenceUpload } from '@/components/evidence-upload'
 import { InternalNotesPanel } from '@/components/internal-notes-panel'
 import { MessagePanel } from '@/components/message-panel'
@@ -61,6 +65,9 @@ export default function ProjectPageClient() {
   const [userId, setUserId] = useState<string | null>(null)
   const [timelineRefreshKey, setTimelineRefreshKey] = useState(0)
   const [archivePrompt, setArchivePrompt] = useState(false)
+  const [statusLabels, setStatusLabels] = useState<ClaimStatusLabels>(
+    defaultClaimStatusLabels()
+  )
 
   function mergeWorkerProjectAccess(
     base: UserAccess,
@@ -106,6 +113,17 @@ export default function ProjectPageClient() {
 
     void loadAccessForProject()
   }, [id])
+
+  useEffect(() => {
+    async function loadLabels() {
+      const res = await fetch('/api/org/settings')
+      const payload = await res.json().catch(() => ({}))
+      if (res.ok && payload.claim_status_labels) {
+        setStatusLabels(payload.claim_status_labels)
+      }
+    }
+    void loadLabels()
+  }, [])
 
   async function fetchClaims() {
     setLoading(true)
@@ -436,6 +454,7 @@ export default function ProjectPageClient() {
               claimId={activeClaim.id}
               projectId={id}
               status={activeClaim.status}
+              statusLabels={statusLabels}
               canEdit={access.canUpdateReportStatus}
               showReadOnlyHint={!isClientViewer}
               onStatusChange={(next: ClaimStatus) => {

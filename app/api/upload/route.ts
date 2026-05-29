@@ -18,6 +18,7 @@ import { assertProjectMemberPermission } from '@/lib/member-permissions-server'
 import { requireAuth } from '@/lib/require-auth'
 import { normalizeUploadFile } from '@/lib/file-meta'
 import { validateUploadSize } from '@/lib/upload-limits'
+import { touchProjectActivity } from '@/lib/touch-project-activity'
 
 export const maxDuration = 60
 
@@ -190,6 +191,8 @@ export async function POST(req: Request) {
       created_at: uploadedAt,
       ...uploader,
     })
+
+    await touchProjectActivity(supabase, projectId)
 
     return NextResponse.json({ evidence })
   } catch (err: unknown) {

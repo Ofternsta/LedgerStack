@@ -7,6 +7,7 @@ import {
 } from '@/lib/staff-project-access'
 import { loadTeamRoster } from '@/lib/team-roster'
 import { requireAuth } from '@/lib/require-auth'
+import { touchProjectActivity } from '@/lib/touch-project-activity'
 
 const NOTE_KINDS = new Set(['note', 'status_update', 'mention'])
 
@@ -201,6 +202,8 @@ export async function POST(req: Request) {
         source: 'manual',
       })
     }
+
+    await touchProjectActivity(supabase, projectId)
 
     const [note] = await enrichNotes(supabase, [data])
     return NextResponse.json({ note })

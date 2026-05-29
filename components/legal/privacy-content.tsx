@@ -78,11 +78,25 @@ export function PrivacyContent() {
 
       <LegalSection title="Data retention and deletion">
         <p>
-          We retain data while your account is active and as needed to provide the
-          Service. You may request deletion of your account or specific data by
-          contacting {LEGAL_CONTACT_EMAIL}. Some data may remain in backups for a
-          limited period. If you delete content or revoke client access, copies
-          already downloaded by a client may remain outside our control.
+          <strong className="text-foreground">Completed projects:</strong> when
+          all reports on a project are marked Completed, the project (including
+          files and messages) is automatically deleted after 7 days unless the
+          status is changed before then.
+        </p>
+        <p>
+          <strong className="text-foreground">Inactive projects:</strong>{' '}
+          projects that are not completed and have no activity for 12 months are
+          automatically deleted.
+        </p>
+        <p>
+          <strong className="text-foreground">Account deletion:</strong> to
+          delete your entire account and organization, email{' '}
+          {LEGAL_CONTACT_EMAIL}. We verify ownership before processing. Scheduled
+          org backups may be kept up to the backup limit configured in Billing.
+        </p>
+        <p>
+          If you revoke client access or delete content, copies already
+          downloaded by a client may remain outside our control.
         </p>
       </LegalSection>
 

@@ -3,6 +3,7 @@ import { assertCanAddWorker } from '@/lib/plan-enforcement'
 import { transferOrgAdmin } from '@/lib/transfer-org-admin'
 import { requireAuth } from '@/lib/require-auth'
 import { normalizeJobTitle } from '@/lib/worker-job-titles'
+import { parseDefaultWorkerPermissions } from '@/lib/org-status-labels'
 
 /** GET pending workers for admin's organization */
 export async function GET() {
@@ -151,13 +152,34 @@ export async function POST(req: Request) {
     }
   }
 
+  let approvePatch: Record<string, unknown> = {
+    status: action === 'approve' ? 'approved' : 'rejected',
+    approved_at: action === 'approve' ? new Date().toISOString() : null,
+    approved_by: action === 'approve' ? user.id : null,
+  }
+
+  if (action === 'approve') {
+    const { data: orgDefaults } = await supabase
+      .from('organizations')
+      .select('default_worker_permissions')
+      .eq('id', member.organization_id)
+      .maybeSingle()
+
+    const defaults = parseDefaultWorkerPermissions(
+      orgDefaults?.default_worker_permissions
+    )
+    approvePatch = {
+      ...approvePatch,
+      can_upload: defaults.can_upload,
+      can_delete: defaults.can_delete,
+      can_add_events: defaults.can_add_events,
+      can_view_files: defaults.can_view_files,
+    }
+  }
+
   const { error } = await supabase
     .from('organization_members')
-    .update({
-      status: action === 'approve' ? 'approved' : 'rejected',
-      approved_at: action === 'approve' ? new Date().toISOString() : null,
-      approved_by: action === 'approve' ? user.id : null,
-    })
+    .update(approvePatch)
     .eq('id', memberId)
 
   if (error) {

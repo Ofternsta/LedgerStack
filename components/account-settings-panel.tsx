@@ -1,7 +1,11 @@
 'use client'
 
+import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { LegalNotice } from '@/components/legal-notice'
+import { LEGAL_CONTACT_EMAIL } from '@/lib/legal-meta'
+import { supportMailtoUrl } from '@/lib/support'
 import { useTheme } from '@/components/theme-provider'
 import { passwordResetRedirectUrl } from '@/lib/auth-redirect'
 import {
@@ -18,7 +22,13 @@ type MfaFactor = {
   status: string
 }
 
-export function AccountSettingsPanel() {
+type AccountSettingsPanelProps = {
+  showOrganizationLink?: boolean
+}
+
+export function AccountSettingsPanel({
+  showOrganizationLink = false,
+}: AccountSettingsPanelProps) {
   const router = useRouter()
   const { preference, setPreference } = useTheme()
 
@@ -522,6 +532,33 @@ export function AccountSettingsPanel() {
           {themeButton('light', 'Light')}
           {themeButton('system', 'System')}
         </div>
+      </section>
+
+      <section className="border border-border rounded-xl p-4 bg-surface-elevated space-y-3">
+        <h2 className="font-bold text-lg text-[var(--header-title)]">
+          Data & account
+        </h2>
+        <p className="text-sm text-muted leading-relaxed">
+          Completed projects are removed after 7 days. Inactive projects are
+          removed after 12 months without activity. To delete your entire
+          account, email{' '}
+          <a
+            href={supportMailtoUrl('Account deletion request')}
+            className="text-brand-bright underline"
+          >
+            {LEGAL_CONTACT_EMAIL}
+          </a>
+          .
+        </p>
+        <LegalNotice id="data-retention" showLegalLinks />
+        {showOrganizationLink && (
+          <Link
+            href="/settings/organization"
+            className="inline-block text-sm text-brand-bright font-medium min-h-[44px] flex items-center"
+          >
+            Organization settings →
+          </Link>
+        )}
       </section>
 
       <section className="border border-border rounded-xl p-4 bg-surface-elevated space-y-3">

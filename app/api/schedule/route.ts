@@ -7,6 +7,7 @@ import {
 import { isScheduleEventType } from '@/lib/schedule-types'
 import { assertProjectMemberPermission } from '@/lib/member-permissions-server'
 import { requireAuth } from '@/lib/require-auth'
+import { touchProjectActivity } from '@/lib/touch-project-activity'
 
 export async function GET(req: Request) {
   try {
@@ -196,6 +197,8 @@ export async function POST(req: Request) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
+
+    await touchProjectActivity(supabase, projectId)
 
     return NextResponse.json({ event: data })
   } catch (err: unknown) {

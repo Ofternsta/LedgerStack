@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import { LegalNotice } from '@/components/legal-notice'
 import {
   CLAIM_STATUSES,
@@ -8,13 +9,22 @@ import {
   claimStatusIndex,
   normalizeClaimStatus,
 } from '@/lib/claim-status'
+import {
+  COMPLETED_PROJECT_RETENTION_DAYS,
+  INACTIVE_PROJECT_RETENTION_MONTHS,
+} from '@/lib/data-retention'
+import {
+  defaultClaimStatusLabels,
+  displayClaimStatus,
+  type ClaimStatusLabels,
+} from '@/lib/org-status-labels'
 
 type Props = {
   claimId: string
   projectId: string
   status: string
   canEdit: boolean
-  /** When false, hides the staff-only read-only footnote (e.g. client portal). */
+  statusLabels?: ClaimStatusLabels | null
   showReadOnlyHint?: boolean
   onStatusChange: (status: ClaimStatus) => void
   onMarkedCompleted?: () => void
@@ -25,18 +35,19 @@ export function ClaimStatusWorkflow({
   projectId,
   status,
   canEdit,
+  statusLabels,
   showReadOnlyHint = true,
   onStatusChange,
   onMarkedCompleted,
 }: Props) {
+  const labels = statusLabels ?? defaultClaimStatusLabels()
   const current = normalizeClaimStatus(status)
   const currentIndex = claimStatusIndex(current)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [pendingStatus, setPendingStatus] = useState<ClaimStatus | null>(null)
 
-  async function updateStatus(next: ClaimStatus) {
-    if (!canEdit || next === current || saving) return
-
+  async function applyStatus(next: ClaimStatus) {
     setSaving(true)
     setError(null)
 
@@ -64,24 +75,53 @@ export function ClaimStatusWorkflow({
     setSaving(false)
   }
 
+  function requestStatus(next: ClaimStatus) {
+    if (!canEdit || next === current || saving) return
+
+    if (next === 'Completed') {
+      setPendingStatus(next)
+      return
+    }
+
+    void applyStatus(next)
+  }
+
+  const currentLabel = displayClaimStatus(current, labels)
+
   return (
     <section className="border border-border rounded-xl p-4 bg-surface-elevated">
+      <ConfirmDialog
+        open={pendingStatus === 'Completed'}
+        title="Mark report as completed?"
+        description={`This project and all of its files and messages will be permanently deleted in ${COMPLETED_PROJECT_RETENTION_DAYS} days unless you change the status before then.\n\nSave an archive or backup first if you need to keep records.`}
+        confirmLabel="Mark completed"
+        destructive
+        busy={saving}
+        onCancel={() => setPendingStatus(null)}
+        onConfirm={() => {
+          const next = pendingStatus
+          setPendingStatus(null)
+          if (next) void applyStatus(next)
+        }}
+      />
+
       <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
         <h2 className="font-bold text-foreground">Report status</h2>
-        <span className="text-sm font-medium text-muted">{current}</span>
+        <span className="text-sm font-medium text-muted">{currentLabel}</span>
       </div>
 
       <ol className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
         {CLAIM_STATUSES.map((stage, index) => {
           const isPast = index < currentIndex
           const isCurrent = index === currentIndex
+          const label = displayClaimStatus(stage, labels)
 
           return (
             <li key={stage}>
               <button
                 type="button"
                 disabled={!canEdit || saving || isCurrent}
-                onClick={() => updateStatus(stage)}
+                onClick={() => requestStatus(stage)}
                 className={`w-full text-left rounded-lg px-2 py-2 text-xs sm:text-sm border transition min-h-[52px] ${
                   isCurrent
                     ? 'btn-primary text-[#052e16] border-black font-semibold'
@@ -95,7 +135,7 @@ export function ClaimStatusWorkflow({
                 <span className="block text-[10px] uppercase tracking-wide opacity-70 mb-0.5">
                   {index + 1}
                 </span>
-                {stage}
+                {label}
               </button>
             </li>
           )
@@ -104,7 +144,9 @@ export function ClaimStatusWorkflow({
 
       {canEdit && (
         <p className="text-xs text-muted-dim mt-3">
-          Tap a stage to update the report workflow.
+          Tap a stage to update the report workflow. Completed projects are removed
+          after {COMPLETED_PROJECT_RETENTION_DAYS} days; inactive projects after{' '}
+          {INACTIVE_PROJECT_RETENTION_MONTHS} months.
         </p>
       )}
 

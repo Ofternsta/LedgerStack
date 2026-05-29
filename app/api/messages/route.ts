@@ -9,6 +9,7 @@ import {
 import { enrichMessageSenders } from '@/lib/message-sender-labels'
 import { requireOrgPlanFeature } from '@/lib/plan-guard'
 import { requireAuth } from '@/lib/require-auth'
+import { touchProjectActivity } from '@/lib/touch-project-activity'
 
 export async function GET(req: Request) {
   try {
@@ -281,6 +282,8 @@ export async function POST(req: Request) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
+
+    await touchProjectActivity(supabase, projectId)
 
     const [enriched] = await enrichMessageSenders(project.organization_id, [row])
     return NextResponse.json({ message: enriched })

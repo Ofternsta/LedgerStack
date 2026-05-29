@@ -4,6 +4,7 @@ import { loadUserAccessServer } from '@/lib/load-access-server'
 import { triggerProjectCompletedBackup } from '@/lib/organization-backups'
 import { getProjectOrgId } from '@/lib/staff-project-access'
 import { requireAuth } from '@/lib/require-auth'
+import { touchProjectActivity } from '@/lib/touch-project-activity'
 
 export async function PATCH(req: Request) {
   try {
@@ -53,9 +54,18 @@ export async function PATCH(req: Request) {
 
     const previousStatus = normalizeClaimStatus(claim.status)
 
+    const claimPatch: { status: string; completed_at?: string | null } = {
+      status: rawStatus,
+    }
+    if (rawStatus === 'Completed' && previousStatus !== 'Completed') {
+      claimPatch.completed_at = new Date().toISOString()
+    } else if (rawStatus !== 'Completed') {
+      claimPatch.completed_at = null
+    }
+
     const { data: updated, error: updateError } = await supabase
       .from('claims')
-      .update({ status: rawStatus })
+      .update(claimPatch)
       .eq('id', claimId)
       .select('id, status, client_name, property_address')
       .single()
@@ -73,6 +83,8 @@ export async function PATCH(req: Request) {
         source: 'manual',
       })
     }
+
+    await touchProjectActivity(supabase, projectId)
 
     if (rawStatus === 'Completed' && previousStatus !== 'Completed') {
       const organizationId = await getProjectOrgId(supabase, projectId)

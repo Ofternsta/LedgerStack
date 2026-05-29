@@ -39,6 +39,8 @@ export function AppNav({ access }: AppNavProps) {
       {access.canViewCalendar && pill('/calendar', 'Calendar')}
       {access.canViewAnalytics && pill('/dashboard', 'Analytics')}
       {pill('/settings/account', 'Settings')}
+      {access.canManageSystemSettings &&
+        pill('/settings/organization', 'Organization')}
       {access.canManageBilling && pill('/settings/billing', 'Billing')}
       {platformOwner && (
         <Link

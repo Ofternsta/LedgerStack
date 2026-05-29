@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { AppHeader } from '@/components/app-header'
 import { AppFooter } from '@/components/app-footer'
 import { AppNav } from '@/components/app-nav'
+import { LegalNotice } from '@/components/legal-notice'
 import { PlanUpgradeBanner } from '@/components/plan-upgrade-banner'
 import { isUnlimited } from '@/lib/plan-entitlements'
 import { linkClientAccessByEmail } from '@/lib/auth-signup'
@@ -312,6 +313,10 @@ export default function ProjectsPage() {
           <p className="text-sm text-muted bg-blue-50 border border-blue-100 rounded-xl p-3">
             You can only open projects your contractor has granted to your email.
           </p>
+        )}
+
+        {access.role === 'admin' && (
+          <LegalNotice id="data-retention" className="mb-4" />
         )}
 
         <section>
