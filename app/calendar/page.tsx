@@ -101,7 +101,7 @@ export default function CalendarPage() {
       <main className="flex-1 safe-x px-4 py-4 max-w-2xl mx-auto w-full pb-8 space-y-4">
         <AppNav access={access} />
         <p className="text-sm text-muted">
-          Upcoming inspections, deadlines, reminders, and insurance follow-ups
+          Upcoming site visits, deadlines, reminders, and client follow-ups
           across all projects. Open a project to add or edit events.
         </p>
         {loading ? (

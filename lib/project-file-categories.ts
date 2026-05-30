@@ -1,4 +1,16 @@
-import { EVIDENCE_TYPES } from '@/lib/evidence-types'
+import {
+  EVIDENCE_TYPES,
+  LEGACY_EVIDENCE_TYPE_LABELS,
+  normalizeEvidenceType,
+} from '@/lib/evidence-types'
+
+/** Keys from the previous default category set → current default label. */
+const LEGACY_FILE_CATEGORY_KEYS: Record<string, string> = {
+  damage_photo: 'Site Photo',
+  moisture_reading: 'Measurements',
+  insurance_email: 'Correspondence',
+  report: 'Documents',
+}
 
 export const MAX_FILE_CATEGORIES = 15
 export const MIN_FILE_CATEGORIES = 1
@@ -115,14 +127,23 @@ export function normalizeFileCategoryLabel(
   const byKey = categories.find((c) => c.key === trimmed)
   if (byKey) return byKey.label
 
-  const defaults = defaultFileCategories()
-  const legacy = defaults.find(
-    (c) => c.label.toLowerCase() === trimmed.toLowerCase()
-  )
-  if (legacy) {
-    const inWorkflow = categories.find((c) => c.key === legacy.key)
+  const legacyMapped =
+    LEGACY_EVIDENCE_TYPE_LABELS[trimmed.toLowerCase()] ??
+    LEGACY_FILE_CATEGORY_KEYS[trimmed] ??
+    LEGACY_FILE_CATEGORY_KEYS[trimmed.toLowerCase()]
+
+  if (legacyMapped) {
+    const inWorkflow = categories.find(
+      (c) => c.label.toLowerCase() === legacyMapped.toLowerCase()
+    )
     if (inWorkflow) return inWorkflow.label
   }
+
+  const normalized = normalizeEvidenceType(trimmed)
+  const fromDefault = categories.find(
+    (c) => c.label.toLowerCase() === normalized.toLowerCase()
+  )
+  if (fromDefault) return fromDefault.label
 
   return categories[0]?.label ?? trimmed
 }

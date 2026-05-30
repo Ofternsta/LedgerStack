@@ -25,13 +25,13 @@ function buildCategoryRules(allowed: string[]): string {
 Allowed categories: ${allowed.join(', ')}
 
 General guidance:
-- Photo/image categories: job site or property damage (not document screenshots)
+- Photo/image categories: job site or work in progress (not document screenshots)
 - Invoice/receipt categories: bills and payments
-- Estimate categories: scopes, quotes, Xactimate
-- Email/letter categories: insurer or adjuster correspondence
-- Report/document categories: policies, claim forms, inspection reports, PDF exports
+- Estimate categories: scopes, quotes, proposals
+- Email/letter categories: client or partner correspondence
+- Report/document categories: contracts, forms, inspection reports, PDF exports
 
-PNG/JPEG screenshots of forms or policies belong in a document/report-style category, not a photo category.`
+PNG/JPEG screenshots of forms belong in a document/report-style category, not a photo category.`
 }
 
 function allowedAsCategories(allowed: string[]) {
@@ -104,7 +104,7 @@ async function analyzeImageWithVision(
     messages: [
       {
         role: 'system',
-        content: `You analyze restoration/insurance project document images.
+        content: `You analyze contractor job site document images.
 
 Return JSON only:
 {
@@ -207,7 +207,7 @@ export async function analyzeEvidence(
       messages: [
         {
           role: 'system',
-          content: `You analyze restoration/insurance project files.
+          content: `You analyze contractor project job files.
 
 Return JSON only:
 {

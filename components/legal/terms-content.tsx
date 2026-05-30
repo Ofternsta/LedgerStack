@@ -91,8 +91,8 @@ export function TermsContent() {
         <LegalList
           items={[
             'AI-generated summaries, timelines, and categorizations are aids only and may be wrong.',
-            'The Service does not provide legal, insurance, engineering, or claims-adjusting advice.',
-            'You are solely responsible for decisions made using the Service and for documents shared with clients, carriers, or regulators.',
+            'The Service does not provide legal, engineering, or licensed professional advice for your trade.',
+            'You are solely responsible for decisions made using the Service and for documents shared with clients, partners, or regulators.',
           ]}
         />
       </LegalSection>

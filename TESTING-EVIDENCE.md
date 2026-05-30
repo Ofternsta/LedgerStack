@@ -125,7 +125,7 @@ Must be logged in as admin or approved worker with active subscription.
 
 | # | Action | Expected |
 |---|--------|----------|
-| 1 | Upload a small **JPEG** | Success; card appears with category (e.g. Damage Photo) |
+| 1 | Upload a small **JPEG** | Success; card appears with category (e.g. Site Photo) |
 | 2 | Open evidence file | File opens (signed URL) |
 | 3 | Search box | Finds file by name or summary text |
 | 4 | Upload **PDF** | Works on trial+ (stored as-is; no lossy compression) |
@@ -157,7 +157,7 @@ project-files / {projectId} / {claimId} / {timestamp}-{filename}.meta.json
 | Status update fails | Run `claim-status-workflow.sql` |
 | No AI category / empty summary | Set `GROQ_API_KEY`; without it, filename heuristics still work |
 | PDF says “no text could be extracted” | Often a **scanned/image PDF**; set `GROQ_API_KEY`, deploy, then **Re-scan text** on the card (or re-upload). OCR reads up to 6 pages. |
-| PNG of a claim PDF labeled **Damage Photo** | Redeploy (Llama 4 Scout vision + document rules). **Re-scan text** on the image card or re-upload. |
+| PNG of a PDF labeled **Site Photo** | Redeploy (Llama 4 Scout vision + document rules). **Re-scan text** on the image card or re-upload. |
 | `DOMMatrix is not defined` on upload | Redeploy after fix; needs `pdf-parse/worker` + `@napi-rs/canvas` (Node 20.16+ / 22.3+ on Vercel). |
 | 401 on API | Sign in again |
 | Project empty / no claim | Create project from `/projects` (auto-creates one claim) |

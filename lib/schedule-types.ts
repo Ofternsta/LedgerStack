@@ -13,7 +13,7 @@ export const SCHEDULE_EVENT_LABELS: Record<ScheduleEventType, string> = {
   inspection: 'Inspection',
   deadline: 'Deadline',
   reminder: 'Reminder',
-  insurance_followup: 'Insurance follow-up',
+  insurance_followup: 'Client follow-up',
   assignment: 'Worker assignment',
   other: 'Other',
 }

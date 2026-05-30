@@ -1,38 +1,58 @@
 export const EVIDENCE_TYPES = [
-  'Damage Photo',
+  'Site Photo',
   'Invoice',
   'Estimate',
-  'Moisture Reading',
-  'Insurance Email',
-  'Report',
+  'Measurements',
+  'Correspondence',
+  'Documents',
   'Other',
 ] as const
 
 export type EvidenceType = (typeof EVIDENCE_TYPES)[number]
 
+/** Previous default labels (and common variants) → current defaults. */
+export const LEGACY_EVIDENCE_TYPE_LABELS: Record<string, EvidenceType> = {
+  'damage photo': 'Site Photo',
+  'moisture reading': 'Measurements',
+  'insurance email': 'Correspondence',
+  report: 'Documents',
+}
+
 export function normalizeEvidenceType(raw: string): EvidenceType {
   const cleaned = raw.trim().toLowerCase()
+
+  const legacy = LEGACY_EVIDENCE_TYPE_LABELS[cleaned]
+  if (legacy) return legacy
 
   const match = EVIDENCE_TYPES.find((t) => t.toLowerCase() === cleaned)
   if (match) return match
 
   if (cleaned.includes('invoice') || cleaned.includes('receipt')) return 'Invoice'
   if (cleaned.includes('estimate') || cleaned.includes('quote')) return 'Estimate'
-  if (cleaned.includes('moisture')) return 'Moisture Reading'
-  if (cleaned.includes('email') || cleaned.includes('letter')) return 'Insurance Email'
   if (
-    cleaned.includes('report') ||
-    cleaned.includes('claim') ||
-    cleaned.includes('policy') ||
-    cleaned.includes('insurance')
+    cleaned.includes('moisture') ||
+    cleaned.includes('reading') ||
+    cleaned.includes('measurement')
   ) {
-    return 'Report'
+    return 'Measurements'
+  }
+  if (cleaned.includes('email') || cleaned.includes('letter')) {
+    return 'Correspondence'
   }
   if (
-    cleaned.includes('damage') &&
-    (cleaned.includes('photo') || cleaned.includes('image'))
+    cleaned.includes('report') ||
+    cleaned.includes('document') ||
+    cleaned.includes('contract') ||
+    cleaned.includes('form')
   ) {
-    return 'Damage Photo'
+    return 'Documents'
+  }
+  if (
+    cleaned.includes('photo') ||
+    cleaned.includes('image') ||
+    cleaned.includes('site')
+  ) {
+    return 'Site Photo'
   }
 
   return 'Other'
@@ -48,63 +68,79 @@ export function guessEvidenceTypeFromFile(file: {
   if (name.includes('invoice') || name.includes('receipt') || name.includes('bill')) {
     return 'Invoice'
   }
-  if (name.includes('estimate') || name.includes('quote') || name.includes('xact')) {
+  if (name.includes('estimate') || name.includes('quote') || name.includes('proposal')) {
     return 'Estimate'
   }
-  if (name.includes('moisture') || name.includes('hygro') || name.includes('drying')) {
-    return 'Moisture Reading'
+  if (
+    name.includes('moisture') ||
+    name.includes('hygro') ||
+    name.includes('drying') ||
+    name.includes('reading')
+  ) {
+    return 'Measurements'
   }
-  if (name.includes('email') || name.includes('correspondence') || name.includes('adjuster')) {
-    return 'Insurance Email'
+  if (
+    name.includes('email') ||
+    name.includes('correspondence') ||
+    name.includes('letter')
+  ) {
+    return 'Correspondence'
   }
   if (
     name.includes('report') ||
-    name.includes('copilot') ||
-    name.includes('inspection') ||
-    name.includes('claim') ||
-    name.includes('insurance')
+    name.includes('contract') ||
+    name.includes('scope') ||
+    name.includes('spec')
   ) {
-    return 'Report'
+    return 'Documents'
   }
-  if (mime === 'application/pdf' || name.endsWith('.docx')) return 'Report'
+  if (mime === 'application/pdf' || name.endsWith('.docx')) return 'Documents'
 
   if (mime.startsWith('image/')) {
-    return 'Other'
+    return 'Site Photo'
   }
 
   return 'Other'
 }
 
-/** Prefer Report/Email when OCR text looks like a document, not a job-site photo. */
+/** Prefer Documents/Correspondence when OCR text looks like a document, not a job-site photo. */
 export function guessEvidenceTypeFromExtractedText(text: string): EvidenceType | null {
   const sample = text.slice(0, 4000).toLowerCase()
   if (sample.length < 40) return null
 
   const docSignals = [
-    'claim number',
-    'policy number',
-    'insured',
-    'insurance',
-    'adjuster',
-    'deductible',
-    'coverage',
-    'loss date',
-    'date of loss',
-    'declaration',
-    'estimate',
     'invoice',
-    'xactimate',
+    'estimate',
+    'quote',
+    'proposal',
+    'contract',
+    'work order',
+    'scope of work',
+    'dear ',
+    'attention:',
+    'total due',
+    'amount due',
+    'payment terms',
   ]
-  const photoSignals = ['mold', 'water damage', 'ceiling', 'drywall', 'flooring']
+  const photoSignals = [
+    'job site',
+    'before',
+    'after',
+    'installed',
+    'ceiling',
+    'drywall',
+    'flooring',
+    'foundation',
+  ]
 
   const docHits = docSignals.filter((s) => sample.includes(s)).length
   const photoHits = photoSignals.filter((s) => sample.includes(s)).length
 
   if (docHits >= 2 && docHits >= photoHits) {
     if (sample.includes('invoice') || sample.includes('receipt')) return 'Invoice'
-    if (sample.includes('estimate') || sample.includes('xactimate')) return 'Estimate'
-    if (sample.includes('email') || sample.includes('dear ')) return 'Insurance Email'
-    return 'Report'
+    if (sample.includes('estimate') || sample.includes('quote')) return 'Estimate'
+    if (sample.includes('email') || sample.includes('dear ')) return 'Correspondence'
+    return 'Documents'
   }
 
   return null

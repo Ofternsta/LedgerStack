@@ -10,24 +10,24 @@ import { BILLING_PLANS } from '@/lib/stripe-config'
 
 const FEATURES = [
   {
-    title: 'Report workflow',
+    title: 'Job workflow',
     description:
-      'Track every job through Inspection → Documentation → Estimate → Approved → In Progress → Completed.',
+      'Track each project through stages you define — from first visit through completion — so office and field stay on the same page.',
   },
   {
-    title: 'Document library',
+    title: 'Field documentation',
     description:
-      'Upload photos, PDFs, and videos from the field. OCR and AI categorize and summarize automatically.',
+      'Capture photos, PDFs, and video on site. AI helps categorize and summarize uploads so nothing lives in random camera rolls.',
   },
   {
-    title: 'AI report assistant',
+    title: 'Client alignment',
     description:
-      'Generate timelines and summaries from your documents so adjusters and clients stay aligned.',
+      'Share selected files with clients, keep report status visible, and export professional packets when it is time to close the loop.',
   },
   {
-    title: 'Team & clients',
+    title: 'Crew coordination',
     description:
-      'Invite workers with org codes, grant clients view-only access per project, and keep internal chat private.',
+      'Give workers project access, team chat, calendar events, and permissions — so you see what happened on the job when it happened.',
   },
 ]
 
@@ -40,12 +40,12 @@ const STEPS = [
   {
     step: '2',
     title: 'Open a project',
-    body: 'Add the customer, address, and a report — document uploads attach to that report.',
+    body: 'Add the customer, job address, and reports — every upload and update ties to that job.',
   },
   {
     step: '3',
-    title: 'Document & close',
-    body: 'Move the report through stages, export packets, and share with clients when ready.',
+    title: 'Run it with your team',
+    body: 'Workers document and update status in the field; share files with clients; export when the job is ready.',
   },
 ]
 
@@ -96,19 +96,20 @@ export function MarketingHome() {
             <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-12 xl:gap-16">
               <div className="flex-1 text-center lg:text-left">
                 <p className="text-sm font-semibold text-brand-bright mb-4">
-                  Built for restoration &amp; insurance contractors
+                  Built for contractors in the field
                 </p>
                 <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1] max-w-3xl">
                   <span className="block text-2xl sm:text-3xl text-brand-bright mb-2">
                     LedgerStack
                   </span>
-                  <span className="text-white">Reports, documents, and teams</span>
+                  <span className="text-white">Your jobs, clients, and crew</span>
                   <span className="brand-gradient-text"> — in one stack.</span>
                 </h1>
                 <p className="mt-6 text-lg sm:text-xl text-muted leading-relaxed max-w-2xl mx-auto lg:mx-0">
-                  LedgerStack helps your company organize projects, document damage,
-                  track report status, and collaborate with workers and clients without
-                  scattered folders or email threads.
+                  Organize projects, capture work from the field, keep clients in the
+                  loop on what you share, and give your workers a clear view of status
+                  and documents as the job moves — without scattered folders or endless
+                  text threads.
                 </p>
                 <div className="mt-10 flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
                   <Link
@@ -149,8 +150,8 @@ export function MarketingHome() {
             Everything on the job, organized
           </h2>
           <p className="mt-3 text-muted text-lg max-w-2xl">
-            Replace spreadsheets and text threads with a system your field crew
-            and office staff can actually use on mobile.
+            One system for the owner, the crew on site, and the clients you work
+            with closely — usable on mobile where the work actually happens.
           </p>
           <ul className="mt-10 grid sm:grid-cols-2 gap-6">
             {FEATURES.map((f) => (
@@ -195,7 +196,7 @@ export function MarketingHome() {
           <h2 className="text-3xl font-bold tracking-tight">Simple pricing</h2>
           <p className="mt-3 text-muted text-lg max-w-2xl">
             Start with a 7-day trial (card required), then pick the plan that
-            matches your crew size. All plans keep your projects and documents
+            matches your crew size. Every tier keeps jobs, files, and team access
             in one place.
           </p>
           <ul className="mt-10 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -275,7 +276,8 @@ export function MarketingHome() {
               Ready to stack your paperwork?
             </h2>
             <p className="mt-4 text-muted text-lg max-w-xl mx-auto">
-              Join contractors who keep reports, photos, and status in one place.
+              Join contractors who keep jobs, photos, and status aligned with their
+              crew and clients.
             </p>
             <Link
               href="/login?signup=admin"

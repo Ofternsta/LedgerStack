@@ -19,7 +19,7 @@ export const LEGAL_NOTICES: Record<LegalNoticeId, LegalNoticeContent> = {
   ai: {
     title: 'AI disclaimer',
     body:
-      'AI summaries, timelines, and categorization are automated aids only. They may be incomplete or inaccurate. Review all output before sharing with clients, carriers, or counsel. LedgerStack does not provide legal, insurance, or engineering advice.',
+      'AI summaries, timelines, and categorization are automated aids only. They may be incomplete or inaccurate. Review all output before sharing with clients or third parties. LedgerStack does not provide legal, regulatory, or professional trade advice.',
   },
   'file-responsibility': {
     title: 'File responsibility',
@@ -29,7 +29,7 @@ export const LEGAL_NOTICES: Record<LegalNoticeId, LegalNoticeContent> = {
   'no-guarantee': {
     title: 'No guarantee',
     body:
-      'Report status, schedules, and exports reflect information entered by your team. LedgerStack does not guarantee claim outcomes, carrier approval, or regulatory compliance for your jobs.',
+      'Report status, schedules, and exports reflect information entered by your team. LedgerStack does not guarantee job outcomes, client approvals, or regulatory compliance for your work.',
   },
   'data-retention': {
     title: 'Data retention & deletion',

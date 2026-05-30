@@ -31,7 +31,7 @@ export async function ocrImageFromBuffer(
               type: 'text',
               text: `Extract ALL readable text from this image (${fileName}).
 
-This may be a screenshot or scan of an insurance claim, policy, estimate, invoice, email, or form — not only a job-site photo. Return plain text only: headings, labels, amounts, dates, addresses, claim/policy numbers, tables. Preserve line breaks where helpful. If no text is visible, reply with an empty string.`,
+This may be a screenshot or scan of an estimate, invoice, email, contract, or form — not only a job-site photo. Return plain text only: headings, labels, amounts, dates, addresses, claim/policy numbers, tables. Preserve line breaks where helpful. If no text is visible, reply with an empty string.`,
             },
             {
               type: 'image_url',

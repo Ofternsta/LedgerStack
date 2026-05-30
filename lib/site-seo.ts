@@ -3,20 +3,21 @@ import { billingAppUrl } from '@/lib/stripe-config'
 
 export const SITE_NAME = 'LedgerStack'
 export const SITE_TAGLINE =
-  'Reports & documents for restoration contractors'
+  'Field jobs, clients, and crew — one stack'
 export const SITE_DESCRIPTION =
-  'LedgerStack helps restoration and insurance contractors organize projects, track report status, upload field documents with AI, and collaborate with workers and clients.'
+  'LedgerStack helps contractors organize jobs, capture field documentation, collaborate with workers in real time, and stay aligned with clients through shared status and files.'
 
 export const SITE_KEYWORDS = [
   'LedgerStack',
   'Ledger Stack',
   'ledgerstack',
   'ledgerstack.org',
-  'restoration contractor software',
-  'insurance restoration software',
-  'property damage documentation',
-  'restoration project management',
-  'contractor report workflow',
+  'contractor project management',
+  'field contractor software',
+  'job site documentation',
+  'contractor client portal',
+  'crew coordination app',
+  'contractor workflow software',
   'field documentation app',
 ]
 

@@ -148,7 +148,7 @@ export function ProjectSchedulePanel({ projectId, claimId, canEdit }: Props) {
         <div>
           <h2 className="font-bold text-lg">Schedule &amp; calendar</h2>
           <p className="text-sm text-muted mt-1">
-            Inspections, deadlines, reminders, insurance follow-ups, and worker
+            Site visits, deadlines, reminders, client follow-ups, and worker
             assignments.
           </p>
         </div>

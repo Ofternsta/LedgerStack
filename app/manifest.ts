@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'LedgerStack',
     short_name: 'LedgerStack',
-    description: 'Manage restoration projects, reports, and documents in the field',
+    description: 'Manage contractor jobs, field documents, clients, and crew from one app',
     start_url: '/',
     display: 'standalone',
     orientation: 'portrait',

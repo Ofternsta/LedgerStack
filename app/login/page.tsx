@@ -649,7 +649,7 @@ export default function LoginPage() {
                     value={organizationName}
                     onChange={(e) => setOrganizationName(e.target.value)}
                     className="input-field"
-                    placeholder="Acme Restoration"
+                    placeholder="Acme Contracting"
                   />
                   <p className="text-xs text-muted-dim mt-2">
                     Next step: choose a subscription plan, then your account is

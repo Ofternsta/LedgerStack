@@ -35,7 +35,7 @@ export async function generateClaimSummary(
         {
           role: 'system',
           content:
-            'You write concise restoration insurance claim summaries for contractors. Use only facts from the data provided. 3-5 sentences.',
+            'You write concise contractor job summaries for field projects. Use only facts from the data provided. 3-5 sentences.',
         },
         {
           role: 'user',
