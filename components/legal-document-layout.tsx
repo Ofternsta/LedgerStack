@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { BrandLogo } from '@/components/brand-logo'
 import { SupportLink } from '@/components/support-link'
 import {
-  LEGAL_CONTACT_EMAIL,
   LEGAL_LAST_UPDATED,
   LEGAL_OPERATOR_NAME,
   LEGAL_PRODUCT_NAME,
@@ -41,14 +40,7 @@ export function LegalDocumentLayout({
         </article>
 
         <p className="mt-10 text-sm text-muted">
-          Questions?{' '}
-          <a
-            href={`mailto:${LEGAL_CONTACT_EMAIL}`}
-            className="text-brand-bright hover:underline"
-          >
-            {LEGAL_CONTACT_EMAIL}
-          </a>{' '}
-          or <SupportLink className="text-brand-bright hover:underline" />.
+          Questions? <SupportLink className="text-brand-bright hover:underline" />
         </p>
       </main>
 
