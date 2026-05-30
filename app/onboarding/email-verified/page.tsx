@@ -12,6 +12,7 @@ function EmailVerifiedContent() {
   const searchParams = useSearchParams()
   const planParam = searchParams.get('plan') as BillingPlanId | null
   const emailParam = searchParams.get('email')?.trim().toLowerCase() || null
+  const verifyError = searchParams.get('verify_error')
 
   const plan =
     planParam && planParam in BILLING_PLANS ? planParam : ('starter' as BillingPlanId)
@@ -60,6 +61,12 @@ function EmailVerifiedContent() {
 
       <main className="flex-1 safe-x px-4 py-8 max-w-lg mx-auto w-full pb-8">
         <section className="border border-emerald-200 bg-emerald-50 rounded-2xl p-6 space-y-4 text-center">
+          {verifyError && (
+            <p className="text-sm text-amber-950 bg-amber-100 border border-amber-300 rounded-xl p-3 text-left">
+              {verifyError} Try opening the latest verification email, or resend
+              from checkout.
+            </p>
+          )}
           <p className="text-4xl" aria-hidden>
             ✓
           </p>

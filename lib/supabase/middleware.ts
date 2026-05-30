@@ -97,10 +97,13 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  const isAuthConfirm = pathname.startsWith('/auth/confirm')
+
   if (
     user &&
     !emailConfirmed &&
     !isAuthRoute &&
+    !isAuthConfirm &&
     !isPublicApi &&
     !isPublicOnboarding &&
     !isPublicSignupCheckout

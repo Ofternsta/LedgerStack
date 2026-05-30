@@ -54,7 +54,9 @@ With **`RESEND_API_KEY`** set, most admin signup / resend flows bypass Supabaseâ
 
 **Authentication â†’ URL Configuration** must include:
 
-- `https://ledgerstack.org/auth/callback`
+- `https://ledgerstack.org/auth/confirm`
+- `https://ledgerstack.org/auth/callback` (legacy)
+- `http://localhost:3000/auth/confirm` (local)
 - `http://localhost:3000/auth/callback` (local)
 
 See `.env.example` for `NEXT_PUBLIC_APP_URL`.

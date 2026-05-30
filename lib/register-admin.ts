@@ -256,7 +256,7 @@ export async function prepareAdminCheckoutVerification(
       return { error: pending.error }
     }
     const sent = await sendSignupConfirmationEmail(email, {
-      nextPath: signupEmailVerifiedNextPath(input.plan),
+      nextPath: signupEmailVerifiedNextPath(input.plan, email),
     })
     if (!sent.ok) return { error: sent.error || 'Could not send verification email' }
     return {
@@ -289,7 +289,7 @@ export async function prepareAdminCheckoutVerification(
   }
 
   const sent = await sendSignupConfirmationEmail(email, {
-    nextPath: signupEmailVerifiedNextPath(input.plan),
+    nextPath: signupEmailVerifiedNextPath(input.plan, email),
   })
   if (!sent.ok) {
     return { error: sent.error || 'Could not send verification email' }

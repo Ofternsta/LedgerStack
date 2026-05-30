@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     }
 
     const result = await sendSignupConfirmationEmail(email, {
-      nextPath: signupEmailVerifiedNextPath(plan),
+      nextPath: signupEmailVerifiedNextPath(plan, email),
     })
     if (!result.ok) {
       return NextResponse.json(

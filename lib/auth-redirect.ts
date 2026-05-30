@@ -1,11 +1,16 @@
 import type { BillingPlanId } from '@/lib/stripe-config'
 import { billingAppUrl } from '@/lib/stripe-config'
 
-/** Supabase Auth redirect after email link (signup, recovery, etc.). */
-export function authCallbackRedirectUrl(nextPath: string) {
+/** Where Supabase sends users after they click the email confirmation link. */
+export function authConfirmRedirectUrl(nextPath: string) {
   const appUrl = billingAppUrl()
-  const next = encodeURIComponent(nextPath)
-  return `${appUrl}/auth/callback?next=${next}`
+  const params = new URLSearchParams({ next: nextPath })
+  return `${appUrl}/auth/confirm?${params.toString()}`
+}
+
+/** @deprecated Use authConfirmRedirectUrl — kept for older links */
+export function authCallbackRedirectUrl(nextPath: string) {
+  return authConfirmRedirectUrl(nextPath)
 }
 
 export function passwordResetRedirectUrl() {
@@ -13,7 +18,7 @@ export function passwordResetRedirectUrl() {
 }
 
 export function emailVerificationRedirectUrl(nextPath = '/login?verified=1') {
-  return authCallbackRedirectUrl(nextPath)
+  return authConfirmRedirectUrl(nextPath)
 }
 
 /** After admin signup email confirm — do not send users to login. */

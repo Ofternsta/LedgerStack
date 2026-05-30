@@ -2,6 +2,7 @@ import 'server-only'
 
 import { emailVerificationRedirectUrl } from '@/lib/auth-redirect'
 import { useCustomAuthEmail } from '@/lib/auth-email-config'
+import { billingAppUrl } from '@/lib/stripe-config'
 import {
   buildVerificationEmailHtml,
   buildVerificationEmailText,
@@ -101,16 +102,21 @@ async function sendViaResendLink(
     return { ok: false, error: error.message }
   }
 
-  const actionLink = data?.properties?.action_link
-  if (!actionLink) {
+  const hashedToken = data?.properties?.hashed_token
+  if (!hashedToken) {
     return { ok: false, error: 'Could not create verification link' }
   }
+
+  const link = new URL('/auth/confirm', billingAppUrl())
+  link.searchParams.set('token_hash', hashedToken)
+  link.searchParams.set('type', password ? 'signup' : 'magiclink')
+  link.searchParams.set('next', nextPath)
 
   const sent = await sendTransactionalEmail({
     to: normalized,
     subject: 'Confirm your LedgerStack email',
-    html: buildVerificationEmailHtml({ confirmUrl: actionLink }),
-    text: buildVerificationEmailText({ confirmUrl: actionLink }),
+    html: buildVerificationEmailHtml({ confirmUrl: link.toString() }),
+    text: buildVerificationEmailText({ confirmUrl: link.toString() }),
   })
 
   if (!sent.ok) {
