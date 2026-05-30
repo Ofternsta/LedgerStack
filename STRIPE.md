@@ -37,7 +37,7 @@ Trial is free in-app only — no Stripe price needed.
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Publishable key (`pk_test_...` or live) |
 | `STRIPE_CHECKOUT_DISPLAY_NAME` | Optional. Name at top of Checkout (default: `LedgerStack`) |
 | `STRIPE_STATEMENT_DESCRIPTOR` | Optional. Text on card statements for subscriptions (default: `LedgerStack`, max 22 chars) |
-| `STRIPE_STATEMENT_DESCRIPTOR_SUFFIX` | Optional. Suffix on card charges from Checkout (default: `LEDGERSTACK`) |
+| `STRIPE_STATEMENT_DESCRIPTOR_SUFFIX` | Optional. Suffix on trial setup Checkout only (default: `LEDGERSTACK`). Paid plans use the product statement descriptor. |
 
 Never commit secret keys. Add them only in `.env.local` and Vercel.
 

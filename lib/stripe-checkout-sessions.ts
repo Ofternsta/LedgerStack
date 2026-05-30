@@ -81,9 +81,10 @@ export async function createStripeCheckoutSession(
 
   await ensureStripeProductBranding(stripe, input.plan)
 
+  // Statement descriptor for subscriptions comes from the Product (ensureStripeProductBranding).
+  // payment_intent_data is only valid for payment/setup mode, not subscription.
   const session = await stripe.checkout.sessions.create({
     ...base,
-    ...stripeCheckoutPaymentIntentBranding(),
     mode: 'subscription',
     line_items: [{ price: priceId, quantity: 1 }],
     subscription_data: {

@@ -88,7 +88,7 @@ export function stripeCheckoutBranding(): {
   }
 }
 
-/** Card charges from Checkout (trial card verify, etc.). */
+/** Card charges from Checkout setup mode (trial card verify only — not subscriptions). */
 export function stripeCheckoutPaymentIntentBranding(): {
   payment_intent_data: { statement_descriptor_suffix: string }
 } {
