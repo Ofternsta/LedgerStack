@@ -83,6 +83,12 @@ export function ClaimStatusWorkflow({
   }
 
   const currentLabel = statusLabel(currentKey, workflow)
+  const progressPct =
+    workflow.length > 1
+      ? Math.round((currentIndex / (workflow.length - 1)) * 100)
+      : currentIndex > 0
+        ? 100
+        : 0
 
   return (
     <section className="border border-border rounded-xl p-4 bg-surface-elevated">
@@ -118,7 +124,7 @@ export function ClaimStatusWorkflow({
                 type="button"
                 disabled={!canEdit || saving || isCurrent}
                 onClick={() => requestStatus(stage.key)}
-                className={`w-full text-left rounded-lg px-2 py-2 text-xs sm:text-sm border transition min-h-[52px] ${
+                className={`w-full text-left rounded-lg px-2 py-2 text-xs sm:text-sm border transition-all duration-300 min-h-[52px] ${
                   isCurrent
                     ? 'btn-primary text-[#052e16] border-black font-semibold'
                     : isPast

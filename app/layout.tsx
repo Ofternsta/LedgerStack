@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { AppMessagingRoot } from '@/components/app-messaging-root'
+import { PageTransition } from '@/components/page-transition'
 import { ThemeProvider } from '@/components/theme-provider'
 import { ThemeScript } from '@/components/theme-script'
 import { rootSiteMetadata, SITE_NAME } from '@/lib/site-seo'
@@ -80,7 +81,7 @@ export default function RootLayout({
       <body className="min-h-dvh flex flex-col bg-background text-foreground">
         <ThemeProvider>
           <AppMessagingRoot />
-          {children}
+          <PageTransition>{children}</PageTransition>
         </ThemeProvider>
       </body>
     </html>

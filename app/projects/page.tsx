@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { AppHeader } from '@/components/app-header'
+import { LedgerStackLoader } from '@/components/ledgerstack-loader'
 import { AppFooter } from '@/components/app-footer'
 import { AppNav } from '@/components/app-nav'
 import { LegalNotice } from '@/components/legal-notice'
@@ -173,7 +174,7 @@ export default function ProjectsPage() {
   if (accessLoading) {
     return (
       <div className="min-h-dvh flex items-center justify-center">
-        <p className="text-muted">Loading…</p>
+        <LedgerStackLoader label="Loading projects…" />
       </div>
     )
   }

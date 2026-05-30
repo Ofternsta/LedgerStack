@@ -61,6 +61,8 @@ export default function ProjectPageClient() {
   const [documents, setDocuments] = useState<Evidence[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null)
+  const [uploadProgressLabel, setUploadProgressLabel] = useState<string>('Processing…')
   const [uploadMessage, setUploadMessage] = useState<string | null>(null)
   const [configError, setConfigError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
@@ -208,11 +210,21 @@ export default function ProjectPageClient() {
     }
 
     setUploading(true)
+    setUploadProgress(0)
+    setUploadProgressLabel('Preparing…')
     setUploadMessage(null)
     setConfigError(null)
 
     try {
-      const evidence = await uploadEvidenceWithAi(id, selectedClaim.id, file)
+      const evidence = await uploadEvidenceWithAi(
+        id,
+        selectedClaim.id,
+        file,
+        (pct, label) => {
+          setUploadProgress(pct)
+          setUploadProgressLabel(label)
+        }
+      )
 
       await fetchEvidence(selectedClaim.id)
       setUploadMessage(
@@ -228,21 +240,31 @@ export default function ProjectPageClient() {
     }
 
     setUploading(false)
+    setUploadProgress(null)
   }
 
   async function uploadMany(files: File[]) {
     if (!selectedClaim || !access?.canUploadEvidence) return
     setUploading(true)
+    setUploadProgress(0)
     setUploadMessage(null)
     let ok = 0
-    for (const file of files) {
+    const total = files.length
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
       const sizeError = validateUploadSize(file.size)
       if (sizeError) {
         setUploadMessage(sizeError)
         break
       }
       try {
-        await uploadEvidenceWithAi(id, selectedClaim.id, file)
+        await uploadEvidenceWithAi(id, selectedClaim.id, file, (pct, label) => {
+          const overall = Math.round(((i + pct / 100) / total) * 100)
+          setUploadProgress(overall)
+          setUploadProgressLabel(
+            total > 1 ? `File ${i + 1} of ${total}: ${label}` : label
+          )
+        })
         ok++
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Upload failed'
@@ -255,6 +277,7 @@ export default function ProjectPageClient() {
       setUploadMessage(`Uploaded ${ok} file(s) with AI analysis`)
     }
     setUploading(false)
+    setUploadProgress(null)
   }
 
   async function deleteFile(filePath: string) {
@@ -550,6 +573,8 @@ export default function ProjectPageClient() {
               <EvidenceUpload
                 uploading={uploading}
                 uploadMessage={uploadMessage}
+                uploadProgress={uploadProgress}
+                uploadProgressLabel={uploadProgressLabel}
                 onUpload={uploadFile}
                 onUploadMany={uploadMany}
               />

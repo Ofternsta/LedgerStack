@@ -332,7 +332,7 @@ export function MessagingLauncher({
         {hasUnread && (
           <>
             <UnreadDot className="top-0 right-0" />
-            <span className="absolute -top-1 -right-1 min-w-[1.125rem] h-[1.125rem] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">
+            <span className="messaging-unread-pulse absolute -top-1 -right-1 min-w-[1.125rem] h-[1.125rem] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">
               {formatBadgeCount(totalUnread)}
             </span>
           </>
@@ -429,7 +429,7 @@ export function MessagingLauncher({
                         {hasChatUnread && (
                           <>
                             <UnreadDot className="top-2 right-2" />
-                            <span className="absolute top-1.5 right-2 min-w-[1.125rem] h-[1.125rem] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">
+                            <span className="messaging-unread-pulse absolute top-1.5 right-2 min-w-[1.125rem] h-[1.125rem] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">
                               {formatBadgeCount(c.unread_count)}
                             </span>
                           </>

@@ -7,6 +7,8 @@ import { isNativeApp, takeNativePhoto } from '@/lib/native-photo'
 type EvidenceUploadProps = {
   uploading: boolean
   uploadMessage: string | null
+  uploadProgress?: number | null
+  uploadProgressLabel?: string
   onUpload: (file: File) => void
   onUploadMany?: (files: File[]) => void
 }
@@ -14,6 +16,8 @@ type EvidenceUploadProps = {
 export function EvidenceUpload({
   uploading,
   uploadMessage,
+  uploadProgress = null,
+  uploadProgressLabel,
   onUpload,
   onUploadMany,
 }: EvidenceUploadProps) {
@@ -142,8 +146,23 @@ export function EvidenceUpload({
         Photos, PDFs, and Word docs — AI categorizes and summarizes after upload.
       </p>
 
-      {uploading && (
-        <p className="mt-3 text-sm font-medium">
+      {uploading && uploadProgress != null && (
+        <div className="mt-4" role="progressbar" aria-valuenow={uploadProgress} aria-valuemin={0} aria-valuemax={100}>
+          <div className="flex justify-between text-xs text-muted mb-1.5">
+            <span>{uploadProgressLabel ?? 'Processing…'}</span>
+            <span className="tabular-nums font-medium text-brand-bright">{uploadProgress}%</span>
+          </div>
+          <div className="upload-progress-track">
+            <div
+              className="upload-progress-fill"
+              style={{ width: `${Math.min(100, Math.max(0, uploadProgress))}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {uploading && uploadProgress == null && (
+        <p className="mt-3 text-sm font-medium text-muted">
           Uploading, extracting text, categorizing, and summarizing…
         </p>
       )}

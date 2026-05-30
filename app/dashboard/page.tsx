@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { CountUp } from '@/components/count-up'
 import { AppHeader } from '@/components/app-header'
+import { LedgerStackLoader } from '@/components/ledgerstack-loader'
 import { AppFooter } from '@/components/app-footer'
 import { AppNav } from '@/components/app-nav'
 import { loadUserAccess } from '@/lib/load-access'
@@ -64,7 +66,7 @@ export default function DashboardPage() {
   if (!access) {
     return (
       <div className="min-h-dvh flex items-center justify-center">
-        <p className="text-muted">Loading…</p>
+        <LedgerStackLoader label="Loading dashboard…" />
       </div>
     )
   }
@@ -108,7 +110,9 @@ export default function DashboardPage() {
                   key={card.label}
                   className="border rounded-xl p-4 bg-surface-elevated shadow-sm text-center"
                 >
-                  <p className="text-2xl font-bold">{card.value}</p>
+                  <p className="text-2xl font-bold">
+                    <CountUp value={card.value} />
+                  </p>
                   <p className="text-xs text-muted mt-1">{card.label}</p>
                 </div>
               ))}

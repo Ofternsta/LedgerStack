@@ -1,6 +1,8 @@
 import type { EvidenceRecord } from '@/lib/evidence-storage'
 import { prepareEvidenceFileForUpload } from '@/lib/compress-evidence-client'
 
+export type UploadProgressCallback = (percent: number, label: string) => void
+
 async function parseUploadError(res: Response): Promise<string> {
   if (res.status === 413) {
     return 'Photo is too large for upload. We now resize photos automatically — refresh the page and try again.'
@@ -24,23 +26,58 @@ async function parseUploadError(res: Response): Promise<string> {
   return body.length > 280 ? `${body.slice(0, 280)}…` : body
 }
 
+function uploadWithProgress(
+  formData: FormData,
+  onProgress?: UploadProgressCallback
+): Promise<Response> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', '/api/upload')
+
+    xhr.upload.addEventListener('progress', (e) => {
+      if (!onProgress) return
+      if (e.lengthComputable && e.total > 0) {
+        const pct = 20 + Math.round((e.loaded / e.total) * 65)
+        onProgress(Math.min(85, pct), 'Uploading…')
+      } else {
+        onProgress(40, 'Uploading…')
+      }
+    })
+
+    xhr.addEventListener('load', () => {
+      resolve(
+        new Response(xhr.responseText, {
+          status: xhr.status,
+          statusText: xhr.statusText,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+    })
+
+    xhr.addEventListener('error', () => reject(new Error('Network error during upload')))
+    xhr.addEventListener('abort', () => reject(new Error('Upload cancelled')))
+
+    xhr.send(formData)
+  })
+}
+
 /** Upload file to storage, then run server AI/OCR via /api/upload. */
 export async function uploadEvidenceWithAi(
   projectId: string,
   claimId: string,
-  file: File
+  file: File,
+  onProgress?: UploadProgressCallback
 ): Promise<EvidenceRecord> {
+  onProgress?.(5, 'Preparing file…')
   const prepared = await prepareEvidenceFileForUpload(file)
+  onProgress?.(15, 'Uploading…')
 
   const formData = new FormData()
   formData.append('file', prepared)
   formData.append('project_id', projectId)
   formData.append('claim_id', claimId)
 
-  const res = await fetch('/api/upload', {
-    method: 'POST',
-    body: formData,
-  })
+  const res = await uploadWithProgress(formData, onProgress)
 
   if (res.status === 401) {
     window.location.href = '/login'
@@ -51,7 +88,9 @@ export async function uploadEvidenceWithAi(
     throw new Error(await parseUploadError(res))
   }
 
+  onProgress?.(92, 'Analyzing with AI…')
   const payload = (await res.json()) as { evidence: EvidenceRecord }
+  onProgress?.(100, 'Done')
   return payload.evidence
 }
 
@@ -61,8 +100,11 @@ export async function rescanEvidenceWithAi(
   claimId: string,
   filePath: string,
   fileName: string,
-  fileType: string
+  fileType: string,
+  onProgress?: UploadProgressCallback
 ): Promise<EvidenceRecord> {
+  onProgress?.(20, 'Re-scanning…')
+
   const res = await fetch('/api/upload', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -84,6 +126,7 @@ export async function rescanEvidenceWithAi(
     throw new Error(await parseUploadError(res))
   }
 
+  onProgress?.(100, 'Done')
   const payload = (await res.json()) as { evidence: EvidenceRecord }
   return payload.evidence
 }
