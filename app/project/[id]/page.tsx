@@ -22,9 +22,6 @@ import { EvidenceUpload } from '@/components/evidence-upload'
 import { InternalNotesPanel } from '@/components/internal-notes-panel'
 import { MessagePanel } from '@/components/message-panel'
 import { ProjectSchedulePanel } from '@/components/project-schedule-panel'
-import { PlanUpgradeBanner } from '@/components/plan-upgrade-banner'
-import { ProjectClientPanel } from '@/components/project-client-panel'
-import { ProjectWorkerPanel } from '@/components/project-worker-panel'
 import { isUnlimited } from '@/lib/plan-entitlements'
 import { loadUserAccess } from '@/lib/load-access'
 import type { UserAccess } from '@/lib/roles'
@@ -408,14 +405,6 @@ export default function ProjectPageClient() {
           </p>
         )}
 
-        {access.canManageProjectClients && (
-          <ProjectClientPanel projectId={id} />
-        )}
-
-        {access.role === 'admin' && !access.canManageProjectClients && (
-          <PlanUpgradeBanner message="Client portal access is available on Professional and Enterprise. Upgrade to invite clients to view projects." />
-        )}
-
         <label className="block lg:hidden">
           <span className="text-sm font-medium text-muted mb-1 block">
             Active report
@@ -590,10 +579,6 @@ export default function ProjectPageClient() {
                 Your account cannot view project files. Contact your organization
                 admin if you need access.
               </p>
-            )}
-
-            {access.role === 'admin' && (
-              <ProjectWorkerPanel projectId={id} />
             )}
           </div>
         </div>
