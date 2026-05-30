@@ -13,6 +13,10 @@ import { assertProjectMemberPermission } from '@/lib/member-permissions-server'
 import { getProjectOrgId } from '@/lib/staff-project-access'
 import { requireAuth } from '@/lib/require-auth'
 import { createServiceClient } from '@/lib/supabase/service'
+import {
+  normalizeFileCategoryLabel,
+  parseProjectFileCategories,
+} from '@/lib/project-file-categories'
 import { updateEvidenceMeta } from '@/lib/update-evidence-meta'
 
 export async function GET(req: Request) {
@@ -163,9 +167,21 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: gate.error }, { status: 403 })
     }
 
+    const projectId = projectIdFromEvidencePath(filePath)
+    let normalizedType = evidenceType
+    if (evidenceType !== undefined && projectId) {
+      const { data: project } = await supabase
+        .from('projects')
+        .select('file_categories')
+        .eq('id', projectId)
+        .maybeSingle()
+      const categories = parseProjectFileCategories(project?.file_categories)
+      normalizedType = normalizeFileCategoryLabel(evidenceType, categories)
+    }
+
     const evidence = await updateEvidenceMeta(supabase, filePath, {
       summary,
-      evidence_type: evidenceType,
+      evidence_type: normalizedType,
     })
 
     return NextResponse.json({ evidence })

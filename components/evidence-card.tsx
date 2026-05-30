@@ -1,7 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { defaultFileCategories } from '@/lib/project-file-categories'
+import { moveEvidenceCategory } from '@/lib/move-evidence-category-client'
+import {
+  defaultFileCategories,
+  normalizeFileCategoryLabel,
+  type FileCategory,
+} from '@/lib/project-file-categories'
 
 type EvidenceCardProps = {
   doc: {
@@ -16,6 +21,7 @@ type EvidenceCardProps = {
   }
   projectId?: string
   claimId?: string
+  categories?: FileCategory[]
   categoryLabels?: string[]
   canEdit: boolean
   canDelete: boolean
@@ -30,6 +36,7 @@ export function EvidenceCard({
   doc,
   projectId,
   claimId,
+  categories: categoriesProp,
   categoryLabels: categoryLabelsProp,
   canEdit,
   canDelete,
@@ -43,6 +50,7 @@ export function EvidenceCard({
   const [summary, setSummary] = useState(doc.summary)
   const [evidenceType, setEvidenceType] = useState(doc.evidence_type)
   const [saving, setSaving] = useState(false)
+  const [movingCategory, setMovingCategory] = useState(false)
   const [rescanning, setRescanning] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -55,10 +63,15 @@ export function EvidenceCard({
   const canRunAiRescan = isPdf || isImage
   const isDetail = variant === 'detail'
 
+  const categories =
+    categoriesProp?.length ? categoriesProp : defaultFileCategories()
+
   const categoryLabels =
     categoryLabelsProp?.length
       ? categoryLabelsProp
-      : defaultFileCategories().map((c) => c.label)
+      : categories.map((c) => c.label)
+
+  const displayCategory = normalizeFileCategoryLabel(evidenceType, categories)
 
   useEffect(() => {
     setSummary(doc.summary)
@@ -76,7 +89,6 @@ export function EvidenceCard({
       body: JSON.stringify({
         file_path: doc.file_path,
         summary,
-        evidence_type: evidenceType,
       }),
     })
     const payload = await res.json().catch(() => ({}))
@@ -90,6 +102,20 @@ export function EvidenceCard({
     setEditing(false)
     onUpdated()
     setSaving(false)
+  }
+
+  async function moveToCategory(nextLabel: string) {
+    if (nextLabel === displayCategory) return
+    setMovingCategory(true)
+    setError(null)
+    try {
+      await moveEvidenceCategory(doc.file_path, nextLabel)
+      setEvidenceType(nextLabel)
+      onUpdated()
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Could not move document')
+    }
+    setMovingCategory(false)
   }
 
   async function rescanText() {
@@ -120,11 +146,38 @@ export function EvidenceCard({
           : 'border border-border rounded-xl p-4 bg-surface-elevated shadow-sm'
       }
     >
+      {canEdit && !editing && (
+        <div className="mb-3">
+          <label className="block text-xs font-medium text-muted-dim mb-1">
+            Category
+          </label>
+          <select
+            value={displayCategory}
+            disabled={movingCategory}
+            onChange={(e) => void moveToCategory(e.target.value)}
+            className="border border-border rounded-xl p-2 w-full text-sm bg-surface min-h-[44px] disabled:opacity-50"
+            aria-label="Move document to category"
+          >
+            {categoryLabels.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+          {movingCategory && (
+            <p className="text-xs text-muted-dim mt-1">Moving…</p>
+          )}
+        </div>
+      )}
+
+      {!isDetail && !canEdit && (
+        <span className="inline-block text-xs font-semibold bg-surface border border-border text-foreground px-2 py-1 rounded-full mb-2">
+          {displayCategory}
+        </span>
+      )}
+
       {!isDetail && (
         <>
-          <span className="inline-block text-xs font-semibold bg-surface border border-border text-foreground px-2 py-1 rounded-full mb-2">
-            {doc.evidence_type}
-          </span>
           <button
             type="button"
             className="block font-medium text-brand-bright text-left w-full py-1 min-h-[44px]"
@@ -160,17 +213,6 @@ export function EvidenceCard({
 
       {editing ? (
         <div className="space-y-2">
-          <select
-            value={evidenceType}
-            onChange={(e) => setEvidenceType(e.target.value)}
-            className="border border-border rounded-xl p-2 w-full text-sm bg-surface"
-          >
-            {categoryLabels.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
           <textarea
             value={summary}
             onChange={(e) => setSummary(e.target.value)}
@@ -203,6 +245,10 @@ export function EvidenceCard({
         <p className="text-sm text-muted leading-relaxed">{doc.summary}</p>
       )}
 
+      {error && !editing && (
+        <p className="text-sm text-red-400">{error}</p>
+      )}
+
       {!editing && (
         <div className="flex flex-wrap gap-3">
           {canRescan && canRunAiRescan && (
@@ -221,7 +267,7 @@ export function EvidenceCard({
               className="text-sm font-medium text-foreground min-h-[44px]"
               onClick={() => setEditing(true)}
             >
-              Edit summary
+              Edit summary text
             </button>
           )}
           {canDelete && (
