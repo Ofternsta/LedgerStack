@@ -12,8 +12,8 @@ import {
 type Props = {
   projectId: string
   projectName: string
-  reportCompleted: boolean
-  allReportsCompleted: boolean
+  jobCompleted: boolean
+  allJobsCompleted: boolean
   canArchive: boolean
   /** When set, show a one-time prompt to save after marking completed */
   promptSave?: boolean
@@ -23,8 +23,8 @@ type Props = {
 export function ProjectArchivePanel({
   projectId,
   projectName,
-  reportCompleted,
-  allReportsCompleted,
+  jobCompleted,
+  allJobsCompleted,
   canArchive,
   promptSave,
   onPromptDismiss,
@@ -47,7 +47,7 @@ export function ProjectArchivePanel({
 
   if (!canArchive) return null
 
-  const showPanel = reportCompleted || allReportsCompleted || promptSave
+  const showPanel = jobCompleted || allJobsCompleted || promptSave
 
   async function handleDownload() {
     setBusy(true)
@@ -85,7 +85,7 @@ export function ProjectArchivePanel({
     try {
       const name = await saveProjectArchiveToFolder(projectId)
       setSuccess(
-        `Saved project files, messages, and report intelligence to folder “${name}”.`
+        `Saved project files, messages, and job intelligence to folder “${name}”.`
       )
       await refreshFolderLabel()
       onPromptDismiss?.()
@@ -101,8 +101,8 @@ export function ProjectArchivePanel({
       <section className="border border-dashed border-border rounded-xl p-4 bg-surface">
         <h2 className="font-bold text-foreground">Project archive</h2>
         <p className="text-sm text-muted mt-2 leading-relaxed">
-          When a report reaches <strong>Completed</strong>, you can save all documents,
-          messages, and report intelligence to your computer.
+          When a job reaches <strong>Completed</strong>, you can save all documents,
+          messages, and job intelligence to your computer.
         </p>
       </section>
     )
@@ -111,7 +111,7 @@ export function ProjectArchivePanel({
   return (
     <section
       className={`border rounded-xl p-4 space-y-3 ${
-        promptSave || reportCompleted
+        promptSave || jobCompleted
           ? 'border-brand-dim/60 bg-[var(--info-surface)]'
           : 'border-border bg-surface-elevated'
       }`}
@@ -122,14 +122,14 @@ export function ProjectArchivePanel({
           {promptSave ? (
             <>
               <strong>{projectName}</strong> is marked completed. Save documents, project
-              messages, internal notes, schedule, and report intelligence (timeline + summaries)
+              messages, internal notes, schedule, and job intelligence (timeline + summaries)
               to your computer.
             </>
-          ) : allReportsCompleted ? (
-            <>All reports on this project are completed. Download or save a full archive.</>
+          ) : allJobsCompleted ? (
+            <>All jobs on this project are completed. Download or save a full archive.</>
           ) : (
             <>
-              This report is completed. Archive includes all reports on{' '}
+              This job is completed. Archive includes all jobs on{' '}
               <strong>{projectName}</strong>.
             </>
           )}

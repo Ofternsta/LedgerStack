@@ -32,8 +32,8 @@ export function PrivacyContent() {
         </p>
         <p>
           <strong className="text-foreground">Project and job data:</strong>{' '}
-          client names, property addresses, per-project report workflow stages
-          (custom labels you configure), report status, schedules, messages,
+          client names, property addresses, per-project job workflow stages
+          (custom labels you configure), job status, schedules, messages,
           internal notes, and files you upload (photos, PDFs, videos, and related
           metadata).
         </p>
@@ -91,7 +91,7 @@ export function PrivacyContent() {
         </p>
         <p>
           <strong className="text-foreground">Completed projects:</strong> when
-          all reports on a project reach the final completed stage in that
+          all jobs on a project reach the final completed stage in that
           project&apos;s workflow, the project — including uploaded files, project
           messages, and related project data — is automatically deleted after{' '}
           {COMPLETED_PROJECT_RETENTION_DAYS} days unless the status is changed
@@ -106,7 +106,7 @@ export function PrivacyContent() {
         <p>
           <strong className="text-foreground">Organization backups:</strong> if
           your plan includes backups, we may store ZIP copies of projects in secure
-          cloud storage (on a schedule, when a report is completed, or when you run
+          cloud storage (on a schedule, when a job is completed, or when you run
           a manual backup). We retain up to a plan-based number of completed
           backups per organization ({BACKUP_LIMITS_DISPLAY.starter} on Starter,{' '}
           {BACKUP_LIMITS_DISPLAY.professional} on Professional,{' '}

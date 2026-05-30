@@ -99,7 +99,7 @@ export function ProjectStatusWorkflowEditor({ projectId, onSaved }: Props) {
     }
 
     setStages(payload.workflow as StatusStage[])
-    setMessage('Report status stages saved.')
+    setMessage('Job status stages saved.')
     onSaved?.()
   }
 
@@ -109,7 +109,7 @@ export function ProjectStatusWorkflowEditor({ projectId, onSaved }: Props) {
 
   return (
     <form onSubmit={save} className="space-y-3 border border-border rounded-lg p-3">
-      <h3 className="text-sm font-semibold text-foreground">Report status stages</h3>
+      <h3 className="text-sm font-semibold text-foreground">Job status stages</h3>
       <p className="text-xs text-muted">
         Customize stages for this project. The final Completed stage stays last.
       </p>

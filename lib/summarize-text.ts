@@ -22,7 +22,7 @@ export function summarizeFile(
   }
 
   if (file.type.startsWith('image/')) {
-    return `${label}: ${describeFile(file)} — image stored; no text extracted. Screenshots of report documents need GROQ_API_KEY and Re-scan text.`
+    return `${label}: ${describeFile(file)} — image stored; no text extracted. Screenshots of job documents need GROQ_API_KEY and Re-scan text.`
   }
 
   if (file.type.startsWith('video/')) {
@@ -30,7 +30,7 @@ export function summarizeFile(
   }
 
   if (file.type.startsWith('audio/')) {
-    return `${label}: Audio ${describeFile(file)} — stored for report documentation.`
+    return `${label}: Audio ${describeFile(file)} — stored for job documentation.`
   }
 
   return `${label}: ${describeFile(file)} — file stored successfully.`

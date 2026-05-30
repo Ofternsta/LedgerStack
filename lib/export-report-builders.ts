@@ -28,7 +28,7 @@ export function buildHtmlReport(
     .join('')
 
   return `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>LedgerStack Report</title>
+<html><head><meta charset="utf-8"><title>LedgerStack Job Export</title>
 <style>body{font-family:system-ui,sans-serif;max-width:800px;margin:2rem auto;padding:0 1rem}
 h1{font-size:1.5rem}table{width:100%;border-collapse:collapse;margin-top:1rem}
 th,td{border:1px solid #ccc;padding:8px;text-align:left}th{background:#f5f5f5}
@@ -38,10 +38,10 @@ th,td{border:1px solid #ccc;padding:8px;text-align:left}th{background:#f5f5f5}
 </style></head><body>
 ${watermark ? `<div class="watermark" aria-hidden>${escapeHtml(TRIAL_WATERMARK)}</div>` : ''}
 <div class="content">
-<h1>Report — documents</h1>
+<h1>Job — documents</h1>
 <p><strong>Client:</strong> ${escapeHtml(String(claim.client_name))}</p>
 <p><strong>Property:</strong> ${escapeHtml(String(claim.property_address))}</p>
-<p><strong>Report #:</strong> ${escapeHtml(String(claim.claim_number))}</p>
+<p><strong>Job #:</strong> ${escapeHtml(String(claim.claim_number))}</p>
 <p><strong>Insurer:</strong> ${escapeHtml(String(claim.insurance_company))}</p>
 <p><strong>Status:</strong> ${escapeHtml(String(claim.status))}</p>
 <h2>AI Summary</h2>
@@ -87,7 +87,7 @@ export async function buildPdfReport(
     y += 6
     addLine(`Client: ${claim.client_name}`)
     addLine(`Property: ${claim.property_address}`)
-    addLine(`Report #: ${claim.claim_number}`)
+    addLine(`Job #: ${claim.claim_number}`)
     addLine(`Insurer: ${claim.insurance_company}`)
     addLine(`Status: ${claim.status}`)
     addLine(`Loss type: ${claim.loss_type}`)

@@ -22,7 +22,7 @@ const FEATURES = [
   {
     title: 'Client alignment',
     description:
-      'Share selected files with clients, keep report status visible, and export professional packets when it is time to close the loop.',
+      'Share selected files with clients, keep job status visible, and export professional packets when it is time to close the loop.',
   },
   {
     title: 'Crew coordination',
@@ -40,7 +40,7 @@ const STEPS = [
   {
     step: '2',
     title: 'Open a project',
-    body: 'Add the customer, job address, and reports — every upload and update ties to that job.',
+    body: 'Add the customer, job address, and job record — every upload and update ties to that work.',
   },
   {
     step: '3',

@@ -143,7 +143,7 @@ export default function ProjectsPage() {
 
   async function removeProject(project: Project) {
     const ok = window.confirm(
-      `Delete "${project.customer_name}" and all reports and uploaded files? This cannot be undone.`
+      `Delete "${project.customer_name}" and all jobs and uploaded files? This cannot be undone.`
     )
     if (!ok) return
 

@@ -159,7 +159,7 @@ export function OrganizationSettingsPanel() {
         <h2 className="font-bold text-foreground">Data retention</h2>
         <ul className="text-sm text-muted space-y-2 list-disc pl-5">
           <li>
-            Completed projects (all reports marked Completed) are deleted after{' '}
+            Completed projects (all jobs marked Completed) are deleted after{' '}
             {COMPLETED_PROJECT_RETENTION_DAYS} days, including files and messages.
           </li>
           <li>
@@ -229,7 +229,7 @@ export function OrganizationSettingsPanel() {
       <section className="card p-4 space-y-4">
         <h2 className="font-bold text-foreground">Projects</h2>
         <p className="text-sm text-muted">
-          Rename projects, customize report status stages and file categories per
+          Rename projects, customize job status stages and file categories per
           project, and manage client and worker access.
         </p>
 

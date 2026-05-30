@@ -45,7 +45,7 @@ export function TermsContent() {
       <LegalSection title="Accounts and roles">
         <p>
           Organization admins manage billing, team members, client access, and
-          per-project settings (including project names and customizable report
+          per-project settings (including project names and customizable job
           workflow stages). Each project may define its own sequence of status
           stages, with a required final completed stage. Workers and clients
           receive only the permissions assigned by an admin. You are responsible
@@ -106,11 +106,11 @@ export function TermsContent() {
         </p>
       </LegalSection>
 
-      <LegalSection title="Report workflow and data retention">
+      <LegalSection title="Job workflow and data retention">
         <p>
-          Admins may configure report status stages per project (up to{' '}
+          Admins may configure job status stages per project (up to{' '}
           {MAX_PROJECT_STATUS_STAGES} stages, including a required final completed
-          stage). Marking a report completed may trigger a confirmation that project
+          stage). Marking a job completed may trigger a confirmation that project
           data will be deleted after {COMPLETED_PROJECT_RETENTION_DAYS} days.
         </p>
         <p>
@@ -118,7 +118,7 @@ export function TermsContent() {
         </p>
         <LegalList
           items={[
-            `Projects where all reports are completed are deleted after ${COMPLETED_PROJECT_RETENTION_DAYS} days.`,
+            `Projects where all jobs are completed are deleted after ${COMPLETED_PROJECT_RETENTION_DAYS} days.`,
             `Projects that remain incomplete and inactive for ${INACTIVE_PROJECT_RETENTION_MONTHS} months are deleted.`,
           ]}
         />

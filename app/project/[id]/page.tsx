@@ -21,6 +21,7 @@ import {
 import { EvidenceUpload } from '@/components/evidence-upload'
 import { InternalNotesPanel } from '@/components/internal-notes-panel'
 import { MessagePanel } from '@/components/message-panel'
+import { ProjectJobsList } from '@/components/project-jobs-list'
 import { ProjectSchedulePanel } from '@/components/project-schedule-panel'
 import { isUnlimited } from '@/lib/plan-entitlements'
 import { loadUserAccess } from '@/lib/load-access'
@@ -35,6 +36,7 @@ type Claim = {
   client_name: string
   property_address: string
   status: string
+  notes?: string | null
 }
 
 type Evidence = {
@@ -71,6 +73,7 @@ export default function ProjectPageClient() {
   const [fileCategories, setFileCategories] = useState<FileCategory[]>(
     defaultFileCategories()
   )
+  const [projectNotes, setProjectNotes] = useState<string | null>(null)
 
   function mergeWorkerProjectAccess(
     base: UserAccess,
@@ -119,9 +122,10 @@ export default function ProjectPageClient() {
 
   useEffect(() => {
     async function loadProjectConfig() {
-      const [workflowRes, categoriesRes] = await Promise.all([
+      const [workflowRes, categoriesRes, projectRes] = await Promise.all([
         fetch(`/api/projects/${id}/workflow`),
         fetch(`/api/projects/${id}/file-categories`),
+        supabase.from('projects').select('notes').eq('id', id).maybeSingle(),
       ])
       const workflowPayload = await workflowRes.json().catch(() => ({}))
       const categoriesPayload = await categoriesRes.json().catch(() => ({}))
@@ -130,6 +134,9 @@ export default function ProjectPageClient() {
       }
       if (categoriesRes.ok && categoriesPayload.categories) {
         setFileCategories(categoriesPayload.categories as FileCategory[])
+      }
+      if (!projectRes.error && projectRes.data) {
+        setProjectNotes(projectRes.data.notes ?? null)
       }
     }
     void loadProjectConfig()
@@ -140,7 +147,7 @@ export default function ProjectPageClient() {
 
     const { data, error } = await supabase
       .from('claims')
-      .select('id, client_name, property_address, status')
+      .select('id, client_name, property_address, status, notes')
       .eq('project_id', id)
 
     if (error) {
@@ -334,8 +341,8 @@ export default function ProjectPageClient() {
         <div className="safe-x px-4 py-6 max-w-5xl mx-auto">
           <p className="text-gray-600">
             {access.role === 'client'
-              ? 'There are no reports on this project yet. Your contractor will add progress here.'
-              : 'You do not have access to this project, or it has no reports yet.'}
+              ? 'There are no jobs on this project yet. Your contractor will add progress here.'
+              : 'You do not have access to this project, or it has no jobs yet.'}
           </p>
         </div>
       </div>
@@ -347,7 +354,7 @@ export default function ProjectPageClient() {
   const activeStatusKey = activeClaim
     ? normalizeStatusKey(activeClaim.status, statusWorkflow)
     : null
-  const allReportsCompleted =
+  const allJobsCompleted =
     claims.length > 0 &&
     claims.every((c) => isCompletedStatus(c.status, statusWorkflow))
 
@@ -361,7 +368,7 @@ export default function ProjectPageClient() {
           backLabel="Projects"
         />
         <div className="safe-x px-4 py-6 max-w-5xl mx-auto">
-          <p className="text-gray-600">No report selected for this project.</p>
+          <p className="text-gray-600">No job selected for this project.</p>
         </div>
       </div>
     )
@@ -407,7 +414,7 @@ export default function ProjectPageClient() {
 
         <label className="block lg:hidden">
           <span className="text-sm font-medium text-muted mb-1 block">
-            Active report
+            Active job
           </span>
           <select
             className="input-field"
@@ -426,28 +433,29 @@ export default function ProjectPageClient() {
         </label>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
-          <aside className="hidden lg:block lg:col-span-3 card p-3">
-            <h2 className="font-bold mb-3">Reports</h2>
-            {claims.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => setSelectedClaim(c)}
-                className={`w-full text-left p-3 mb-2 rounded-lg transition-colors ${
-                  selectedClaim?.id === c.id
-                    ? 'btn-primary text-[#052e16]'
-                    : 'bg-surface-elevated border border-border hover:border-brand-dim/50'
-                }`}
-              >
-                <p className="font-bold">{c.client_name}</p>
-                <p className="text-xs opacity-80">
-                  {statusLabel(c.status, statusWorkflow)}
-                </p>
-              </button>
-            ))}
-          </aside>
+          <ProjectJobsList
+            jobs={claims}
+            projectNotes={projectNotes}
+            workflow={statusWorkflow}
+            selectedId={selectedClaim?.id ?? null}
+            onSelect={(job) => {
+              const claim = claims.find((c) => c.id === job.id)
+              if (claim) setSelectedClaim(claim)
+            }}
+          />
 
           <div className="lg:col-span-9 space-y-4">
+            <ProjectJobsList
+              variant="summary"
+              jobs={claims}
+              projectNotes={projectNotes}
+              workflow={statusWorkflow}
+              selectedId={selectedClaim?.id ?? null}
+              onSelect={(job) => {
+                const claim = claims.find((c) => c.id === job.id)
+                if (claim) setSelectedClaim(claim)
+              }}
+            />
             {configError && (
               <p className="text-sm text-red-700 border border-red-200 bg-red-50 p-3 rounded-xl">
                 {configError}
@@ -481,11 +489,11 @@ export default function ProjectPageClient() {
               <ProjectArchivePanel
                 projectId={id}
                 projectName={activeClaim.client_name}
-                reportCompleted={
+                jobCompleted={
                   activeStatusKey !== null &&
                   isCompletedStatus(activeStatusKey, statusWorkflow)
                 }
-                allReportsCompleted={allReportsCompleted}
+                allJobsCompleted={allJobsCompleted}
                 canArchive
                 promptSave={archivePrompt}
                 onPromptDismiss={() => setArchivePrompt(false)}

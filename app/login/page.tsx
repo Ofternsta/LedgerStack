@@ -528,7 +528,7 @@ export default function LoginPage() {
         <div className="mb-8 text-center">
           <BrandLogo href="/" size="lg" className="mx-auto" />
           <p className="text-muted mt-4 text-sm">
-            Sign in to manage projects, reports, and documents
+            Sign in to manage projects, jobs, and documents
           </p>
         </div>
 

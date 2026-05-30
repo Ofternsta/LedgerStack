@@ -229,7 +229,7 @@ export function ClaimAiPanel({
   return (
     <section className="border border-border rounded-xl p-4 bg-surface-elevated space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-bold text-lg text-foreground">Report intelligence</h2>
+        <h2 className="font-bold text-lg text-foreground">Job intelligence</h2>
         <div className="flex flex-wrap gap-2">
           {canGenerate && (
             <>
@@ -326,7 +326,7 @@ export function ClaimAiPanel({
 
         {!loadingTimeline && !latestEvent && (
           <p className="text-sm text-muted-dim">
-            Upload documents or change report status to build history. Use Refresh
+            Upload documents or change job status to build history. Use Refresh
             timeline to add AI-derived milestones from files.
           </p>
         )}
@@ -351,7 +351,7 @@ export function ClaimAiPanel({
         {showFullTimeline && (
           <div className="pt-1">
             <p className="text-xs text-muted mb-2">
-              Full timeline for this report ({events.length}{' '}
+              Full timeline for this job ({events.length}{' '}
               {events.length === 1 ? 'entry' : 'entries'})
             </p>
             <TimelineList events={events} newestFirst />
@@ -363,7 +363,7 @@ export function ClaimAiPanel({
             <p className="text-xs text-muted mb-2 mt-3">
               Every status change on this project
               {claimStatusUpdates.length > 0 &&
-                ` · ${claimStatusUpdates.length} on this report`}
+                ` · ${claimStatusUpdates.length} on this job`}
             </p>
             {loadingStatusHistory && (
               <p className="text-sm text-muted-dim">Loading status history…</p>

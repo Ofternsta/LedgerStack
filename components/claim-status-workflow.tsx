@@ -88,7 +88,7 @@ export function ClaimStatusWorkflow({
     <section className="border border-border rounded-xl p-4 bg-surface-elevated">
       <ConfirmDialog
         open={pendingKey === COMPLETED_STATUS_KEY}
-        title="Mark report as completed?"
+        title="Mark job as completed?"
         description={`This project and all of its files and messages will be permanently deleted in ${COMPLETED_PROJECT_RETENTION_DAYS} days unless you change the status before then.\n\nSave an archive or backup first if you need to keep records.`}
         confirmLabel="Mark completed"
         destructive
@@ -102,7 +102,7 @@ export function ClaimStatusWorkflow({
       />
 
       <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-        <h2 className="font-bold text-foreground">Report status</h2>
+        <h2 className="font-bold text-foreground">Job status</h2>
         <span className="text-sm font-medium text-muted">{currentLabel}</span>
       </div>
 
@@ -140,7 +140,7 @@ export function ClaimStatusWorkflow({
 
       {canEdit && (
         <p className="text-xs text-muted-dim mt-3">
-          Tap a stage to update the report workflow. Completed projects are removed
+          Tap a stage to update the job workflow. Completed projects are removed
           after {COMPLETED_PROJECT_RETENTION_DAYS} days; inactive projects after{' '}
           {INACTIVE_PROJECT_RETENTION_MONTHS} months.
         </p>

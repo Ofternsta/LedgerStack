@@ -27,8 +27,8 @@ export async function PATCH(req: Request) {
         : access.role === 'client'
           ? 'Clients have view-only access.'
           : access.role === 'worker'
-            ? 'Only organization admins can update report status.'
-            : 'You do not have permission to update report status.'
+            ? 'Only organization admins can update job status.'
+            : 'You do not have permission to update job status.'
       return NextResponse.json({ error: message }, { status: 403 })
     }
 
@@ -70,7 +70,7 @@ export async function PATCH(req: Request) {
       .maybeSingle()
 
     if (fetchError || !claim) {
-      return NextResponse.json({ error: 'Report not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 })
     }
 
     const previousKey = normalizeStatusKey(claim.status, workflow)

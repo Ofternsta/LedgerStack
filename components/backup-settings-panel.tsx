@@ -29,7 +29,7 @@ function formatBytes(n: number | null) {
 
 function typeLabel(t: string) {
   if (t === 'scheduled') return 'Scheduled'
-  if (t === 'report_completed') return 'Report completed'
+  if (t === 'report_completed') return 'Job completed'
   if (t === 'manual') return 'Manual'
   return t
 }
@@ -178,7 +178,7 @@ export function BackupSettingsPanel({ canManage }: { canManage: boolean }) {
       <div>
         <h2 className="font-bold text-lg">Automatic backups</h2>
         <p className="text-sm text-muted mt-1 leading-relaxed">
-          ZIP copies of each project (reports, documents, messages, exports) are
+          ZIP copies of each project (jobs, documents, messages, exports) are
           saved to secure cloud storage. Admins can download them anytime. Your plan
           keeps the last {maxBackups} completed backups (older ones are removed
           automatically).
@@ -213,7 +213,7 @@ export function BackupSettingsPanel({ canManage }: { canManage: boolean }) {
                 Enable automatic backups
               </span>
               <span className="block text-muted-dim text-xs mt-0.5">
-                Runs on a schedule and when reports are marked completed.
+                Runs on a schedule and when jobs are marked completed.
               </span>
             </span>
           </label>
@@ -250,7 +250,7 @@ export function BackupSettingsPanel({ canManage }: { canManage: boolean }) {
               }
             />
             <span className="text-sm text-foreground">
-              Back up project when a report is marked{' '}
+              Back up project when a job is marked{' '}
               <strong>Completed</strong>
             </span>
           </label>

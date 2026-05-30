@@ -38,7 +38,7 @@ export async function GET(req: Request) {
       .maybeSingle()
 
     if (error || !claim) {
-      return NextResponse.json({ error: 'Report not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 })
     }
 
     const { data: project } = await supabase
@@ -99,7 +99,7 @@ export async function GET(req: Request) {
     const footerBrand = branded
       ? String(claim.client_name || 'LedgerStack')
       : 'LedgerStack'
-    const safeName = `report-${claim.claim_number || claimId}`.replace(
+    const safeName = `job-${claim.claim_number || claimId}`.replace(
       /[^a-zA-Z0-9.-]/g,
       '_'
     )

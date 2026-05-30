@@ -127,7 +127,7 @@ export function buildFallbackSummary(
   evidence: EvidenceRecord[]
 ) {
   const types = [...new Set(evidence.map((e) => e.evidence_type))]
-  return `${claim.client_name} — ${claim.status} report at ${claim.property_address}. ${evidence.length} document(s) on record${types.length ? ` (${types.join(', ')})` : ''}. Insurer: ${claim.insurance_company}, report #${claim.claim_number}.`
+  return `${claim.client_name} — ${claim.status} job at ${claim.property_address}. ${evidence.length} document(s) on record${types.length ? ` (${types.join(', ')})` : ''}. Reference: ${claim.insurance_company}, job #${claim.claim_number}.`
 }
 
 function buildFallbackTimeline(
@@ -137,7 +137,7 @@ function buildFallbackTimeline(
   const events: TimelineEvent[] = [
     {
       event_date: new Date().toISOString().slice(0, 10),
-      title: 'Report opened',
+      title: 'Job opened',
       description: `${claim.status} — ${claim.loss_type}`,
       source: 'manual',
     },

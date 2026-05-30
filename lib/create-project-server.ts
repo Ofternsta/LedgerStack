@@ -93,14 +93,14 @@ export async function createProjectForUser(
       insurance_company: 'Unknown',
       claim_number: `AUTO-${Date.now()}`,
       status: initialStatus,
-      notes: 'Auto claim',
+      notes: notes || null,
     })
     .select('id')
 
   if (claimError || !claimRows?.length) {
     await service.from('projects').delete().eq('id', project.id)
     return {
-      error: claimError?.message || 'Project created but report could not be saved.',
+      error: claimError?.message || 'Project created but job could not be saved.',
     }
   }
 

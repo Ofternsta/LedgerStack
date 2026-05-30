@@ -137,14 +137,14 @@ export const PLAN_FEATURE_COPY: Record<
     includes: [
       '1 user · up to 25 active projects',
       'Automatic cloud backups — 5 retained per organization',
-      'Full report workflow, timeline & AI summaries',
+      'Full job workflow, timeline & AI summaries',
       'Standard PDF export · mobile uploads',
       '25 MB uploads (photos, PDFs & video)',
     ],
     excludes: [
       'Worker & client logins',
       'Internal notes, calendar & team messages',
-      'Analytics dashboard & branded reports',
+      'Analytics dashboard & branded exports',
       'Branded export packets & client portal',
     ],
   },

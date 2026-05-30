@@ -100,7 +100,7 @@ export default function DashboardPage() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
                 { label: 'Projects', value: stats.projectCount },
-                { label: 'Reports', value: stats.claimCount },
+                { label: 'Jobs', value: stats.claimCount },
                 { label: 'Documents', value: stats.evidenceCount },
                 { label: 'Workers', value: stats.approvedWorkers },
               ].map((card) => (
@@ -133,7 +133,7 @@ export default function DashboardPage() {
             </section>
 
             <section className="border rounded-xl p-4">
-              <h2 className="font-bold mb-3">Reports by status</h2>
+              <h2 className="font-bold mb-3">Jobs by status</h2>
               <ul className="space-y-1 text-sm">
                 {Object.entries(stats.claimsByStatus).map(([status, count]) => (
                   <li key={status} className="flex justify-between">

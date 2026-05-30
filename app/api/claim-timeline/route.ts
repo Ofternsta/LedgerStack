@@ -47,7 +47,7 @@ export async function GET(req: Request) {
 
       const events = (statusEvents || []).map((e) => ({
         ...e,
-        client_name: nameByClaim[e.claim_id as string] || 'Report',
+        client_name: nameByClaim[e.claim_id as string] || 'Job',
       }))
 
       return NextResponse.json({ events })
@@ -77,7 +77,7 @@ export async function GET(req: Request) {
       .maybeSingle()
 
     if (!claim) {
-      return NextResponse.json({ error: 'Report not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 })
     }
 
     const evidence = await listEvidence(supabase, projectId, claimId)
@@ -114,7 +114,7 @@ export async function POST(req: Request) {
       .maybeSingle()
 
     if (!claim) {
-      return NextResponse.json({ error: 'Report not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 })
     }
 
     const { data: project } = await supabase

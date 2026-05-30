@@ -31,7 +31,7 @@ export async function POST(req: Request) {
       .maybeSingle()
 
     if (error || !claim) {
-      return NextResponse.json({ error: 'Report not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 })
     }
 
     const { data: project } = await supabase

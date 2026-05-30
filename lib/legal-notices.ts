@@ -29,12 +29,12 @@ export const LEGAL_NOTICES: Record<LegalNoticeId, LegalNoticeContent> = {
   'no-guarantee': {
     title: 'No guarantee',
     body:
-      'Report status, schedules, and exports reflect information entered by your team. LedgerStack does not guarantee job outcomes, client approvals, or regulatory compliance for your work.',
+      'Job status, schedules, and exports reflect information entered by your team. LedgerStack does not guarantee job outcomes, client approvals, or regulatory compliance for your work.',
   },
   'data-retention': {
     title: 'Data retention & deletion',
     body:
-      'Completed projects are deleted 7 days after all reports reach the final completed stage. Inactive projects are deleted after 12 months with no activity. Organization backup limits depend on your plan (5–30). Full account deletion: email support@ledgerstack.org. See our Privacy Policy.',
+      'Completed projects are deleted 7 days after all jobs reach the final completed stage. Inactive projects are deleted after 12 months with no activity. Organization backup limits depend on your plan (5–30). Full account deletion: email support@ledgerstack.org. See our Privacy Policy.',
   },
   'client-access': {
     title: 'Client access warning',
