@@ -358,6 +358,14 @@ function CheckoutContent() {
           </div>
         )}
 
+        {clientSecret && publishableKey && plan && plan !== 'trial' && (
+          <p className="text-sm text-muted border border-border rounded-xl px-4 py-3 leading-relaxed">
+            Have a promo code? In the secure payment form below, choose{' '}
+            <strong className="text-white">Add promotion code</strong> and enter
+            the code we sent you.
+          </p>
+        )}
+
         {clientSecret && publishableKey && (
           <>
             <StripeEmbeddedCheckout

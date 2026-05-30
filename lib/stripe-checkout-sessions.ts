@@ -86,6 +86,7 @@ export async function createStripeCheckoutSession(
   const session = await stripe.checkout.sessions.create({
     ...base,
     mode: 'subscription',
+    allow_promotion_codes: true,
     line_items: [{ price: priceId, quantity: 1 }],
     subscription_data: {
       metadata: input.subscriptionMetadata ?? input.metadata,

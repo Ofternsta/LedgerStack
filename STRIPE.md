@@ -192,6 +192,16 @@ Leave **Preview/Development** on test keys if you still want local test checkout
 
 Keep test keys in `.env.local` and Vercel **Preview** so you can still use `4242 4242 4242 4242` locally without charging real cards.
 
+## Promotion codes
+
+Paid plan checkout (`/checkout` and **Settings → Billing → Pay with card**) enables Stripe’s **Add promotion code** field (`allow_promotion_codes` on the Checkout Session).
+
+1. **Product catalog → Coupons** — create a coupon (e.g. 100% off for one month, 50% off once).
+2. Open the coupon → **Promotion codes** → create a customer-facing code (e.g. `LEDGER-FOUNDER-01`).
+3. Set **Redemption limits** (e.g. max 1 per code) and restrict to the correct product/price if needed (Enterprise-only codes must apply only to the Enterprise price).
+
+Codes are entered on the Stripe payment form, not on a separate LedgerStack screen. Trial signup (card verify only) does not show promo codes.
+
 ## Troubleshooting
 
 | Symptom | Fix |
