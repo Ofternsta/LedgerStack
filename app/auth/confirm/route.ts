@@ -2,10 +2,12 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse, type NextRequest } from 'next/server'
 import {
+  appendEmailToPath,
   confirmEmailFromLink,
   isSignupVerifyReturn,
   safeAuthNextPath,
 } from '@/lib/auth-confirm-server'
+import { isEmailVerifiedAddress } from '@/lib/email-verification'
 import { billingAppUrl } from '@/lib/stripe-config'
 
 function clientFallbackUrl(origin: string, next: string) {
@@ -59,6 +61,13 @@ export async function GET(request: NextRequest) {
     }
     if (isSignupVerifyReturn(next)) {
       const signupReturn = new URL(next, origin)
+      const emailHint =
+        signupReturn.searchParams.get('email')?.trim().toLowerCase() || null
+      if (emailHint && (await isEmailVerifiedAddress(emailHint))) {
+        return NextResponse.redirect(
+          `${origin}${appendEmailToPath(next, emailHint, origin)}`
+        )
+      }
       signupReturn.searchParams.set('verify_error', result.error)
       return NextResponse.redirect(signupReturn)
     }

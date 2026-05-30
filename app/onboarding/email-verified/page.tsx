@@ -1,18 +1,19 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { BrandLogo } from '@/components/brand-logo'
 import { loadAdminSignupDraft } from '@/lib/signup-draft'
 import { signupCheckoutPath } from '@/lib/auth-redirect'
 import { BILLING_PLANS, type BillingPlanId } from '@/lib/stripe-config'
 
 function EmailVerifiedContent() {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const planParam = searchParams.get('plan') as BillingPlanId | null
   const emailParam = searchParams.get('email')?.trim().toLowerCase() || null
-  const verifyError = searchParams.get('verify_error')
+  const verifyErrorParam = searchParams.get('verify_error')
 
   const plan =
     planParam && planParam in BILLING_PLANS ? planParam : ('starter' as BillingPlanId)
@@ -49,9 +50,28 @@ function EmailVerifiedContent() {
     void resolve()
   }, [emailParam])
 
-  const checkoutHref = email
-    ? signupCheckoutPath(plan, email)
-    : signupCheckoutPath(plan)
+  useEffect(() => {
+    if (!verified || !verifyErrorParam) return
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete('verify_error')
+    const qs = params.toString()
+    router.replace(qs ? `/onboarding/email-verified?${qs}` : '/onboarding/email-verified')
+  }, [verified, verifyErrorParam, router, searchParams])
+
+  const checkoutHref = useMemo(() => {
+    const resolved =
+      email?.trim().toLowerCase() ||
+      emailParam ||
+      loadAdminSignupDraft()?.email.trim().toLowerCase() ||
+      null
+    return signupCheckoutPath(plan, resolved)
+  }, [email, emailParam, plan])
+
+  const showVerifyError = Boolean(verifyErrorParam && !verified && !checking)
+
+  function continueToPayment() {
+    window.location.assign(checkoutHref)
+  }
 
   return (
     <div className="min-h-dvh flex flex-col bg-background">
@@ -61,9 +81,9 @@ function EmailVerifiedContent() {
 
       <main className="flex-1 safe-x px-4 py-8 max-w-lg mx-auto w-full pb-8">
         <section className="border border-emerald-200 bg-emerald-50 rounded-2xl p-6 space-y-4 text-center">
-          {verifyError && (
+          {showVerifyError && (
             <p className="text-sm text-amber-950 bg-amber-100 border border-amber-300 rounded-xl p-3 text-left">
-              {verifyError} Try opening the latest verification email, or resend
+              {verifyErrorParam} Try opening the latest verification email, or resend
               from checkout.
             </p>
           )}
@@ -91,13 +111,14 @@ function EmailVerifiedContent() {
               Account: <strong>{email}</strong>
             </p>
           )}
-          <Link
-            href={checkoutHref}
-            className="block w-full btn-primary text-[#052e16] py-4 rounded-xl font-medium min-h-[52px] leading-[52px]"
+          <button
+            type="button"
+            onClick={continueToPayment}
+            className="block w-full btn-primary text-[#052e16] py-4 rounded-xl font-medium min-h-[52px]"
           >
             Continue to payment
-          </Link>
-          {!email && (
+          </button>
+          {!email && !emailParam && (
             <p className="text-xs text-amber-900 text-left">
               Email not found in this browser. Return to your original signup tab,
               or{' '}

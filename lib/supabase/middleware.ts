@@ -5,6 +5,7 @@ import {
   isPublicLegalPath,
   isPublicSeoPath,
   isPublicSignupCheckoutPath,
+  isSignupRegisterCheckoutRequest,
 } from '@/lib/auth-public-routes'
 import { needsMfaVerificationServer } from '@/lib/mfa-auth-server'
 
@@ -31,6 +32,10 @@ export async function updateSession(request: NextRequest) {
   const isPublicMarketing = pathname === '/'
   const isPublicSeo = isPublicSeoPath(pathname)
   const isPublicLegal = isPublicLegalPath(pathname)
+  const isSignupRegisterCheckout = isSignupRegisterCheckoutRequest(
+    pathname,
+    request.nextUrl.searchParams
+  )
 
   const isPublicRoute =
     isAuthRoute ||
@@ -90,7 +95,12 @@ export async function updateSession(request: NextRequest) {
     requiresMfaStep = await needsMfaVerificationServer(supabase)
   }
 
-  if (requiresMfaStep && !isAuthRoute) {
+  if (
+    requiresMfaStep &&
+    !isAuthRoute &&
+    !isPublicOnboarding &&
+    !isSignupRegisterCheckout
+  ) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('mfa', '1')
@@ -106,7 +116,8 @@ export async function updateSession(request: NextRequest) {
     !isAuthConfirm &&
     !isPublicApi &&
     !isPublicOnboarding &&
-    !isPublicSignupCheckout
+    !isPublicSignupCheckout &&
+    !isSignupRegisterCheckout
   ) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
@@ -152,6 +163,7 @@ export async function updateSession(request: NextRequest) {
     emailConfirmed &&
     !isPublicRoute &&
     !isRenewOrBilling &&
+    !isSignupRegisterCheckout &&
     !pathname.startsWith('/api/')
   ) {
     const needsPlan = await adminNeedsSubscription(supabase, user.id)

@@ -32,15 +32,17 @@ async function registerPayloadForVerifiedEmail(
   const verify = await verifyRes.json().catch(() => ({}))
   if (!verifyRes.ok || !verify.verified) return null
 
-  const pendingRes = await fetch(
-    `/api/auth/finish-signup?email=${encodeURIComponent(email)}`
-  )
-  const pending = await pendingRes.json().catch(() => ({}))
-  if (pendingRes.ok && pending.pending) {
-    return { pendingSignup: true as const, email, plan }
-  }
+  return { pendingSignup: true as const, email, plan }
+}
 
-  return null
+function signupEmailFromBrowser(fallbackEmail: string | null) {
+  return (
+    fallbackEmail?.trim().toLowerCase() ||
+    (typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('email')?.trim().toLowerCase()
+      : null) ||
+    null
+  )
 }
 
 async function registerPayloadForSignup(
@@ -50,12 +52,7 @@ async function registerPayloadForSignup(
   const draft = loadAdminSignupDraft()
   if (draft) return registerPayloadFromDraft(draft, plan)
 
-  const email =
-    fallbackEmail?.trim().toLowerCase() ||
-    (typeof window !== 'undefined'
-      ? new URLSearchParams(window.location.search).get('email')?.trim().toLowerCase()
-      : null) ||
-    null
+  const email = signupEmailFromBrowser(fallbackEmail)
 
   if (email) {
     const pending = await registerPayloadForVerifiedEmail(email, plan)
@@ -128,7 +125,10 @@ function CheckoutContent() {
       embedded: true,
     }
 
-    const registerPayload = await registerPayloadForSignup(plan, checkoutEmail)
+    const registerPayload = await registerPayloadForSignup(
+      plan,
+      checkoutEmail ?? signupEmailFromBrowser(null)
+    )
     if (registerPayload) {
       body.register = registerPayload
     } else if (isSignupFlow) {
@@ -232,9 +232,12 @@ function CheckoutContent() {
         if (!isRegister && !planParam && pendingData?.plan) {
           const pendingPlan = pendingData.plan as BillingPlanId
           if (pendingPlan in BILLING_PLANS) {
-            router.replace(
-              `/checkout?plan=${encodeURIComponent(pendingPlan)}&register=1`
-            )
+            const params = new URLSearchParams({
+              plan: pendingPlan,
+              register: '1',
+            })
+            if (email) params.set('email', email)
+            router.replace(`/checkout?${params.toString()}`)
             return
           }
         }
