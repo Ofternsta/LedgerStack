@@ -3,6 +3,7 @@ import 'server-only'
 import Stripe from 'stripe'
 import type { Stripe as StripeTypes } from 'stripe'
 import { createServiceClient } from '@/lib/supabase/service'
+import { isActiveSubscriptionStatus } from '@/lib/admin-subscription-status'
 import {
   type BillingPlanId,
   planFromStripePriceId,
@@ -20,7 +21,62 @@ function mapStripeStatus(status: StripeTypes.Subscription.Status): SubscriptionS
   if (status === 'active') return 'active'
   if (status === 'trialing') return 'trialing'
   if (status === 'past_due' || status === 'unpaid') return 'past_due'
+  if (status === 'canceled' || status === 'incomplete_expired') return 'canceled'
+  if (status === 'incomplete') return 'pending'
+  if (status === 'paused') return 'active'
   return 'canceled'
+}
+
+function subscriptionPeriodEndUnix(
+  subscription: StripeTypes.Subscription
+): number | null {
+  const unix = subscription.items.data[0]?.current_period_end
+  return typeof unix === 'number' ? unix : null
+}
+
+function subscriptionPeriodEndIso(subscription: StripeTypes.Subscription): string | null {
+  const unix = subscriptionPeriodEndUnix(subscription)
+  if (unix === null) return null
+  return new Date(unix * 1000).toISOString()
+}
+
+/** Map Stripe status without kicking users off on transient webhook downgrades. */
+function resolveSubscriptionStatus(
+  subscription: StripeTypes.Subscription,
+  existingStatus?: string | null
+): SubscriptionStatus {
+  const periodEndUnix = subscriptionPeriodEndUnix(subscription)
+  if (
+    subscription.cancel_at_period_end &&
+    periodEndUnix !== null &&
+    periodEndUnix * 1000 > Date.now()
+  ) {
+    return 'active'
+  }
+
+  const mapped = mapStripeStatus(subscription.status)
+
+  if (!isActiveSubscriptionStatus(existingStatus)) {
+    return mapped
+  }
+
+  if (
+    subscription.status === 'canceled' ||
+    subscription.status === 'incomplete_expired'
+  ) {
+    return mapped
+  }
+
+  if (
+    mapped === 'canceled' ||
+    mapped === 'pending' ||
+    subscription.status === 'incomplete' ||
+    subscription.status === 'paused'
+  ) {
+    return existingStatus as SubscriptionStatus
+  }
+
+  return mapped
 }
 
 export async function upsertSubscriptionFromStripe(input: {
@@ -83,16 +139,19 @@ export async function syncStripeSubscription(subscription: StripeTypes.Subscript
     (subscription.metadata?.plan as BillingPlanId | undefined) ||
     'starter'
 
-  const periodEndUnix = subscription.items.data[0]?.current_period_end
+  const { data: existing } = await supabase
+    .from('subscriptions')
+    .select('status, current_period_end')
+    .eq('organization_id', organizationId)
+    .maybeSingle()
+
   const periodEnd =
-    typeof periodEndUnix === 'number'
-      ? new Date(periodEndUnix * 1000).toISOString()
-      : null
+    subscriptionPeriodEndIso(subscription) ?? existing?.current_period_end ?? null
 
   await upsertSubscriptionFromStripe({
     organizationId,
     plan,
-    status: mapStripeStatus(subscription.status),
+    status: resolveSubscriptionStatus(subscription, existing?.status),
     stripeCustomerId: customerId,
     stripeSubscriptionId: subscription.id,
     currentPeriodEnd: periodEnd,
@@ -129,11 +188,22 @@ export async function handleCheckoutSessionCompleted(
       session.metadata?.plan
     )
 
+    const subscriptionId =
+      typeof session.subscription === 'string'
+        ? session.subscription
+        : session.subscription?.id ?? null
+
     const result = await fulfillPendingAdminSignup(pendingSignupId, {
       paymentMethodFingerprint: fingerprint,
       stripeCustomerId: customerId,
+      stripeSubscriptionId: subscriptionId,
       allowExpired: true,
     })
+
+    if (subscriptionId) {
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+      await syncStripeSubscription(subscription)
+    }
 
     console.info('Pending signup fulfill result', pendingSignupId, result)
     return

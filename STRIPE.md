@@ -202,6 +202,8 @@ Paid plan checkout (`/checkout` and **Settings → Billing → Pay with card**) 
 
 Codes are entered on the Stripe payment form, not on a separate LedgerStack screen. Trial signup (card verify only) does not show promo codes.
 
+**Do not delete coupons** that are already in use — archive them instead. Deleting a coupon can still fire Stripe webhooks that briefly confuse billing state; LedgerStack now ignores most transient downgrades, but archiving is safer. Deleting a coupon does **not** remove an existing customer’s discount in Stripe’s model, but Dashboard actions can still trigger subscription updates.
+
 ## Troubleshooting
 
 | Symptom | Fix |

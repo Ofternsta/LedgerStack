@@ -52,20 +52,8 @@ export async function adminNeedsSubscription(
     return true
   }
 
-  if (
-    sub.status === 'active' &&
-    sub.current_period_end &&
-    new Date(sub.current_period_end).getTime() < Date.now()
-  ) {
-    await supabase
-      .from('subscriptions')
-      .update({
-        status: 'expired',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('organization_id', org.id)
-    return true
-  }
+  // Paid access follows Stripe subscription status (webhooks), not local period_end alone.
+  // A stale or cleared current_period_end must not revoke founder / promo access early.
 
   return false
 }

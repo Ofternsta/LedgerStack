@@ -37,6 +37,7 @@ export type RegisterAdminInput = {
 export type FulfillPendingOptions = {
   paymentMethodFingerprint?: string | null
   stripeCustomerId?: string | null
+  stripeSubscriptionId?: string | null
   /** Allow fulfillment when checkout completed but the 2h pending row expired */
   allowExpired?: boolean
 }
@@ -453,6 +454,7 @@ export async function fulfillPendingAdminSignup(
           status: isTrial ? 'trialing' : 'active',
           trial_ends_at: isTrial ? await registerEmailTrial(email) : null,
           stripe_customer_id: options.stripeCustomerId ?? null,
+          stripe_subscription_id: options.stripeSubscriptionId ?? null,
           updated_at: new Date().toISOString(),
         },
         { onConflict: 'organization_id' }
@@ -536,6 +538,7 @@ export async function fulfillPendingAdminSignup(
       status: isTrial ? 'trialing' : 'active',
       trial_ends_at: trialEndsAt,
       stripe_customer_id: options.stripeCustomerId ?? null,
+      stripe_subscription_id: options.stripeSubscriptionId ?? null,
       updated_at: new Date().toISOString(),
     },
     { onConflict: 'organization_id' }
