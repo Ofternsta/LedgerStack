@@ -1,4 +1,5 @@
 -- Per-project file category folders. Run after project-status-workflow.sql.
+-- Or run supabase/rename-default-file-categories.sql alone (adds column + same defaults).
 
 ALTER TABLE public.projects
   ADD COLUMN IF NOT EXISTS file_categories jsonb;
