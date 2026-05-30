@@ -136,10 +136,10 @@ export const PLAN_FEATURE_COPY: Record<
   starter: {
     includes: [
       '1 user · up to 25 active projects',
+      'Automatic cloud backups — 5 retained per organization',
       'Full report workflow, timeline & AI summaries',
       'Standard PDF export · mobile uploads',
       '25 MB uploads (photos, PDFs & video)',
-      'Automatic backups (5 retained per organization)',
     ],
     excludes: [
       'Worker & client logins',
@@ -151,21 +151,21 @@ export const PLAN_FEATURE_COPY: Record<
   professional: {
     includes: [
       'Up to 15 team members · 100 projects',
+      'Automatic cloud backups — 15 retained per organization',
       'Worker accounts, client portal & permissions',
       'Calendar, internal notes & team messages',
       'Branded exports, claim packets & analytics',
       'Higher AI limits (250 summaries/month)',
-      'Automatic backups (15 retained per organization)',
     ],
   },
   enterprise: {
     includes: [
       'Unlimited workers & active projects',
+      'Automatic cloud backups — 30 retained per organization',
       'Advanced analytics & activity insights',
       'White-label / branded export templates',
       'Priority support & dedicated onboarding',
       'Enterprise options: SSO, API & integrations (contact us)',
-      'Automatic backups (30 retained per organization)',
     ],
   },
 }
@@ -176,11 +176,11 @@ export const PLAN_STRIPE_DESCRIPTIONS: Record<
   string
 > = {
   starter:
-    'LedgerStack Starter ($20/mo) — For solo contractors: 1 user, up to 25 active projects, report timeline & workflow, AI summaries, standard PDF export, and mobile field uploads. Organized documentation without worker or client accounts.',
+    'LedgerStack Starter ($20/mo) — For solo contractors: 1 user, up to 25 active projects, report timeline & workflow, AI summaries, standard PDF export, mobile field uploads, and automatic cloud backups (5 ZIPs retained per organization).',
   professional:
-    'LedgerStack Professional ($70/mo) — Run your team’s workflow: up to 15 workers, client portal, scheduling, internal notes, team messages, branded exports, claim packets, searchable evidence, and analytics dashboard. Built for real restoration operations.',
+    'LedgerStack Professional ($70/mo) — Run your team’s workflow: up to 15 workers, client portal, scheduling, internal notes, team messages, branded exports, claim packets, analytics dashboard, and automatic cloud backups (15 ZIPs retained per organization).',
   enterprise:
-    'LedgerStack Enterprise ($150/mo) — Company infrastructure: unlimited workers & projects, advanced analytics, branded/white-label exports, priority support, and onboarding. Ask about SSO, API access, audit logs, and custom integrations.',
+    'LedgerStack Enterprise ($150/mo) — Company infrastructure: unlimited workers & projects, advanced analytics, branded/white-label exports, automatic cloud backups (30 ZIPs retained per organization), priority support, and onboarding. Ask about SSO, API access, audit logs, and custom integrations.',
 }
 
 export function getPlanStripeDescription(

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { AppHeader } from '@/components/app-header'
 import { AppFooter } from '@/components/app-footer'
 import { AppNav } from '@/components/app-nav'
-import { BackupSettingsPanel } from '@/components/backup-settings-panel'
+import Link from 'next/link'
 import {
   PLAN_ENTITLEMENTS,
   PLAN_FEATURE_COPY,
@@ -167,7 +167,7 @@ function BillingContent() {
                 </p>
                 <ul className="mt-2 space-y-0.5 text-xs text-muted">
                   {PLAN_FEATURE_COPY[planId].includes
-                    .slice(0, 3)
+                    .slice(0, planId === 'enterprise' ? 6 : 5)
                     .map((line) => (
                       <li key={line}>✓ {line}</li>
                     ))}
@@ -240,7 +240,17 @@ export default function BillingPage() {
         <Suspense fallback={<p className="text-muted">Loading billing…</p>}>
           <BillingContent />
         </Suspense>
-        <BackupSettingsPanel canManage={access.canArchiveProject} />
+
+        {access.canArchiveProject && (
+          <p className="text-sm text-muted">
+            Manage automatic backups on the{' '}
+            <Link href="/settings/backups" className="text-brand-bright font-medium">
+              Backups
+            </Link>{' '}
+            page.
+          </p>
+        )}
+
         <AppFooter />
       </main>
     </div>

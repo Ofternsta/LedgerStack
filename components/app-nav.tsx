@@ -41,6 +41,7 @@ export function AppNav({ access }: AppNavProps) {
       {pill('/settings/account', 'Settings')}
       {access.canManageSystemSettings &&
         pill('/settings/organization', 'Organization')}
+      {access.canArchiveProject && pill('/settings/backups', 'Backups')}
       {access.canManageBilling && pill('/settings/billing', 'Billing')}
       {platformOwner && (
         <Link

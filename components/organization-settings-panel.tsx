@@ -166,7 +166,8 @@ export function OrganizationSettingsPanel() {
             {INACTIVE_PROJECT_RETENTION_MONTHS} months are deleted automatically.
           </li>
           <li>
-            Org backups (Billing) may be kept separately up to the backup limit.
+            Org backups (Backups settings) may be kept separately up to your plan
+            limit (5 Starter · 15 Professional · 30 Enterprise).
           </li>
         </ul>
         <p className="text-sm text-muted">
