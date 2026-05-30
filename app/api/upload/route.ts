@@ -19,6 +19,10 @@ import { requireAuth } from '@/lib/require-auth'
 import { normalizeUploadFile } from '@/lib/file-meta'
 import { validateUploadSize } from '@/lib/upload-limits'
 import { touchProjectActivity } from '@/lib/touch-project-activity'
+import {
+  categoryLabels,
+  parseProjectFileCategories,
+} from '@/lib/project-file-categories'
 
 export const maxDuration = 60
 
@@ -92,13 +96,17 @@ export async function POST(req: Request) {
 
     const { data: project } = await supabase
       .from('projects')
-      .select('organization_id')
+      .select('organization_id, file_categories')
       .eq('id', projectId)
       .maybeSingle()
 
     if (!project?.organization_id) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
+
+    const fileCategoryLabels = categoryLabels(
+      parseProjectFileCategories(project.file_categories)
+    )
 
     const uploadGate = await assertProjectMemberPermission(
       supabase,
@@ -155,7 +163,11 @@ export async function POST(req: Request) {
       })).filePath
 
     let extractedText = await extractTextFromFile(file)
-    const analysis = await analyzeEvidence(file, extractedText)
+    const analysis = await analyzeEvidence(
+      file,
+      extractedText,
+      fileCategoryLabels
+    )
     if (analysis.extractedText?.trim()) {
       extractedText = analysis.extractedText.trim()
     }

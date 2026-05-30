@@ -48,14 +48,36 @@ CREATE POLICY "org admin update backup settings"
   USING (admin_user_id = auth.uid())
   WITH CHECK (admin_user_id = auth.uid());
 
-GRANT SELECT ON public.organization_backups TO authenticated;
+GRANT SELECT, DELETE ON public.organization_backups TO authenticated;
 GRANT SELECT, UPDATE ON public.organizations TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.organization_backups TO service_role;
+
+DROP POLICY IF EXISTS "org admin delete backups" ON public.organization_backups;
+CREATE POLICY "org admin delete backups"
+  ON public.organization_backups FOR DELETE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.organizations o
+      WHERE o.id = organization_id AND o.admin_user_id = auth.uid()
+    )
+  );
 
 -- Storage: org admins read/download their org backup files
 DROP POLICY IF EXISTS "org admin read backup files" ON storage.objects;
 CREATE POLICY "org admin read backup files"
   ON storage.objects FOR SELECT TO authenticated
+  USING (
+    bucket_id = 'org-backups'
+    AND EXISTS (
+      SELECT 1 FROM public.organizations o
+      WHERE o.id = (split_part(name, '/', 1))::uuid
+        AND o.admin_user_id = auth.uid()
+    )
+  );
+
+DROP POLICY IF EXISTS "org admin delete backup files" ON storage.objects;
+CREATE POLICY "org admin delete backup files"
+  ON storage.objects FOR DELETE TO authenticated
   USING (
     bucket_id = 'org-backups'
     AND EXISTS (

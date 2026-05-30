@@ -8,6 +8,10 @@ import { ClaimAiPanel } from '@/components/claim-ai-panel'
 import { ClaimStatusWorkflow } from '@/components/claim-status-workflow'
 import { ProjectArchivePanel } from '@/components/project-archive-panel'
 import {
+  defaultFileCategories,
+  type FileCategory,
+} from '@/lib/project-file-categories'
+import {
   DEFAULT_STATUS_WORKFLOW,
   isCompletedStatus,
   normalizeStatusKey,
@@ -67,6 +71,9 @@ export default function ProjectPageClient() {
   const [statusWorkflow, setStatusWorkflow] = useState<StatusStage[]>(
     DEFAULT_STATUS_WORKFLOW.map((s) => ({ ...s }))
   )
+  const [fileCategories, setFileCategories] = useState<FileCategory[]>(
+    defaultFileCategories()
+  )
 
   function mergeWorkerProjectAccess(
     base: UserAccess,
@@ -114,14 +121,21 @@ export default function ProjectPageClient() {
   }, [id])
 
   useEffect(() => {
-    async function loadWorkflow() {
-      const res = await fetch(`/api/projects/${id}/workflow`)
-      const payload = await res.json().catch(() => ({}))
-      if (res.ok && payload.workflow) {
-        setStatusWorkflow(payload.workflow as StatusStage[])
+    async function loadProjectConfig() {
+      const [workflowRes, categoriesRes] = await Promise.all([
+        fetch(`/api/projects/${id}/workflow`),
+        fetch(`/api/projects/${id}/file-categories`),
+      ])
+      const workflowPayload = await workflowRes.json().catch(() => ({}))
+      const categoriesPayload = await categoriesRes.json().catch(() => ({}))
+      if (workflowRes.ok && workflowPayload.workflow) {
+        setStatusWorkflow(workflowPayload.workflow as StatusStage[])
+      }
+      if (categoriesRes.ok && categoriesPayload.categories) {
+        setFileCategories(categoriesPayload.categories as FileCategory[])
       }
     }
-    void loadWorkflow()
+    void loadProjectConfig()
   }, [id])
 
   async function fetchClaims() {
@@ -557,6 +571,7 @@ export default function ProjectPageClient() {
                   documents={filtered}
                   projectId={id}
                   claimId={activeClaim.id}
+                  categories={fileCategories}
                   canEdit={access.canEditEvidenceSummary}
                   canDelete={access.canDeleteEvidence}
                   canRescan={access.canUploadEvidence}

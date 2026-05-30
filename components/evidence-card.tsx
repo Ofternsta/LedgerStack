@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { EVIDENCE_TYPES } from '@/lib/evidence-types'
+import { defaultFileCategories } from '@/lib/project-file-categories'
 
 type EvidenceCardProps = {
   doc: {
@@ -16,6 +16,7 @@ type EvidenceCardProps = {
   }
   projectId?: string
   claimId?: string
+  categoryLabels?: string[]
   canEdit: boolean
   canDelete: boolean
   canRescan?: boolean
@@ -29,6 +30,7 @@ export function EvidenceCard({
   doc,
   projectId,
   claimId,
+  categoryLabels: categoryLabelsProp,
   canEdit,
   canDelete,
   canRescan = false,
@@ -52,6 +54,11 @@ export function EvidenceCard({
     /\.(jpe?g|png|gif|webp)$/i.test(doc.file_name)
   const canRunAiRescan = isPdf || isImage
   const isDetail = variant === 'detail'
+
+  const categoryLabels =
+    categoryLabelsProp?.length
+      ? categoryLabelsProp
+      : defaultFileCategories().map((c) => c.label)
 
   useEffect(() => {
     setSummary(doc.summary)
@@ -158,7 +165,7 @@ export function EvidenceCard({
             onChange={(e) => setEvidenceType(e.target.value)}
             className="border border-border rounded-xl p-2 w-full text-sm bg-surface"
           >
-            {EVIDENCE_TYPES.map((t) => (
+            {categoryLabels.map((t) => (
               <option key={t} value={t}>
                 {t}
               </option>

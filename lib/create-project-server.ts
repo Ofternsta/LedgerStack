@@ -1,6 +1,10 @@
 import 'server-only'
 
 import {
+  defaultFileCategories,
+  serializeProjectFileCategories,
+} from '@/lib/project-file-categories'
+import {
   defaultFirstStatusKey,
   DEFAULT_STATUS_WORKFLOW,
   serializeProjectStatusWorkflow,
@@ -55,6 +59,7 @@ export async function createProjectForUser(
 
   const workflow = DEFAULT_STATUS_WORKFLOW.map((s) => ({ ...s }))
   const initialStatus = defaultFirstStatusKey(workflow)
+  const fileCategories = defaultFileCategories()
 
   const { data: project, error: projectError } = await service
     .from('projects')
@@ -65,6 +70,7 @@ export async function createProjectForUser(
       user_id: userId,
       organization_id: organizationId,
       status_workflow: serializeProjectStatusWorkflow(workflow),
+      file_categories: serializeProjectFileCategories(fileCategories),
     })
     .select('id, customer_name, project_address, notes')
     .single()

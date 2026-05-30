@@ -1,7 +1,10 @@
 import 'server-only'
 import {
-  EVIDENCE_TYPES,
-  type EvidenceType,
+  categoryLabels,
+  defaultFileCategories,
+  normalizeFileCategoryLabel,
+} from '@/lib/project-file-categories'
+import {
   guessEvidenceTypeFromExtractedText,
   guessEvidenceTypeFromFile,
   normalizeEvidenceType,
@@ -10,24 +13,59 @@ import { GROQ_TEXT_MODEL, GROQ_VISION_MODEL } from '@/lib/groq-models'
 import { summarizeFile } from '@/lib/summarize-text'
 
 export type EvidenceAnalysis = {
-  evidenceType: EvidenceType
+  evidenceType: string
   summary: string
-  /** Set when vision analysis extracts text that OCR missed. */
   extractedText?: string
 }
 
 const MIN_TEXT_FOR_TEXT_ONLY = 80
 
-const CATEGORY_RULES = `Category rules:
-- Damage Photo: photos of physical property damage, mold, water/fire damage, or the job site (not document screenshots)
-- Invoice: bills, receipts, paid invoices
-- Estimate: repair estimates, scopes, quotes, Xactimate
-- Moisture Reading: moisture logs, hygrometer readings, drying charts
-- Insurance Email: insurer/adjuster emails or letters
-- Report: claim summaries, policy/claim forms, inspection reports, PDF/PNG screenshots of documents, Copilot exports
-- Other: does not fit above
+function buildCategoryRules(allowed: string[]): string {
+  return `Pick exactly one category name from the allowed list. Use the closest match.
+Allowed categories: ${allowed.join(', ')}
 
-Important: PNG/JPEG screenshots of claim forms, policies, or insurance paperwork are Report or Insurance Email — NOT Damage Photo just because the file is an image.`
+General guidance:
+- Photo/image categories: job site or property damage (not document screenshots)
+- Invoice/receipt categories: bills and payments
+- Estimate categories: scopes, quotes, Xactimate
+- Email/letter categories: insurer or adjuster correspondence
+- Report/document categories: policies, claim forms, inspection reports, PDF exports
+
+PNG/JPEG screenshots of forms or policies belong in a document/report-style category, not a photo category.`
+}
+
+function allowedAsCategories(allowed: string[]) {
+  return allowed.map((label, i) => ({
+    key: `cat_${i}`,
+    label,
+  }))
+}
+
+function resolveCategory(
+  raw: string | undefined,
+  file: File,
+  extractedText: string,
+  allowed: string[]
+): string {
+  const categories = allowedAsCategories(
+    allowed.length ? allowed : categoryLabels(defaultFileCategories())
+  )
+
+  if (raw?.trim()) {
+    return normalizeFileCategoryLabel(raw, categories)
+  }
+
+  const textHint = guessEvidenceTypeFromExtractedText(extractedText)
+  if (textHint) {
+    return normalizeFileCategoryLabel(textHint, categories)
+  }
+
+  const fileHint = guessEvidenceTypeFromFile(file)
+  return normalizeFileCategoryLabel(
+    normalizeEvidenceType(fileHint),
+    categories
+  )
+}
 
 function isImageFile(file: File): boolean {
   return (
@@ -36,8 +74,11 @@ function isImageFile(file: File): boolean {
   )
 }
 
-async function analyzeImageWithVision(file: File): Promise<{
-  evidenceType: EvidenceType
+async function analyzeImageWithVision(
+  file: File,
+  allowed: string[]
+): Promise<{
+  evidenceType: string
   summary: string
   extractedText: string
 }> {
@@ -50,6 +91,7 @@ async function analyzeImageWithVision(file: File): Promise<{
   const base64 = buffer.toString('base64')
   const mime = file.type || 'image/png'
   const dataUrl = `data:${mime};base64,${base64}`
+  const rules = buildCategoryRules(allowed)
 
   const { default: Groq } = await import('groq-sdk')
   const groq = new Groq({ apiKey })
@@ -66,14 +108,14 @@ async function analyzeImageWithVision(file: File): Promise<{
 
 Return JSON only:
 {
-  "category": "<one of: ${EVIDENCE_TYPES.join(', ')}>",
-  "summary": "<1-2 factual sentences about what this image shows>",
-  "extracted_text": "<all readable text in the image, or empty string if none>"
+  "category": "<exact name from allowed list>",
+  "summary": "<1-2 factual sentences>",
+  "extracted_text": "<readable text or empty string>"
 }
 
-${CATEGORY_RULES}
+${rules}
 
-Never invent report details not visible in the image.`,
+Never invent details not visible in the image.`,
       },
       {
         role: 'user',
@@ -102,18 +144,20 @@ Never invent report details not visible in the image.`,
     extracted_text?: string
   }
 
-  const fallbackType = guessEvidenceTypeFromFile(file)
-  const evidenceType = normalizeEvidenceType(parsed.category || fallbackType)
   const extractedText = (parsed.extracted_text || '').trim()
-  const textHint = guessEvidenceTypeFromExtractedText(extractedText)
-  const finalType = textHint || evidenceType
+  const evidenceType = resolveCategory(
+    parsed.category,
+    file,
+    extractedText,
+    allowed
+  )
 
   const summary =
     parsed.summary?.trim() ||
-    summarizeFile(file, extractedText, finalType)
+    summarizeFile(file, extractedText, evidenceType)
 
   return {
-    evidenceType: finalType,
+    evidenceType,
     summary,
     extractedText,
   }
@@ -121,11 +165,16 @@ Never invent report details not visible in the image.`,
 
 export async function analyzeEvidence(
   file: File,
-  extractedText: string
+  extractedText: string,
+  allowedCategoryLabels?: string[]
 ): Promise<EvidenceAnalysis> {
+  const allowed =
+    allowedCategoryLabels?.length
+      ? allowedCategoryLabels
+      : categoryLabels(defaultFileCategories())
+
   const text = extractedText.trim()
-  const textHint = guessEvidenceTypeFromExtractedText(text)
-  const fallbackType = textHint || guessEvidenceTypeFromFile(file)
+  const fallbackType = resolveCategory(undefined, file, text, allowed)
   const fallbackSummary = summarizeFile(file, extractedText, fallbackType)
 
   const apiKey = process.env.GROQ_API_KEY
@@ -135,7 +184,7 @@ export async function analyzeEvidence(
 
   if (isImageFile(file) && text.length < MIN_TEXT_FOR_TEXT_ONLY) {
     try {
-      const vision = await analyzeImageWithVision(file)
+      const vision = await analyzeImageWithVision(file, allowed)
       return {
         evidenceType: vision.evidenceType,
         summary: `${vision.evidenceType}: ${file.name} — ${vision.summary}`,
@@ -149,6 +198,7 @@ export async function analyzeEvidence(
   try {
     const { default: Groq } = await import('groq-sdk')
     const groq = new Groq({ apiKey })
+    const rules = buildCategoryRules(allowed)
 
     const completion = await groq.chat.completions.create({
       model: GROQ_TEXT_MODEL,
@@ -157,17 +207,15 @@ export async function analyzeEvidence(
       messages: [
         {
           role: 'system',
-          content: `You analyze restoration/insurance project document files.
+          content: `You analyze restoration/insurance project files.
 
 Return JSON only:
 {
-  "category": "<one of: ${EVIDENCE_TYPES.join(', ')}>",
-  "summary": "<1-2 factual sentences about the file using ONLY provided information>"
+  "category": "<exact name from allowed list>",
+  "summary": "<1-2 factual sentences using ONLY provided information>"
 }
 
-${CATEGORY_RULES}
-
-Never invent facts not in the file content or filename.`,
+${rules}`,
         },
         {
           role: 'user',
@@ -175,7 +223,7 @@ Never invent facts not in the file content or filename.`,
 MIME type: ${file.type || 'unknown'}
 
 Content:
-${text || '(No text could be extracted — classify from filename and file type.)'}`,
+${text || '(No text extracted — use filename and type.)'}`,
         },
       ],
     })
@@ -190,8 +238,12 @@ ${text || '(No text could be extracted — classify from filename and file type.
       summary?: string
     }
 
-    let evidenceType = normalizeEvidenceType(parsed.category || fallbackType)
-    if (textHint) evidenceType = textHint
+    const evidenceType = resolveCategory(
+      parsed.category,
+      file,
+      text,
+      allowed
+    )
 
     const summary =
       parsed.summary?.trim() ||

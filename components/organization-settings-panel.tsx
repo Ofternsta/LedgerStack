@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { ProjectClientPanel } from '@/components/project-client-panel'
+import { ProjectFileCategoriesEditor } from '@/components/project-file-categories-editor'
 import { ProjectStatusWorkflowEditor } from '@/components/project-status-workflow-editor'
 import { ProjectWorkerPanel } from '@/components/project-worker-panel'
 import { LegalNotice } from '@/components/legal-notice'
@@ -228,8 +229,8 @@ export function OrganizationSettingsPanel() {
       <section className="card p-4 space-y-4">
         <h2 className="font-bold text-foreground">Projects</h2>
         <p className="text-sm text-muted">
-          Rename projects, customize report status stages per project, and manage
-          client and worker access.
+          Rename projects, customize report status stages and file categories per
+          project, and manage client and worker access.
         </p>
 
         {projects.length === 0 ? (
@@ -311,6 +312,7 @@ export function OrganizationSettingsPanel() {
                       </div>
 
                       <ProjectStatusWorkflowEditor projectId={p.id} />
+                      <ProjectFileCategoriesEditor projectId={p.id} />
                       <ProjectClientPanel projectId={p.id} />
                       <ProjectWorkerPanel projectId={p.id} />
                     </div>

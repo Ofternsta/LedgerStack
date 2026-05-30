@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  EVIDENCE_TYPES,
-  normalizeEvidenceType,
-  type EvidenceType,
-} from '@/lib/evidence-types'
+  defaultFileCategories,
+  normalizeFileCategoryLabel,
+  type FileCategory,
+} from '@/lib/project-file-categories'
 
 type ShareFile = {
   file_path: string
@@ -20,20 +20,17 @@ type Props = {
   clientEmail: string
 }
 
-function folderKey(type: string): EvidenceType {
-  return normalizeEvidenceType(type)
-}
-
 export function ClientSharedFilesEditor({
   projectId,
   accessId,
   clientEmail,
 }: Props) {
   const [files, setFiles] = useState<ShareFile[]>([])
-  const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [expandedFolders, setExpandedFolders] = useState<Set<EvidenceType>>(
-    new Set()
+  const [categories, setCategories] = useState<FileCategory[]>(
+    defaultFileCategories()
   )
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -60,6 +57,9 @@ export function ClientSharedFilesEditor({
     const list = (payload.files || []) as ShareFile[]
     setFiles(list)
     setSelected(new Set((payload.shared_paths || []) as string[]))
+    if (payload.categories?.length) {
+      setCategories(payload.categories as FileCategory[])
+    }
     setLoading(false)
   }, [projectId, accessId])
 
@@ -69,20 +69,25 @@ export function ClientSharedFilesEditor({
 
   const grouped = useMemo(() => {
     const map = Object.fromEntries(
-      EVIDENCE_TYPES.map((t) => [t, [] as ShareFile[]])
-    ) as Record<EvidenceType, ShareFile[]>
+      categories.map((c) => [c.key, [] as ShareFile[]])
+    ) as Record<string, ShareFile[]>
 
     for (const file of files) {
-      map[folderKey(file.evidence_type)].push(file)
+      const label = normalizeFileCategoryLabel(file.evidence_type, categories)
+      const cat =
+        categories.find((c) => c.label === label) ?? categories[0]
+      map[cat.key].push(file)
     }
 
-    return EVIDENCE_TYPES.map((type) => ({
-      type,
-      files: map[type],
-    })).filter((g) => g.files.length > 0)
-  }, [files])
+    return categories
+      .map((cat) => ({
+        type: cat,
+        files: map[cat.key],
+      }))
+      .filter((g) => g.files.length > 0)
+  }, [files, categories])
 
-  function folderState(type: EvidenceType, folderFiles: ShareFile[]) {
+  function folderState(folderFiles: ShareFile[]) {
     const paths = folderFiles.map((f) => f.file_path)
     const selectedCount = paths.filter((p) => selected.has(p)).length
     if (selectedCount === 0) return 'unchecked' as const
@@ -90,36 +95,34 @@ export function ClientSharedFilesEditor({
     return 'indeterminate' as const
   }
 
-  function toggleFolder(type: EvidenceType, folderFiles: ShareFile[]) {
+  function toggleFolder(key: string) {
+    setExpandedFolders((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
+  function toggleFile(path: string) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(path)) next.delete(path)
+      else next.add(path)
+      return next
+    })
+  }
+
+  function toggleFolderSelectAll(folderFiles: ShareFile[]) {
+    const state = folderState(folderFiles)
     const paths = folderFiles.map((f) => f.file_path)
-    const state = folderState(type, folderFiles)
     setSelected((prev) => {
       const next = new Set(prev)
       if (state === 'checked') {
-        paths.forEach((p) => next.delete(p))
+        for (const p of paths) next.delete(p)
       } else {
-        paths.forEach((p) => next.add(p))
+        for (const p of paths) next.add(p)
       }
-      return next
-    })
-    setSavedMessage(null)
-  }
-
-  function toggleFile(filePath: string) {
-    setSelected((prev) => {
-      const next = new Set(prev)
-      if (next.has(filePath)) next.delete(filePath)
-      else next.add(filePath)
-      return next
-    })
-    setSavedMessage(null)
-  }
-
-  function toggleFolderExpand(type: EvidenceType) {
-    setExpandedFolders((prev) => {
-      const next = new Set(prev)
-      if (next.has(type)) next.delete(type)
-      else next.add(type)
       return next
     })
   }
@@ -139,124 +142,94 @@ export function ClientSharedFilesEditor({
       }),
     })
     const payload = await res.json().catch(() => ({}))
+    setSaving(false)
 
     if (!res.ok) {
-      setError(payload.error || 'Could not save shared files')
-      setSaving(false)
+      setError(payload.error || 'Could not save')
       return
     }
 
-    setSavedMessage(
-      selected.size === 0
-        ? 'No files shared with this client.'
-        : `Shared ${selected.size} file(s) with ${clientEmail}.`
-    )
-    setSaving(false)
+    setSavedMessage(`Shared ${payload.shared_count ?? selected.size} file(s).`)
   }
 
   if (loading) {
-    return <p className="text-sm text-muted-dim py-2">Loading files…</p>
+    return <p className="text-sm text-muted">Loading files…</p>
   }
 
-  if (!grouped.length) {
+  if (!files.length) {
     return (
-      <p className="text-sm text-muted-dim py-2">
-        No project files to share yet. Upload documents on this project first.
+      <p className="text-sm text-muted">
+        No project files to share yet. Upload documents on the project first.
       </p>
     )
   }
 
   return (
-    <div className="space-y-3 border-t border-border pt-3 mt-2">
-      <p className="text-xs text-muted">
-        Choose which files <span className="font-medium">{clientEmail}</span>{' '}
-        can view. Only checked files appear in their portal.
+    <div className="space-y-3 border border-border rounded-lg p-3">
+      <p className="text-sm text-muted">
+        Choose which files <strong>{clientEmail}</strong> can open. Grouped by
+        your project&apos;s file categories.
       </p>
 
-      {error && (
-        <p className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg p-2">
-          {error}
-        </p>
-      )}
+      {grouped.map(({ type, files: folderFiles }) => {
+        const folderStateVal = folderState(folderFiles)
+        const isOpen = expandedFolders.has(type.key)
+
+        return (
+          <div
+            key={type.key}
+            className="border border-border rounded-lg overflow-hidden"
+          >
+            <div className="flex items-center gap-2 px-3 py-2 bg-surface">
+              <input
+                type="checkbox"
+                checked={folderStateVal === 'checked'}
+                ref={(el) => {
+                  if (el) el.indeterminate = folderStateVal === 'indeterminate'
+                }}
+                onChange={() => toggleFolderSelectAll(folderFiles)}
+                className="mt-0.5"
+              />
+              <button
+                type="button"
+                onClick={() => toggleFolder(type.key)}
+                className="flex-1 text-left text-sm font-semibold min-h-[40px]"
+              >
+                {type.label} ({folderFiles.length})
+              </button>
+              <span className="text-muted-dim text-xs">{isOpen ? '▾' : '▸'}</span>
+            </div>
+
+            {isOpen && (
+              <ul className="divide-y divide-border">
+                {folderFiles.map((f) => (
+                  <li key={f.file_path}>
+                    <label className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-surface-elevated min-h-[44px]">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(f.file_path)}
+                        onChange={() => toggleFile(f.file_path)}
+                      />
+                      <span className="truncate">{f.file_name}</span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )
+      })}
+
+      {error && <p className="text-sm text-red-600">{error}</p>}
       {savedMessage && (
-        <p className="text-sm text-green-800 bg-green-50 border border-green-100 rounded-lg p-2">
-          {savedMessage}
-        </p>
+        <p className="text-sm text-green-700">{savedMessage}</p>
       )}
-
-      <ul className="space-y-2">
-        {grouped.map(({ type, files: folderFiles }) => {
-          const state = folderState(type, folderFiles)
-          const isOpen = expandedFolders.has(type)
-
-          return (
-            <li
-              key={type}
-              className="border border-border rounded-lg bg-surface overflow-hidden"
-            >
-              <div className="flex items-center gap-2 px-3 py-2 min-h-[44px]">
-                <input
-                  type="checkbox"
-                  checked={state === 'checked'}
-                  ref={(el) => {
-                    if (el) el.indeterminate = state === 'indeterminate'
-                  }}
-                  onChange={() => toggleFolder(type, folderFiles)}
-                  aria-label={`Share all ${type} files`}
-                  className="h-4 w-4 shrink-0"
-                />
-                <button
-                  type="button"
-                  onClick={() => toggleFolderExpand(type)}
-                  className="flex-1 text-left font-medium text-sm text-foreground min-h-[44px]"
-                >
-                  {type}
-                  <span className="text-muted-dim font-normal ml-2">
-                    ({folderFiles.length})
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => toggleFolderExpand(type)}
-                  className="text-muted-dim px-2 min-h-[44px]"
-                  aria-expanded={isOpen}
-                  aria-label={isOpen ? 'Collapse folder' : 'Expand folder'}
-                >
-                  {isOpen ? '▾' : '▸'}
-                </button>
-              </div>
-
-              {isOpen && (
-                <ul className="border-t border-border divide-y divide-border">
-                  {folderFiles.map((file) => (
-                    <li key={file.file_path}>
-                      <label className="flex items-start gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-surface-elevated min-h-[44px]">
-                        <input
-                          type="checkbox"
-                          checked={selected.has(file.file_path)}
-                          onChange={() => toggleFile(file.file_path)}
-                          className="h-4 w-4 mt-0.5 shrink-0"
-                        />
-                        <span className="min-w-0">
-                          <span className="block font-medium truncate">
-                            {file.file_name}
-                          </span>
-                        </span>
-                      </label>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </li>
-          )
-        })}
-      </ul>
 
       <button
         type="button"
-        onClick={save}
         disabled={saving}
-        className="text-sm font-medium btn-primary text-[#052e16] px-4 py-2 rounded-xl min-h-[44px] disabled:opacity-50"
+        onClick={save}
+        className="btn-primary text-[#052e16] text-sm px-4 py-2 min-h-[44px] w-full disabled:opacity-50"
       >
         {saving ? 'Saving…' : 'Save shared files'}
       </button>

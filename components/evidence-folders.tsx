@@ -2,7 +2,11 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { EvidenceCard } from '@/components/evidence-card'
-import { EVIDENCE_TYPES, type EvidenceType } from '@/lib/evidence-types'
+import {
+  defaultFileCategories,
+  normalizeFileCategoryLabel,
+  type FileCategory,
+} from '@/lib/project-file-categories'
 
 export type EvidenceDoc = {
   id: string
@@ -19,6 +23,7 @@ type EvidenceFoldersProps = {
   documents: EvidenceDoc[]
   projectId: string
   claimId: string
+  categories?: FileCategory[]
   canEdit: boolean
   canDelete: boolean
   canRescan: boolean
@@ -26,13 +31,6 @@ type EvidenceFoldersProps = {
   onOpen: (filePath: string) => void
   onDelete: (filePath: string) => void
   onUpdated: () => void
-}
-
-function folderKey(type: string): EvidenceType {
-  const normalized = EVIDENCE_TYPES.find(
-    (t) => t.toLowerCase() === type.trim().toLowerCase()
-  )
-  return normalized ?? 'Other'
 }
 
 function formatUploadedAt(createdAt?: string) {
@@ -53,6 +51,7 @@ export function EvidenceFolders({
   documents,
   projectId,
   claimId,
+  categories: categoriesProp,
   canEdit,
   canDelete,
   canRescan,
@@ -61,24 +60,31 @@ export function EvidenceFolders({
   onDelete,
   onUpdated,
 }: EvidenceFoldersProps) {
-  const [expanded, setExpanded] = useState<Set<EvidenceType>>(new Set())
+  const categories = categoriesProp?.length
+    ? categoriesProp
+    : defaultFileCategories()
+
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [selectedPath, setSelectedPath] = useState<string | null>(null)
 
   const grouped = useMemo(() => {
     const map = Object.fromEntries(
-      EVIDENCE_TYPES.map((t) => [t, [] as EvidenceDoc[]])
-    ) as Record<EvidenceType, EvidenceDoc[]>
+      categories.map((c) => [c.key, [] as EvidenceDoc[]])
+    ) as Record<string, EvidenceDoc[]>
 
     for (const doc of documents) {
-      map[folderKey(doc.evidence_type)].push(doc)
+      const label = normalizeFileCategoryLabel(doc.evidence_type, categories)
+      const cat =
+        categories.find((c) => c.label === label) ?? categories[0]
+      map[cat.key].push(doc)
     }
 
-    for (const type of EVIDENCE_TYPES) {
-      map[type].sort(sortChronological)
+    for (const cat of categories) {
+      map[cat.key].sort(sortChronological)
     }
 
     return map
-  }, [documents])
+  }, [documents, categories])
 
   const totalCount = documents.length
 
@@ -91,17 +97,17 @@ export function EvidenceFolders({
     }
   }, [documents, selectedPath])
 
-  function toggleFolder(type: EvidenceType) {
+  function toggleFolder(key: string) {
     setExpanded((prev) => {
       const next = new Set(prev)
-      if (next.has(type)) next.delete(type)
-      else next.add(type)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
       return next
     })
   }
 
-  function selectFile(filePath: string, folder: EvidenceType) {
-    setExpanded((prev) => new Set(prev).add(folder))
+  function selectFile(filePath: string, folderKey: string) {
+    setExpanded((prev) => new Set(prev).add(folderKey))
     setSelectedPath((current) => (current === filePath ? null : filePath))
   }
 
@@ -110,17 +116,19 @@ export function EvidenceFolders({
     void onDelete(filePath)
   }
 
+  const categoryLabels = categories.map((c) => c.label)
+
   if (totalCount === 0) {
     return (
       <section className="space-y-2" aria-label="Documents">
         <h2 className="font-bold text-lg text-foreground">Documents</h2>
-        {EVIDENCE_TYPES.map((type) => (
+        {categories.map((cat) => (
           <div
-            key={type}
+            key={cat.key}
             className="border border-border rounded-xl bg-surface-elevated overflow-hidden"
           >
             <div className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left">
-              <span className="font-semibold text-foreground">{type}</span>
+              <span className="font-semibold text-foreground">{cat.label}</span>
               <span className="text-sm text-muted-dim tabular-nums">0 files</span>
             </div>
           </div>
@@ -133,23 +141,23 @@ export function EvidenceFolders({
   return (
     <section className="space-y-2" aria-label="Documents">
       <h2 className="font-bold text-lg text-foreground">Documents</h2>
-      {EVIDENCE_TYPES.map((type) => {
-        const files = grouped[type]
+      {categories.map((cat) => {
+        const files = grouped[cat.key]
         const count = files.length
-        const isOpen = expanded.has(type)
+        const isOpen = expanded.has(cat.key)
 
         return (
           <div
-            key={type}
+            key={cat.key}
             className="border border-border rounded-xl bg-surface-elevated overflow-hidden"
           >
             <button
               type="button"
-              onClick={() => toggleFolder(type)}
+              onClick={() => toggleFolder(cat.key)}
               className="flex w-full items-center justify-between gap-3 px-4 py-3 min-h-[48px] text-left hover:bg-surface transition-colors"
               aria-expanded={isOpen}
             >
-              <span className="font-semibold text-foreground">{type}</span>
+              <span className="font-semibold text-foreground">{cat.label}</span>
               <span className="flex items-center gap-2 text-sm text-muted">
                 <span className="tabular-nums">
                   {count} {count === 1 ? 'file' : 'files'}
@@ -176,7 +184,7 @@ export function EvidenceFolders({
                     <li key={doc.id}>
                       <button
                         type="button"
-                        onClick={() => selectFile(doc.file_path, type)}
+                        onClick={() => selectFile(doc.file_path, cat.key)}
                         className={`flex w-full flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-3 px-4 py-3 min-h-[44px] text-left transition-colors ${
                           isSelected
                             ? 'bg-brand/10 border-l-2 border-l-brand'
@@ -197,6 +205,7 @@ export function EvidenceFolders({
                             doc={doc}
                             projectId={projectId}
                             claimId={claimId}
+                            categoryLabels={categoryLabels}
                             canEdit={canEdit}
                             canDelete={canDelete}
                             canRescan={canRescan}

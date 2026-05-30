@@ -1,6 +1,10 @@
 import 'server-only'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
+import {
+  categoryLabels,
+  parseProjectFileCategories,
+} from '@/lib/project-file-categories'
 import { listAllProjectEvidence, type EvidenceRecord } from '@/lib/evidence-storage'
 import { createServiceClient } from '@/lib/supabase/service'
 
@@ -96,9 +100,19 @@ export async function loadClientSharingPayload(
   const files = await listAllProjectEvidence(service, projectId)
   const sharedPaths = await getSharedFilePaths(accessId)
 
+  const { data: project } = await service
+    .from('projects')
+    .select('file_categories')
+    .eq('id', projectId)
+    .maybeSingle()
+
+  const categories = parseProjectFileCategories(project?.file_categories)
+
   return {
     files,
     shared_paths: [...sharedPaths],
+    categories,
+    category_labels: categoryLabels(categories),
   }
 }
 
