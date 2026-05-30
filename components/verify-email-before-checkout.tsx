@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 type VerifyEmailBeforeCheckoutProps = {
   email: string
@@ -15,20 +15,44 @@ export function VerifyEmailBeforeCheckout({
     'Verify your email before entering card details. Check your inbox for the confirmation link.'
   )
   const [resending, setResending] = useState(false)
+  const [checking, setChecking] = useState(false)
+  const continuedRef = useRef(false)
 
   const check = useCallback(async () => {
+    if (continuedRef.current) return
+
+    setChecking(true)
     const res = await fetch(
       `/api/auth/email-verification-status?email=${encodeURIComponent(email)}`
     )
     const payload = await res.json().catch(() => ({}))
-    if (res.ok && payload.verified) {
-      onVerified()
+    setChecking(false)
+
+    if (!res.ok) {
+      setMessage(
+        payload.error ||
+          'Could not check verification status. Refresh the page or try again in a moment.'
+      )
+      return
     }
+
+    if (payload.verified) {
+      continuedRef.current = true
+      setMessage('Email confirmed — opening secure checkout…')
+      onVerified()
+      return
+    }
+
+    setMessage(
+      'Still waiting for confirmation. Open the link in your email (check spam), then click check again.'
+    )
   }, [email, onVerified])
 
   useEffect(() => {
     void check()
-    const interval = setInterval(check, 4000)
+    const interval = setInterval(() => {
+      void check()
+    }, 5000)
     return () => clearInterval(interval)
   }, [check])
 
@@ -50,7 +74,7 @@ export function VerifyEmailBeforeCheckout({
       return
     }
     setMessage(
-      'Verification email sent. Open the link, then return to this tab — payment will continue here.'
+      'Verification email sent. Open the link, then return to this tab and click check again.'
     )
   }
 
@@ -83,10 +107,11 @@ export function VerifyEmailBeforeCheckout({
         </button>
         <button
           type="button"
+          disabled={checking}
           onClick={check}
-          className="text-sm border border-amber-300 px-4 py-2 rounded-lg min-h-[44px] text-amber-950"
+          className="text-sm border border-amber-300 px-4 py-2 rounded-lg min-h-[44px] text-amber-950 disabled:opacity-50"
         >
-          I verified — check again
+          {checking ? 'Checking…' : 'I verified — check again'}
         </button>
       </div>
     </section>

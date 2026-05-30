@@ -15,6 +15,14 @@ function isSignupVerifyReturn(path: string) {
   )
 }
 
+function appendEmailToPath(path: string, email: string, origin: string) {
+  const url = new URL(path, origin)
+  if (!url.searchParams.has('email')) {
+    url.searchParams.set('email', email)
+  }
+  return `${url.pathname}${url.search}`
+}
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
@@ -27,17 +35,27 @@ export async function GET(request: Request) {
       const {
         data: { user },
       } = await supabase.auth.getUser()
+
       if (user && !user.email_confirmed_at && !isSignupVerifyReturn(next)) {
         return NextResponse.redirect(
           `${origin}/login?verify=1&email=${encodeURIComponent(user.email || '')}`
         )
       }
-      return NextResponse.redirect(`${origin}${next}`)
-    }
-  }
 
-  if (isSignupVerifyReturn(next)) {
-    return NextResponse.redirect(`${origin}${next}`)
+      let destination = next
+      if (user?.email && isSignupVerifyReturn(next)) {
+        destination = appendEmailToPath(next, user.email, origin)
+      }
+
+      return NextResponse.redirect(`${origin}${destination}`)
+    }
+
+    const verifyError = encodeURIComponent(
+      error.message || 'Email link expired or invalid'
+    )
+    return NextResponse.redirect(
+      `${origin}/login?signup=admin&verify_error=${verifyError}`
+    )
   }
 
   return NextResponse.redirect(`${origin}/login?verify=1`)

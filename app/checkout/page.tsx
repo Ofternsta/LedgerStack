@@ -22,6 +22,27 @@ function registerPayloadFromDraft(draft: AdminSignupDraft, plan: BillingPlanId) 
   }
 }
 
+async function registerPayloadForVerifiedEmail(
+  email: string,
+  plan: BillingPlanId
+) {
+  const verifyRes = await fetch(
+    `/api/auth/email-verification-status?email=${encodeURIComponent(email)}`
+  )
+  const verify = await verifyRes.json().catch(() => ({}))
+  if (!verifyRes.ok || !verify.verified) return null
+
+  const pendingRes = await fetch(
+    `/api/auth/finish-signup?email=${encodeURIComponent(email)}`
+  )
+  const pending = await pendingRes.json().catch(() => ({}))
+  if (pendingRes.ok && pending.pending) {
+    return { pendingSignup: true as const, email, plan }
+  }
+
+  return null
+}
+
 async function registerPayloadForSignup(
   plan: BillingPlanId,
   fallbackEmail: string | null
@@ -29,27 +50,24 @@ async function registerPayloadForSignup(
   const draft = loadAdminSignupDraft()
   if (draft) return registerPayloadFromDraft(draft, plan)
 
+  const email =
+    fallbackEmail?.trim().toLowerCase() ||
+    (typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('email')?.trim().toLowerCase()
+      : null) ||
+    null
+
+  if (email) {
+    const pending = await registerPayloadForVerifiedEmail(email, plan)
+    if (pending) return pending
+  }
+
   const statusRes = await fetch('/api/auth/email-verification-status')
   const status = await statusRes.json().catch(() => ({}))
   if (statusRes.ok && status.verified && status.email) {
-    const email = String(status.email)
-    const pendingRes = await fetch(
-      `/api/auth/finish-signup?email=${encodeURIComponent(email)}`
-    )
-    const pending = await pendingRes.json().catch(() => ({}))
-    if (pendingRes.ok && pending.pending) {
-      return { pendingSignup: true as const, email, plan }
-    }
-  }
-
-  if (fallbackEmail) {
-    const verifyRes = await fetch(
-      `/api/auth/email-verification-status?email=${encodeURIComponent(fallbackEmail)}`
-    )
-    const verify = await verifyRes.json().catch(() => ({}))
-    if (verifyRes.ok && verify.verified) {
-      return { pendingSignup: true as const, email: fallbackEmail, plan }
-    }
+    const sessionEmail = String(status.email).trim().toLowerCase()
+    const pending = await registerPayloadForVerifiedEmail(sessionEmail, plan)
+    if (pending) return pending
   }
 
   return null
@@ -114,7 +132,12 @@ function CheckoutContent() {
     if (registerPayload) {
       body.register = registerPayload
     } else if (isSignupFlow) {
-      router.replace('/login?signup=admin')
+      setError(
+        checkoutEmail
+          ? 'Could not continue signup checkout. Return to plan selection and try again, or contact support.'
+          : 'Signup session was lost in this browser tab. Open the link from your email again, or start sign up from the beginning.'
+      )
+      setLoading(false)
       return
     }
 
@@ -189,14 +212,18 @@ function CheckoutContent() {
       const signupFlow = isSignupFlow || pendingSignup
 
       if (signupFlow) {
+        const emailFromUrl = searchParams.get('email')?.trim().toLowerCase() || null
         const email =
+          emailFromUrl ||
           draft?.email.trim().toLowerCase() ||
           sessionEmail ||
-          searchParams.get('email')?.trim().toLowerCase() ||
           null
 
         if (!email) {
-          router.replace('/login?signup=admin')
+          setError(
+            'We could not find your signup email in this tab. Use Continue to payment from the email verification page, or return to sign up.'
+          )
+          setLoading(false)
           return
         }
 
@@ -212,37 +239,38 @@ function CheckoutContent() {
           }
         }
 
-        if (draft) {
-          const accountRes = await fetch('/api/auth/register-admin-account', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email: draft.email,
-              password: draft.password,
-              full_name: draft.fullName,
-              organization_name: draft.organizationName,
-              plan,
-            }),
-          })
-          const accountPayload = await accountRes.json().catch(() => ({}))
+        const verifyRes = await fetch(
+          `/api/auth/email-verification-status?email=${encodeURIComponent(email)}`
+        )
+        const verify = await verifyRes.json().catch(() => ({}))
 
-          if (!accountRes.ok) {
-            setError(accountPayload.error || 'Could not prepare account')
-            setLoading(false)
-            return
-          }
+        if (!verifyRes.ok || !verify.verified) {
+          if (draft) {
+            const accountRes = await fetch('/api/auth/register-admin-account', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: draft.email,
+                password: draft.password,
+                full_name: draft.fullName,
+                organization_name: draft.organizationName,
+                plan,
+              }),
+            })
+            const accountPayload = await accountRes.json().catch(() => ({}))
 
-          if (!accountPayload.emailVerified) {
-            setEmailVerified(false)
-            setLoading(false)
-            return
-          }
-        } else {
-          const verifyRes = await fetch(
-            `/api/auth/email-verification-status?email=${encodeURIComponent(email)}`
-          )
-          const verify = await verifyRes.json().catch(() => ({}))
-          if (!verifyRes.ok || !verify.verified) {
+            if (!accountRes.ok) {
+              setError(accountPayload.error || 'Could not prepare account')
+              setLoading(false)
+              return
+            }
+
+            if (!accountPayload.emailVerified) {
+              setEmailVerified(false)
+              setLoading(false)
+              return
+            }
+          } else {
             setEmailVerified(false)
             setLoading(false)
             return

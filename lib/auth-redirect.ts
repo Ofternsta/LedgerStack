@@ -17,6 +17,20 @@ export function emailVerificationRedirectUrl(nextPath = '/login?verified=1') {
 }
 
 /** After admin signup email confirm — do not send users to login. */
-export function signupEmailVerifiedNextPath(plan: BillingPlanId) {
-  return `/onboarding/email-verified?plan=${encodeURIComponent(plan)}`
+export function signupEmailVerifiedNextPath(
+  plan: BillingPlanId,
+  email?: string | null
+) {
+  const params = new URLSearchParams({ plan })
+  const normalized = email?.trim().toLowerCase()
+  if (normalized) params.set('email', normalized)
+  return `/onboarding/email-verified?${params.toString()}`
+}
+
+/** Checkout during admin signup (keeps email when opening a new tab). */
+export function signupCheckoutPath(plan: BillingPlanId, email?: string | null) {
+  const params = new URLSearchParams({ plan, register: '1' })
+  const normalized = email?.trim().toLowerCase()
+  if (normalized) params.set('email', normalized)
+  return `/checkout?${params.toString()}`
 }
