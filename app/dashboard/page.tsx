@@ -66,7 +66,7 @@ export default function DashboardPage() {
   if (!access) {
     return (
       <div className="min-h-dvh flex items-center justify-center">
-        <LedgerStackLoader label="Loading dashboard…" />
+        <LedgerStackLoader />
       </div>
     )
   }

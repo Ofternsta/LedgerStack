@@ -390,48 +390,6 @@ button {
   animation: app-page-fade-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-@keyframes loader-arrow-rise {
-  0% {
-    transform: translate(-50%, 0);
-    opacity: 0.4;
-  }
-  8% {
-    opacity: 1;
-  }
-  88% {
-    transform: translate(-50%, -78%);
-    opacity: 1;
-  }
-  100% {
-    transform: translate(-50%, -78%);
-    opacity: 0;
-  }
-}
-
-.ledgerstack-loader {
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-}
-
-.ledgerstack-loader__logo {
-  display: block;
-}
-
-.ledgerstack-loader__arrow {
-  position: absolute;
-  left: 52%;
-  bottom: 14%;
-  width: 0;
-  height: 0;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-bottom: 10px solid var(--brand-bright);
-  filter: drop-shadow(0 0 6px var(--brand-glow));
-  animation: loader-arrow-rise 1.75s cubic-bezier(0.45, 0, 0.55, 1) infinite;
-}
-
 @keyframes upload-progress-shimmer {
   0% {
     background-position: 200% 0;
@@ -496,12 +454,6 @@ button {
 @media (prefers-reduced-motion: reduce) {
   .app-page-transition {
     animation: none;
-  }
-
-  .ledgerstack-loader__arrow {
-    animation: none;
-    opacity: 1;
-    transform: translate(-50%, -40%);
   }
 
   .upload-progress-fill {

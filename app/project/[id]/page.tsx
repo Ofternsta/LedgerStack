@@ -19,6 +19,7 @@ import {
   type StatusStage,
 } from '@/lib/project-status-workflow'
 import { EvidenceUpload } from '@/components/evidence-upload'
+import { LedgerStackLoader } from '@/components/ledgerstack-loader'
 import { InternalNotesPanel } from '@/components/internal-notes-panel'
 import { MessagePanel } from '@/components/message-panel'
 import { ProjectJobsList } from '@/components/project-jobs-list'
@@ -347,7 +348,7 @@ export default function ProjectPageClient() {
   if (loading || !access) {
     return (
       <div className="min-h-dvh flex items-center justify-center safe-x">
-        <p className="text-gray-600">Loading project…</p>
+        <LedgerStackLoader />
       </div>
     )
   }

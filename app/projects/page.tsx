@@ -174,7 +174,7 @@ export default function ProjectsPage() {
   if (accessLoading) {
     return (
       <div className="min-h-dvh flex items-center justify-center">
-        <LedgerStackLoader label="Loading projects…" />
+        <LedgerStackLoader />
       </div>
     )
   }
