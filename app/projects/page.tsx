@@ -299,7 +299,7 @@ export default function ProjectsPage() {
 
             <label className="block space-y-1">
               <span className="text-sm font-medium text-foreground">
-                Job description <span className="text-red-600">*</span>
+                Job description
               </span>
               <textarea
                 className="border border-border rounded-xl p-3 w-full min-h-[88px]"

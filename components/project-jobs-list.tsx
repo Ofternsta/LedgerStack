@@ -22,7 +22,9 @@ type Props = {
   selectedId: string | null
   onSelect: (job: ProjectJobRow) => void
   canAddJob?: boolean
+  canDeleteJob?: boolean
   onJobAdded?: (job: ProjectJobRow) => void
+  onJobDeleted?: (jobId: string) => void
   variant?: 'sidebar' | 'summary'
 }
 
@@ -148,7 +150,7 @@ export function AddJobDialog({
         </p>
         <label className="block space-y-1">
           <span className="text-sm font-medium text-foreground">
-            Job description <span className="text-red-600">*</span>
+            Job description
           </span>
           <textarea
             className="input-field w-full min-h-[100px]"
@@ -192,10 +194,43 @@ export function ProjectJobsList({
   selectedId,
   onSelect,
   canAddJob = false,
+  canDeleteJob = false,
   onJobAdded,
+  onJobDeleted,
   variant = 'sidebar',
 }: Props) {
   const [addOpen, setAddOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+
+  async function deleteSelectedJob() {
+    if (!selectedId || !canDeleteJob || jobs.length <= 1) return
+
+    const job = jobs.find((j) => j.id === selectedId)
+    const label =
+      displayJobDescription(job?.notes, legacyProjectNotes) ||
+      job?.client_name ||
+      'this job'
+
+    const ok = window.confirm(
+      `Delete "${label}" and all of its files, timeline entries, and status history? This cannot be undone.`
+    )
+    if (!ok) return
+
+    setDeleting(true)
+    setDeleteError(null)
+    const res = await fetch(`/api/projects/${projectId}/jobs/${selectedId}`, {
+      method: 'DELETE',
+    })
+    const payload = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      setDeleteError(payload.error || 'Could not delete job')
+      setDeleting(false)
+      return
+    }
+    onJobDeleted?.(selectedId)
+    setDeleting(false)
+  }
 
   if (variant === 'summary') {
     const job = jobs.find((j) => j.id === selectedId) ?? jobs[0]
@@ -229,6 +264,9 @@ export function ProjectJobsList({
             </button>
           )}
         </div>
+        {deleteError && (
+          <p className="text-sm alert-error rounded-lg p-2 mb-2">{deleteError}</p>
+        )}
         {jobs.length === 0 ? (
           <p className="text-sm text-muted-dim">No jobs on this project yet.</p>
         ) : (
@@ -259,6 +297,16 @@ export function ProjectJobsList({
               )
             })}
           </ul>
+        )}
+        {canDeleteJob && jobs.length > 1 && selectedId && (
+          <button
+            type="button"
+            onClick={deleteSelectedJob}
+            disabled={deleting}
+            className="mt-3 w-full text-sm border border-red-300 text-red-800 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-lg min-h-[40px] disabled:opacity-50"
+          >
+            {deleting ? 'Deleting…' : 'Delete job'}
+          </button>
         )}
       </aside>
 

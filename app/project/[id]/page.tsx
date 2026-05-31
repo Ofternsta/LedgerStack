@@ -80,6 +80,7 @@ export default function ProjectPageClient() {
   )
   const [projectNotes, setProjectNotes] = useState<string | null>(null)
   const [addJobOpen, setAddJobOpen] = useState(false)
+  const [deletingJob, setDeletingJob] = useState(false)
 
   function mergeWorkerProjectAccess(
     base: UserAccess,
@@ -473,6 +474,41 @@ export default function ProjectPageClient() {
             Add a job
           </button>
         )}
+        {access.canCreateProject && claims.length > 1 && activeClaim && (
+          <button
+            type="button"
+            disabled={deletingJob}
+            onClick={async () => {
+              const label =
+                displayJobDescription(activeClaim.notes, projectNotes) ||
+                activeClaim.client_name
+              const ok = window.confirm(
+                `Delete "${label}" and all of its files, timeline entries, and status history? This cannot be undone.`
+              )
+              if (!ok) return
+              setDeletingJob(true)
+              const res = await fetch(
+                `/api/projects/${id}/jobs/${activeClaim.id}`,
+                { method: 'DELETE' }
+              )
+              const payload = await res.json().catch(() => ({}))
+              setDeletingJob(false)
+              if (!res.ok) {
+                alert(payload.error || 'Could not delete job')
+                return
+              }
+              const remaining = claims.filter((c) => c.id !== activeClaim.id)
+              setClaims(remaining)
+              const next = remaining[0] ?? null
+              setSelectedClaim(next)
+              if (next) void fetchEvidence(next.id)
+              else setDocuments([])
+            }}
+            className="text-sm border border-red-300 text-red-800 bg-red-50 px-3 py-2 rounded-lg min-h-[40px] shrink-0 disabled:opacity-50"
+          >
+            {deletingJob ? 'Deleting…' : 'Delete job'}
+          </button>
+        )}
         </div>
 
         {addJobOpen && (
@@ -497,11 +533,20 @@ export default function ProjectPageClient() {
             workflow={statusWorkflow}
             selectedId={selectedClaim?.id ?? null}
             canAddJob={access.canCreateProject}
+            canDeleteJob={access.canCreateProject}
             onJobAdded={(job) => {
               const claim = job as Claim
               setClaims((prev) => [...prev, claim])
               setSelectedClaim(claim)
               void fetchEvidence(claim.id)
+            }}
+            onJobDeleted={(jobId) => {
+              const remaining = claims.filter((c) => c.id !== jobId)
+              setClaims(remaining)
+              const next = remaining[0] ?? null
+              setSelectedClaim(next)
+              if (next) void fetchEvidence(next.id)
+              else setDocuments([])
             }}
             onSelect={(job) => {
               const claim = claims.find((c) => c.id === job.id)
