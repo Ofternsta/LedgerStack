@@ -1,3 +1,5 @@
+import { sanitizeReportText } from '@/lib/pdf-text'
+
 /** Split comma-glued entries that start with a month name (common in AI-compressed timelines/messages). */
 const MONTH_COMMA_SPLIT =
   /,\s*(?=(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d)/i
@@ -59,7 +61,7 @@ export function normalizeSectionBody(body: string, sectionId?: string): string {
       .join('\n\n')
   }
 
-  return expanded.join('\n\n')
+  return expanded.map((line) => sanitizeReportText(line)).join('\n\n')
 }
 
 export function normalizeReportBodies<T extends { sections: Array<{ id: string; body: string }> }>(

@@ -3,13 +3,17 @@
 import type { ReactNode } from 'react'
 import type { JobIntelligenceReport } from '@/lib/job-intelligence-types'
 import { expandBodyToDisplayLines } from '@/lib/report-body-format'
+import { sanitizeReportText } from '@/lib/pdf-text'
 
 type JobIntelligenceSummaryProps = {
   report: JobIntelligenceReport
 }
 
 function renderEntryLine(line: string, key: string) {
-  const messageMatch = line.match(/^(.+?\d{4}.*?\d{1,2}:\d{2}\s*(?:AM|PM)?)\s*(?:—|-)\s*(.+?):\s*(.+)$/i)
+  const cleaned = sanitizeReportText(line)
+  const messageMatch = cleaned.match(
+    /^(.+?\d{4}.*?\d{1,2}:\d{2}\s*(?:AM|PM)?)\s*(?:—|-)\s*(.+?):\s*(.+)$/i
+  )
   if (messageMatch) {
     const [, when, sender, body] = messageMatch
     return (
@@ -24,7 +28,9 @@ function renderEntryLine(line: string, key: string) {
     )
   }
 
-  const datedMatch = line.match(/^(.+?\d{4}.*?\d{1,2}:\d{2}\s*(?:AM|PM)?)\s*:\s*(.+)$/i)
+  const datedMatch = cleaned.match(
+    /^(.+?\d{4}.*?\d{1,2}:\d{2}\s*(?:AM|PM)?)\s*:\s*(.+)$/i
+  )
   if (datedMatch) {
     const [, when, rest] = datedMatch
     return (
@@ -37,7 +43,7 @@ function renderEntryLine(line: string, key: string) {
 
   return (
     <p key={key} className="text-sm text-foreground leading-relaxed">
-      {line}
+      {cleaned}
     </p>
   )
 }

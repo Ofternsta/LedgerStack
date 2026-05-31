@@ -13,6 +13,8 @@ import {
   type JobIntelligenceSection,
   type JobIntelligenceSectionId,
 } from '@/lib/job-intelligence-types'
+import { mergeStructuredReportSections } from '@/lib/merge-structured-report-sections'
+import { sanitizeReportText } from '@/lib/pdf-text'
 import {
   joinSectionEntries,
   normalizeReportBodies,
@@ -75,10 +77,13 @@ export function buildFallbackReport(ctx: JobIntelligenceContext): JobIntelligenc
     ctx.timelineEvents.length === 0
       ? 'No timeline entries yet.'
       : joinSectionEntries(
-          ctx.timelineEvents.map(
-            (e) =>
-              `${formatWhen(e.created_at || e.event_date)} — ${e.client_name}: ${e.title}. ${e.description}`
-          )
+          ctx.timelineEvents.map((e) => {
+            const when = formatWhen(e.created_at || e.event_date)
+            const title = sanitizeReportText(String(e.title || ''))
+            const description = sanitizeReportText(String(e.description || ''))
+            const detail = description ? `${title}: ${description}` : title
+            return `${when}: ${detail}`
+          })
         )
 
   const notesBody =
@@ -229,10 +234,13 @@ export async function generateJobIntelligenceReport(
   const ctx = await gatherJobIntelligenceContext(supabase, projectId, claimId)
   if (!ctx) return null
 
+  const factual = normalizeReportBodies(buildFallbackReport(ctx))
   const ai = await generateWithGroq(ctx)
-  if (ai) return ai
+  if (ai) {
+    return normalizeReportBodies(mergeStructuredReportSections(ai, factual))
+  }
 
-  return normalizeReportBodies(buildFallbackReport(ctx))
+  return factual
 }
 
 /** Flat text for legacy callers. */

@@ -1,5 +1,6 @@
 import type { JobIntelligenceReport } from '@/lib/job-intelligence-types'
 import { expandBodyToDisplayLines } from '@/lib/report-body-format'
+import { sanitizeReportText } from '@/lib/pdf-text'
 
 export function escapeHtml(text: string) {
   return text
@@ -187,9 +188,18 @@ export async function buildPdfJobReport(
     }
 
     function wrapLines(text: string): string[] {
-      const wrapped = doc.splitTextToSize(text, maxWidth)
+      const wrapped = doc.splitTextToSize(sanitizeReportText(text), maxWidth)
       if (Array.isArray(wrapped)) return wrapped.map(String)
       return [String(wrapped)]
+    }
+
+    function printLines(lines: string[], x: number) {
+      const safe = Array.isArray(lines) ? lines : [String(lines)]
+      for (const line of safe) {
+        newPageIfNeeded()
+        doc.text(String(line), x, y)
+        y += lineHeight
+      }
     }
 
     function addWrappedText(
@@ -202,11 +212,7 @@ export async function buildPdfJobReport(
       if (opts?.color) doc.setTextColor(...opts.color)
       else doc.setTextColor(15, 23, 42)
 
-      for (const line of wrapLines(text)) {
-        newPageIfNeeded()
-        doc.text(line, x, y)
-        y += lineHeight
-      }
+      printLines(wrapLines(text), x)
 
       doc.setFontSize(10)
       doc.setTextColor(15, 23, 42)
@@ -222,28 +228,43 @@ export async function buildPdfJobReport(
       y += 6
     }
 
+    function addTimelineStyleEntry(when: string, detail: string) {
+      addWrappedText(when.trim(), { size: 9, color: [71, 85, 105] })
+      addWrappedText(detail.trim())
+      y += entryGap
+    }
+
     function addEntryLine(line: string) {
-      const messageMatch = line.match(
+      const cleaned = sanitizeReportText(line)
+
+      const messageMatch = cleaned.match(
         /^(.+?\d{4}.*?\d{1,2}:\d{2}\s*(?:AM|PM)?)\s*(?:—|-)\s*(.+?):\s*(.+)$/i
       )
       if (messageMatch) {
         const [, when, sender, body] = messageMatch
-        addWrappedText(when.trim(), { size: 9, color: [71, 85, 105] })
-        addWrappedText(`${sender.trim()}: ${body.trim()}`)
-        y += entryGap
+        addTimelineStyleEntry(when, `${sender.trim()}: ${body.trim()}`)
         return
       }
 
-      const datedMatch = line.match(/^(.+?\d{4}.*?\d{1,2}:\d{2}\s*(?:AM|PM)?)\s*:\s*(.+)$/i)
+      const datedMatch = cleaned.match(
+        /^(.+?\d{4}.*?\d{1,2}:\d{2}\s*(?:AM|PM)?)\s*:\s*(.+)$/i
+      )
       if (datedMatch) {
         const [, when, rest] = datedMatch
-        addWrappedText(when.trim(), { size: 9, color: [71, 85, 105] })
-        addWrappedText(rest.trim())
+        addTimelineStyleEntry(when, rest)
+        return
+      }
+
+      const dateOnly = cleaned.match(
+        /^((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+\d{1,2},\s+\d{4},?\s+\d{1,2}:\d{2}\s*(?:AM|PM)?)$/i
+      )
+      if (dateOnly) {
+        addWrappedText(dateOnly[1], { size: 9, color: [71, 85, 105] })
         y += entryGap
         return
       }
 
-      addWrappedText(line)
+      addWrappedText(cleaned)
       y += entryGap
     }
 
@@ -260,8 +281,8 @@ export async function buildPdfJobReport(
     doc.setFont('helvetica', 'normal')
     doc.setTextColor(71, 85, 105)
     const meta = `${report.projectName} · ${new Date(report.generatedAt).toLocaleString()}`
-    const metaLines = wrapLines(meta)
-    doc.text(metaLines[0] || meta, margin, 62)
+    y = 62
+    printLines(wrapLines(meta), margin)
     y = 92
     doc.setTextColor(15, 23, 42)
 
@@ -279,11 +300,7 @@ export async function buildPdfJobReport(
     }
 
     addSectionTitle('AI summary')
-    for (const line of wrapLines(report.overview)) {
-      newPageIfNeeded()
-      doc.text(line, contentX, y)
-      y += lineHeight
-    }
+    printLines(wrapLines(report.overview), contentX)
 
     newPageIfNeeded(30)
     y += 8
