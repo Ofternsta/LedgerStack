@@ -17,12 +17,85 @@ function stripeCustomerMissing(message: string) {
   )
 }
 
-function stripeResourceMissing(message: string) {
+export function stripeResourceMissing(message: string) {
   return (
     stripeCustomerMissing(message) ||
     message.includes('No such subscription') ||
     message.includes('No such payment_intent')
   )
+}
+
+const BILLABLE_SUBSCRIPTION_STATUSES = new Set<Stripe.Subscription.Status>([
+  'active',
+  'trialing',
+  'past_due',
+])
+
+function pickBestSubscription(subscriptions: Stripe.Subscription[]) {
+  if (!subscriptions.length) return null
+  const billable = subscriptions.filter((s) =>
+    BILLABLE_SUBSCRIPTION_STATUSES.has(s.status)
+  )
+  const pool = billable.length ? billable : subscriptions
+  return pool.sort((a, b) => b.created - a.created)[0]
+}
+
+export type ResolveStripeSubscriptionInput = {
+  customerId: string
+  storedSubscriptionId?: string | null
+}
+
+/** Resolve subscription in the current Stripe mode (repairs stale Supabase IDs). */
+export async function resolveStripeSubscription(
+  stripe: Stripe,
+  input: ResolveStripeSubscriptionInput
+): Promise<
+  | { subscription: Stripe.Subscription; repairedFromStoredId?: string }
+  | { error: string }
+> {
+  const { customerId, storedSubscriptionId } = input
+
+  if (storedSubscriptionId) {
+    try {
+      const subscription = await stripe.subscriptions.retrieve(
+        storedSubscriptionId
+      )
+      const subCustomerId =
+        typeof subscription.customer === 'string'
+          ? subscription.customer
+          : subscription.customer?.id
+      if (subCustomerId === customerId) {
+        return { subscription }
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : ''
+      if (!stripeResourceMissing(message)) {
+        return { error: message || 'Could not load subscription' }
+      }
+    }
+  }
+
+  const listed = await stripe.subscriptions.list({
+    customer: customerId,
+    status: 'all',
+    limit: 20,
+  })
+
+  const best = pickBestSubscription(listed.data)
+  if (!best) {
+    return {
+      error:
+        'No subscription found in Stripe for this account. Use Billing to subscribe again.',
+    }
+  }
+
+  return {
+    subscription: best,
+    repairedFromStoredId:
+      storedSubscriptionId && storedSubscriptionId !== best.id
+        ? storedSubscriptionId
+        : undefined,
+  }
 }
 
 /** Resolve a Stripe customer in the current API key mode (live vs test). */

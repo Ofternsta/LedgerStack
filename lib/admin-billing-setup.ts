@@ -14,7 +14,11 @@ import {
   createStripeClient,
   type CheckoutUiMode,
 } from '@/lib/stripe-checkout-sessions'
-import { resolveStripeCustomerId } from '@/lib/stripe-customer-resolve'
+import {
+  resolveStripeCustomerId,
+  resolveStripeSubscription,
+} from '@/lib/stripe-customer-resolve'
+import { syncStripeSubscription } from '@/lib/stripe-billing'
 
 export function parseBillingPlan(raw: unknown): BillingPlanId | null {
   if (typeof raw !== 'string') return null
@@ -174,24 +178,44 @@ export async function createBillingPortalSession(
 
   const customerId = resolved.customerId
 
-  if (sub && customerId !== sub.stripe_customer_id) {
+  const subscriptionResolved = await resolveStripeSubscription(stripe, {
+    customerId,
+    storedSubscriptionId: sub?.stripe_subscription_id,
+  })
+
+  if ('error' in subscriptionResolved) {
+    return { error: subscriptionResolved.error }
+  }
+
+  const subscription = subscriptionResolved.subscription
+  const subscriptionId = subscription.id
+  const itemId = subscription.items.data[0]?.id
+
+  const stripeIdsChanged =
+    sub &&
+    (customerId !== sub.stripe_customer_id ||
+      subscriptionId !== sub.stripe_subscription_id)
+
+  if (stripeIdsChanged) {
     await supabase
       .from('subscriptions')
       .update({
         stripe_customer_id: customerId,
+        stripe_subscription_id: subscriptionId,
         updated_at: new Date().toISOString(),
       })
       .eq('organization_id', organizationId)
+
+    try {
+      await syncStripeSubscription(subscription)
+    } catch (err) {
+      console.warn('Stripe subscription sync after ID repair failed:', err)
+    }
   }
 
-  const subscriptionId = sub?.stripe_subscription_id
   const afterReturnUrl = `${returnUrlBase}?portal=1&updated=1`
 
-  if (
-    options.targetPlan &&
-    options.targetPlan !== 'trial' &&
-    subscriptionId
-  ) {
+  if (options.targetPlan && options.targetPlan !== 'trial') {
     const targetPriceId = stripePriceIds()[options.targetPlan]
     if (!targetPriceId) {
       return {
@@ -199,8 +223,6 @@ export async function createBillingPortalSession(
       }
     }
 
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId)
-    const itemId = subscription.items.data[0]?.id
     if (!itemId) {
       return { error: 'Could not load subscription for plan change.' }
     }
