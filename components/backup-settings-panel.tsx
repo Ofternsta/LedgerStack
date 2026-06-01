@@ -8,6 +8,13 @@ type BackupSettings = {
   backup_frequency: 'daily' | 'weekly'
   backup_on_report_completed: boolean
   last_scheduled_backup_at: string | null
+  backup_project_ids: string[]
+}
+
+type BackupProject = {
+  id: string
+  customer_name: string
+  project_address: string
 }
 
 type BackupRow = {
@@ -43,6 +50,13 @@ export function BackupSettingsPanel({ canManage }: { canManage: boolean }) {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [maxBackups, setMaxBackups] = useState(5)
+  const [projectLimit, setProjectLimit] = useState<number>(-1)
+  const [projectCount, setProjectCount] = useState<number>(0)
+  const [allowedProjects, setAllowedProjects] = useState<BackupProject[]>([])
+  const [backupPruneWarning, setBackupPruneWarning] = useState<string | null>(null)
+  const [showProjectPicker, setShowProjectPicker] = useState(false)
+  const [specificOpen, setSpecificOpen] = useState(false)
+  const [specificSelected, setSpecificSelected] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
@@ -59,6 +73,26 @@ export function BackupSettingsPanel({ canManage }: { canManage: boolean }) {
       if (typeof settingsPayload.max_backups === 'number') {
         setMaxBackups(settingsPayload.max_backups)
       }
+      setProjectLimit(
+        typeof settingsPayload.project_limit === 'number'
+          ? settingsPayload.project_limit
+          : -1
+      )
+      setProjectCount(
+        typeof settingsPayload.project_count === 'number'
+          ? settingsPayload.project_count
+          : 0
+      )
+      setAllowedProjects(
+        Array.isArray(settingsPayload.allowed_projects)
+          ? (settingsPayload.allowed_projects as BackupProject[])
+          : []
+      )
+      setBackupPruneWarning(
+        typeof settingsPayload.backup_prune_warning === 'string'
+          ? settingsPayload.backup_prune_warning
+          : null
+      )
     } else {
       setError(
         settingsPayload.error ||
@@ -72,6 +106,11 @@ export function BackupSettingsPanel({ canManage }: { canManage: boolean }) {
 
     setLoading(false)
   }, [])
+
+  useEffect(() => {
+    if (!settings) return
+    setSpecificSelected(settings.backup_project_ids || [])
+  }, [settings])
 
   useEffect(() => {
     if (canManage) void load()
@@ -120,6 +159,36 @@ export function BackupSettingsPanel({ canManage }: { canManage: boolean }) {
         : 'No projects to back up.'
     )
     await load()
+  }
+
+  async function runSpecificNow() {
+    setRunning(true)
+    setError(null)
+    setMessage(null)
+    const res = await fetch('/api/backups/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mode: 'specific',
+        project_ids: specificSelected,
+      }),
+    })
+    const payload = await res.json().catch(() => ({}))
+    setRunning(false)
+    if (!res.ok) {
+      setError(payload.error || 'Backup failed')
+      return
+    }
+    setMessage(
+      payload.projects_backed_up
+        ? `Backed up ${payload.projects_backed_up} selected project(s).`
+        : 'No selected projects to back up.'
+    )
+    await load()
+  }
+
+  function toggleId(list: string[], id: string) {
+    return list.includes(id) ? list.filter((x) => x !== id) : [...list, id]
   }
 
   async function removeBackup(id: string, filename: string) {
@@ -184,6 +253,11 @@ export function BackupSettingsPanel({ canManage }: { canManage: boolean }) {
           automatically).
         </p>
       </div>
+      {backupPruneWarning && (
+        <p className="text-sm text-amber-900 bg-amber-50 border border-amber-100 rounded-lg p-2">
+          {backupPruneWarning}
+        </p>
+      )}
 
       {error && (
         <p className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg p-2">
@@ -217,6 +291,58 @@ export function BackupSettingsPanel({ canManage }: { canManage: boolean }) {
               </span>
             </span>
           </label>
+
+          {settings.backup_enabled && (
+            <div className="rounded-lg border border-border bg-surface p-3 space-y-2">
+              <button
+                type="button"
+                onClick={() => setShowProjectPicker((v) => !v)}
+                className="text-sm border border-border px-3 py-1.5 rounded-lg min-h-[36px]"
+              >
+                {showProjectPicker ? 'Hide project selection' : 'Choose projects for automatic backups'}
+              </button>
+              <p className="text-xs text-muted-dim">
+                Select up to{' '}
+                {projectLimit < 0 ? allowedProjects.length : projectLimit} project(s).
+                If none are selected, automatic backups include all allowed projects.
+              </p>
+              {showProjectPicker && (
+                <div className="space-y-2 max-h-[220px] overflow-y-auto border border-border rounded-lg p-2">
+                  {allowedProjects.map((p) => {
+                    const checked = settings.backup_project_ids.includes(p.id)
+                    return (
+                      <label key={p.id} className="flex items-start gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => {
+                            const next = e.target.checked
+                              ? [...settings.backup_project_ids, p.id]
+                              : settings.backup_project_ids.filter((id) => id !== p.id)
+                            setSettings({ ...settings, backup_project_ids: next })
+                          }}
+                        />
+                        <span>
+                          <span className="font-medium text-foreground">{p.customer_name}</span>
+                          <span className="block text-xs text-muted-dim">{p.project_address}</span>
+                        </span>
+                      </label>
+                    )
+                  })}
+                </div>
+              )}
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() =>
+                  void saveSettings({ backup_project_ids: settings.backup_project_ids })
+                }
+                className="text-sm border border-border px-3 py-1.5 rounded-lg min-h-[36px] disabled:opacity-50"
+              >
+                Save project selection
+              </button>
+            </div>
+          )}
 
           <label className="block space-y-1">
             <span className="text-xs font-semibold text-muted uppercase tracking-wide">
@@ -270,6 +396,56 @@ export function BackupSettingsPanel({ canManage }: { canManage: boolean }) {
           >
             {running ? 'Backing up…' : 'Back up all projects now'}
           </button>
+          <button
+            type="button"
+            disabled={running}
+            onClick={() => setSpecificOpen((v) => !v)}
+            className="ml-2 text-sm border border-border px-4 py-2 rounded-lg font-medium min-h-[44px] disabled:opacity-50"
+          >
+            Back up specific projects
+          </button>
+          {specificOpen && (
+            <div className="mt-2 space-y-2 rounded-lg border border-border p-3 bg-surface">
+              <p className="text-xs text-muted-dim">
+                Select up to {projectLimit < 0 ? allowedProjects.length : projectLimit} project(s)
+                for this manual run.
+              </p>
+              {projectCount > allowedProjects.length && (
+                <p className="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded p-2">
+                  This account has {projectCount} projects but this plan currently allows
+                  selecting {allowedProjects.length} project(s) for manual backups.
+                </p>
+              )}
+              <div className="space-y-2 max-h-[220px] overflow-y-auto border border-border rounded-lg p-2">
+                {allowedProjects.map((p) => {
+                  const checked = specificSelected.includes(p.id)
+                  return (
+                    <label key={p.id} className="flex items-start gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() =>
+                          setSpecificSelected((prev) => toggleId(prev, p.id))
+                        }
+                      />
+                      <span>
+                        <span className="font-medium text-foreground">{p.customer_name}</span>
+                        <span className="block text-xs text-muted-dim">{p.project_address}</span>
+                      </span>
+                    </label>
+                  )
+                })}
+              </div>
+              <button
+                type="button"
+                disabled={running || specificSelected.length === 0}
+                onClick={runSpecificNow}
+                className="text-sm border border-border px-4 py-2 rounded-lg font-medium min-h-[40px] disabled:opacity-50"
+              >
+                {running ? 'Backing up…' : 'Run specific backup now'}
+              </button>
+            </div>
+          )}
         </div>
       )}
 

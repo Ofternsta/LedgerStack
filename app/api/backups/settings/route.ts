@@ -6,6 +6,7 @@ import {
   loadBackupSettings,
 } from '@/lib/organization-backups'
 import { getOrgPlanContext } from '@/lib/org-plan'
+import { isUnlimited } from '@/lib/plan-entitlements'
 import { requireAuth } from '@/lib/require-auth'
 
 async function requireOrgAdmin(supabase: Awaited<ReturnType<typeof requireAuth>>['supabase'], userId: string) {
@@ -16,6 +17,12 @@ async function requireOrgAdmin(supabase: Awaited<ReturnType<typeof requireAuth>>
     .maybeSingle()
 
   return org?.id ?? null
+}
+
+type ProjectLite = {
+  id: string
+  customer_name: string
+  project_address: string
 }
 
 export async function GET() {
@@ -36,10 +43,35 @@ export async function GET() {
     const settings = await loadBackupSettings(supabase, organizationId)
     const maxBackups = await getOrganizationBackupLimit(service, organizationId)
     const planCtx = await getOrgPlanContext(supabase, organizationId)
+    const { data: projects } = await supabase
+      .from('projects')
+      .select('id, customer_name, project_address, created_at')
+      .eq('organization_id', organizationId)
+      .order('created_at', { ascending: false })
+
+    const allProjects = (projects || []) as Array<ProjectLite & { created_at?: string }>
+    const projectLimit =
+      planCtx?.entitlements.maxActiveProjects ?? allProjects.length
+    const allowedCount = isUnlimited(projectLimit)
+      ? allProjects.length
+      : Math.min(projectLimit, allProjects.length)
+    const allowedProjects = allProjects.slice(0, allowedCount).map((p) => ({
+      id: p.id,
+      customer_name: p.customer_name,
+      project_address: p.project_address,
+    }))
+
     return NextResponse.json({
       settings,
       max_backups: maxBackups,
       plan: planCtx?.plan ?? null,
+      project_limit: projectLimit,
+      project_count: allProjects.length,
+      allowed_projects: allowedProjects,
+      backup_prune_warning:
+        !isUnlimited(maxBackups) && maxBackups >= 0
+          ? `If your plan backup limit is lower than current retained backups, oldest backups are automatically pruned down to ${maxBackups}.`
+          : null,
     })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to load settings'
@@ -62,6 +94,11 @@ export async function PATCH(req: Request) {
     const body = await req.json().catch(() => ({}))
     const update: Record<string, unknown> = {}
 
+    const planCtx = await getOrgPlanContext(supabase, organizationId)
+    if (!planCtx) {
+      return NextResponse.json({ error: 'Active subscription required.' }, { status: 403 })
+    }
+
     if (typeof body.backup_enabled === 'boolean') {
       update.backup_enabled = body.backup_enabled
     }
@@ -70,6 +107,39 @@ export async function PATCH(req: Request) {
     }
     if (typeof body.backup_on_report_completed === 'boolean') {
       update.backup_on_report_completed = body.backup_on_report_completed
+    }
+    if (body.backup_project_ids !== undefined) {
+      if (!Array.isArray(body.backup_project_ids)) {
+        return NextResponse.json(
+          { error: 'backup_project_ids must be an array' },
+          { status: 400 }
+        )
+      }
+      const rawIds: unknown[] = body.backup_project_ids
+      const ids = [
+        ...new Set(
+          rawIds
+            .map((v) => String(v).trim())
+            .filter((v): v is string => v.length > 0)
+        ),
+      ]
+      const { data: ownedRows } = await supabase
+        .from('projects')
+        .select('id, created_at')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false })
+      const owned = new Set((ownedRows || []).map((r) => String(r.id)))
+      const validIds = ids.filter((id) => owned.has(id))
+      const projectLimit = planCtx.entitlements.maxActiveProjects
+      if (!isUnlimited(projectLimit) && validIds.length > projectLimit) {
+        return NextResponse.json(
+          {
+            error: `This plan allows selecting up to ${projectLimit} project(s) for automatic backups.`,
+          },
+          { status: 400 }
+        )
+      }
+      update.backup_project_ids = validIds
     }
 
     if (!Object.keys(update).length) {
@@ -87,7 +157,14 @@ export async function PATCH(req: Request) {
 
     const settings = await loadBackupSettings(supabase, organizationId)
     const maxBackups = await getOrganizationBackupLimit(supabase, organizationId)
-    return NextResponse.json({ settings, max_backups: maxBackups })
+    return NextResponse.json({
+      settings,
+      max_backups: maxBackups,
+      backup_prune_warning:
+        !isUnlimited(maxBackups) && maxBackups >= 0
+          ? `If your plan backup limit is lower than current retained backups, oldest backups are automatically pruned down to ${maxBackups}.`
+          : null,
+    })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to save settings'
     return NextResponse.json({ error: message }, { status: 500 })

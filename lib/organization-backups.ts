@@ -24,6 +24,7 @@ export type BackupSettings = {
   backup_frequency: 'daily' | 'weekly'
   backup_on_report_completed: boolean
   last_scheduled_backup_at: string | null
+  backup_project_ids: string[]
 }
 
 export async function orgCanUseBackups(
@@ -43,7 +44,7 @@ export async function loadBackupSettings(
   const { data } = await supabase
     .from('organizations')
     .select(
-      'backup_enabled, backup_frequency, backup_on_report_completed, last_scheduled_backup_at'
+      'backup_enabled, backup_frequency, backup_on_report_completed, last_scheduled_backup_at, backup_project_ids'
     )
     .eq('id', organizationId)
     .maybeSingle()
@@ -56,6 +57,11 @@ export async function loadBackupSettings(
       data.backup_frequency === 'daily' ? 'daily' : 'weekly',
     backup_on_report_completed: Boolean(data.backup_on_report_completed),
     last_scheduled_backup_at: data.last_scheduled_backup_at,
+    backup_project_ids: Array.isArray((data as { backup_project_ids?: unknown }).backup_project_ids)
+      ? ((data as { backup_project_ids: unknown[] }).backup_project_ids
+          .map((id) => String(id))
+          .filter(Boolean))
+      : [],
   }
 }
 
@@ -168,7 +174,7 @@ export async function backupProject(
 export async function runScheduledBackupForOrg(
   service: SupabaseClient,
   organizationId: string,
-  options?: { force?: boolean; backupType?: BackupType }
+  options?: { force?: boolean; backupType?: BackupType; projectIds?: string[] }
 ): Promise<{ backedUp: number; error?: string }> {
   const settings = await loadBackupSettings(service, organizationId)
   const backupType = options?.backupType ?? 'scheduled'
@@ -186,10 +192,22 @@ export async function runScheduledBackupForOrg(
     .select('id')
     .eq('organization_id', organizationId)
 
+  const requestedIds = new Set(
+    (options?.projectIds && options.projectIds.length
+      ? options.projectIds
+      : settings?.backup_project_ids || []
+    ).map(String)
+  )
+  const sourceProjects = projects || []
+  const selectedProjects =
+    requestedIds.size > 0
+      ? sourceProjects.filter((p) => requestedIds.has(String(p.id)))
+      : sourceProjects
+
   let backedUp = 0
   let lastError: string | undefined
 
-  for (const project of projects || []) {
+  for (const project of selectedProjects) {
     const result = await backupProject(
       service,
       organizationId,
@@ -221,7 +239,9 @@ export async function runAllDueScheduledBackups(): Promise<{
   const service = createServiceClient()
   const { data: orgs } = await service
     .from('organizations')
-    .select('id, backup_enabled, backup_frequency, last_scheduled_backup_at')
+    .select(
+      'id, backup_enabled, backup_frequency, last_scheduled_backup_at, backup_project_ids'
+    )
     .eq('backup_enabled', true)
 
   let orgCount = 0
@@ -235,6 +255,11 @@ export async function runAllDueScheduledBackups(): Promise<{
         org.backup_frequency === 'daily' ? 'daily' : 'weekly',
       backup_on_report_completed: true,
       last_scheduled_backup_at: org.last_scheduled_backup_at,
+      backup_project_ids: Array.isArray((org as { backup_project_ids?: unknown }).backup_project_ids)
+        ? ((org as { backup_project_ids: unknown[] }).backup_project_ids
+            .map((id) => String(id))
+            .filter(Boolean))
+        : [],
     }
 
     if (!backupDue(settings)) continue

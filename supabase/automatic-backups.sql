@@ -10,7 +10,8 @@ ALTER TABLE public.organizations
   ADD COLUMN IF NOT EXISTS backup_frequency text NOT NULL DEFAULT 'weekly'
     CHECK (backup_frequency IN ('daily', 'weekly')),
   ADD COLUMN IF NOT EXISTS backup_on_report_completed boolean NOT NULL DEFAULT true,
-  ADD COLUMN IF NOT EXISTS last_scheduled_backup_at timestamptz;
+  ADD COLUMN IF NOT EXISTS last_scheduled_backup_at timestamptz,
+  ADD COLUMN IF NOT EXISTS backup_project_ids jsonb NOT NULL DEFAULT '[]'::jsonb;
 
 CREATE TABLE IF NOT EXISTS public.organization_backups (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
