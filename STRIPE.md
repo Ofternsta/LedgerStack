@@ -111,7 +111,7 @@ Run `supabase/platform-security.sql` if you have not already (creates `subscript
 5. Test card: `4242 4242 4242 4242`, any future expiry, any CVC.
 6. After payment, you return to Billing with plan **active** (webhook may take a few seconds).
 
-**Manage card:** use **Manage card & billing (Stripe)** on the Billing page (Stripe Customer Portal).
+**Manage card & invoices:** use **Manage card & invoices** on the Billing page (payment method + invoice history only—no plan switching).
 
 **Upgrade / Downgrade (active subscribers):** use the plan buttons on the Billing page. LedgerStack opens the Stripe Customer Portal on a **confirm plan change** screen for the selected price. Stripe applies your portal rules:
 
@@ -133,6 +133,52 @@ Configure in **Settings → Billing → Customer portal → Subscriptions** (in 
 | Downgrades → cheaper plan | **At end of billing period** (not “Update immediately”) |
 
 LedgerStack portal deep links use `subscription_update_confirm` so admins land on Stripe’s confirmation screen for the plan they chose.
+
+### Two Customer Portal configurations (required for LedgerStack)
+
+Stripe’s default portal lets customers **change plans** on the same screen as invoices. That can create a **second subscription** if someone uses **Manage card** and picks another product. LedgerStack uses **two portal configurations**:
+
+| Button in app | Portal configuration | Features |
+|---------------|----------------------|----------|
+| **Manage card & invoices** | Billing-only (`STRIPE_PORTAL_CONFIGURATION_BILLING_ONLY`) | Payment methods, invoice history. **Subscription updates off.** |
+| **Upgrade / Downgrade** | Default account portal, or `STRIPE_PORTAL_CONFIGURATION_PLAN_CHANGE` | Subscription updates on (your proration / downgrade rules above). |
+
+#### Create the billing-only configuration
+
+**Test** and **Live** each need their own configuration ID.
+
+1. Stripe Dashboard → **Settings → Billing → Customer portal** → **Configurations** (or use the API below).
+2. **Create configuration** (name e.g. `LedgerStack billing only`).
+3. Enable **Invoice history** and **Payment method update**.
+4. Disable **Customers can update subscriptions** (or turn off subscription product switching).
+5. Copy the configuration ID (`bpc_...`).
+6. Set in Vercel / `.env.local`:
+
+```env
+STRIPE_PORTAL_CONFIGURATION_BILLING_ONLY=bpc_...
+```
+
+Optional — if your **default** portal has subscription updates **disabled**, set a second config for plan changes:
+
+```env
+STRIPE_PORTAL_CONFIGURATION_PLAN_CHANGE=bpc_...
+```
+
+(That one must have subscription updates enabled with Starter / Professional / Enterprise.)
+
+**API example (Test mode):**
+
+```bash
+stripe billing_portal configurations create \
+  -d "features[invoice_history][enabled]=true" \
+  -d "features[payment_method_update][enabled]=true" \
+  -d "features[subscription_update][enabled]=false" \
+  -d "features[subscription_cancel][enabled]=true"
+```
+
+Copy the returned `id` into `STRIPE_PORTAL_CONFIGURATION_BILLING_ONLY`.
+
+If `STRIPE_PORTAL_CONFIGURATION_BILLING_ONLY` is not set, **Manage card & invoices** only opens Stripe’s **update payment method** flow (no invoice list).
 
 ## 8. Go live (real card payments)
 
@@ -187,6 +233,8 @@ Still in **Live** mode: **Developers → Webhooks → Add endpoint**
 | `STRIPE_PRICE_STARTER` | live `price_...` |
 | `STRIPE_PRICE_PROFESSIONAL` | live `price_...` |
 | `STRIPE_PRICE_ENTERPRISE` | live `price_...` |
+| `STRIPE_PORTAL_CONFIGURATION_BILLING_ONLY` | live `bpc_...` (billing-only portal) |
+| `STRIPE_PORTAL_CONFIGURATION_PLAN_CHANGE` | optional live `bpc_...` |
 
 Leave **Preview/Development** on test keys if you still want local test checkout.
 

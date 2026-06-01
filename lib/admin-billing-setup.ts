@@ -7,6 +7,8 @@ import {
   type BillingPlanId,
   billingAppUrl,
   isStripeConfigured,
+  stripePortalConfigurationBillingOnly,
+  stripePortalConfigurationPlanChange,
   stripePriceIds,
 } from '@/lib/stripe-config'
 import {
@@ -220,10 +222,16 @@ export async function createBillingPortalSession(
       return { error: 'Could not load subscription for plan change.' }
     }
 
+    const planChangeConfig = stripePortalConfigurationPlanChange()
+    const planPortalBase = planChangeConfig
+      ? { configuration: planChangeConfig }
+      : {}
+
     try {
       const session = await stripe.billingPortal.sessions.create({
         customer: customerId,
         return_url: returnUrlBase,
+        ...planPortalBase,
         flow_data: {
           type: 'subscription_update_confirm',
           subscription_update_confirm: {
@@ -249,6 +257,7 @@ export async function createBillingPortalSession(
       const session = await stripe.billingPortal.sessions.create({
         customer: customerId,
         return_url: returnUrlBase,
+        ...planPortalBase,
         flow_data: {
           type: 'subscription_update',
           subscription_update: { subscription: subscriptionId },
@@ -262,9 +271,22 @@ export async function createBillingPortalSession(
     }
   }
 
+  const billingOnlyConfig = stripePortalConfigurationBillingOnly()
+  if (billingOnlyConfig) {
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: returnUrlBase,
+      configuration: billingOnlyConfig,
+    })
+    return { url: session.url }
+  }
+
   const session = await stripe.billingPortal.sessions.create({
     customer: customerId,
     return_url: returnUrlBase,
+    flow_data: {
+      type: 'payment_method_update',
+    },
   })
 
   return { url: session.url }

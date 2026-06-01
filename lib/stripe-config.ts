@@ -38,6 +38,23 @@ export function stripePublishableKey(): string | undefined {
   return process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() || undefined
 }
 
+/**
+ * Stripe Customer Portal configuration that allows payment methods + invoices only
+ * (subscription_update disabled). Create in Dashboard or via API — see STRIPE.md.
+ */
+export function stripePortalConfigurationBillingOnly(): string | undefined {
+  return (
+    process.env.STRIPE_PORTAL_CONFIGURATION_BILLING_ONLY?.trim() || undefined
+  )
+}
+
+/** Optional portal configuration for Upgrade/Downgrade (subscription updates enabled). */
+export function stripePortalConfigurationPlanChange(): string | undefined {
+  return (
+    process.env.STRIPE_PORTAL_CONFIGURATION_PLAN_CHANGE?.trim() || undefined
+  )
+}
+
 export function isStripeConfigured(): boolean {
   const prices = stripePriceIds()
   return Boolean(

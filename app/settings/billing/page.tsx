@@ -290,8 +290,18 @@ function BillingContent() {
             onClick={() => void openPortal()}
             className="w-full border border-border py-3 rounded-xl text-sm font-medium min-h-[48px] disabled:opacity-50"
           >
-            {loading === 'portal' ? 'Opening…' : 'Manage card & billing'}
+            {loading === 'portal' ? 'Opening…' : 'Manage card & invoices'}
           </button>
+        )}
+
+      {data.stripeConfigured &&
+        (data.subscription?.status === 'active' ||
+          data.subscription?.status === 'trialing' ||
+          data.subscription?.status === 'past_due') && (
+          <p className="text-xs text-muted">
+            To change plan, use <strong>Upgrade</strong> or <strong>Downgrade</strong>{' '}
+            below—not Manage card &amp; invoices.
+          </p>
         )}
 
       <div className="space-y-3">
