@@ -33,3 +33,31 @@ export async function getAiUsageThisMonth(
 
   return data?.summaries_used ?? 0
 }
+
+export async function countApprovedWorkers(
+  supabase: SupabaseClient,
+  organizationId: string
+): Promise<number> {
+  const { count, error } = await supabase
+    .from('organization_members')
+    .select('id', { count: 'exact', head: true })
+    .eq('organization_id', organizationId)
+    .eq('status', 'approved')
+
+  if (error) return 0
+  return count ?? 0
+}
+
+export async function countCompletedBackups(
+  supabase: SupabaseClient,
+  organizationId: string
+): Promise<number> {
+  const { count, error } = await supabase
+    .from('organization_backups')
+    .select('id', { count: 'exact', head: true })
+    .eq('organization_id', organizationId)
+    .eq('status', 'completed')
+
+  if (error) return 0
+  return count ?? 0
+}

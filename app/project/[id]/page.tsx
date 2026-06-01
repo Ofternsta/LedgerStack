@@ -403,6 +403,26 @@ export default function ProjectPageClient() {
     )
   }
 
+  if (access.workerBlockedByStaffLimit) {
+    return (
+      <div className="min-h-dvh">
+        <ProjectPageHeader
+          title="Worker access paused"
+          location="This organization is over the worker limit."
+          backHref="/projects"
+          backLabel="Projects"
+        />
+        <div className="safe-x px-4 py-6 max-w-5xl mx-auto">
+          <p className="text-sm bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-4">
+            Your organization has more approved workers than this plan allows.
+            Workers cannot access projects until the company upgrades or reduces
+            approved workers.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   const q = search.toLowerCase().trim()
   const filtered = documents.filter((doc) => {
     const haystack = [
@@ -438,6 +458,11 @@ export default function ProjectPageClient() {
                 month
               </>
             )}
+          </p>
+        )}
+        {access.downgradeReadOnly && access.downgradeNotice && (
+          <p className="text-sm bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-3">
+            {access.downgradeNotice} You can still open and download project files.
           </p>
         )}
 

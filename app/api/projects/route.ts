@@ -30,6 +30,16 @@ export async function GET() {
       return NextResponse.json({ projects })
     }
 
+    if (access.workerBlockedByStaffLimit && access.role === 'worker') {
+      return NextResponse.json({
+        projects: [],
+        blocked: true,
+        error:
+          access.downgradeNotice ||
+          'Worker project access is paused because this organization is over the worker limit.',
+      })
+    }
+
     const { data, error } = await supabase
       .from('projects')
       .select('id, customer_name, project_address, notes, created_at')

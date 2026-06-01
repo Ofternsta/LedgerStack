@@ -1,4 +1,8 @@
-import { countOrgProjects, getAiUsageThisMonth } from '@/lib/plan-usage'
+import {
+  countApprovedWorkers,
+  countOrgProjects,
+  getAiUsageThisMonth,
+} from '@/lib/plan-usage'
 import { getOrgPlanContext, resolveUserOrganizationId } from '@/lib/org-plan'
 import { buildAccess, type AppRole, type UserAccess, type WorkerStatus } from '@/lib/roles'
 import { parseWorkerPermissions } from '@/lib/worker-permissions'
@@ -88,6 +92,7 @@ export async function loadUserAccess(): Promise<{
   let entitlements = null
   let aiSummariesUsed = 0
   let activeProjectCount = 0
+  let approvedWorkerCount = 0
 
   if (organizationId) {
     const ctx = await getOrgPlanContext(supabase, organizationId)
@@ -97,6 +102,7 @@ export async function loadUserAccess(): Promise<{
       entitlements = ctx.entitlements
       aiSummariesUsed = await getAiUsageThisMonth(supabase, organizationId)
       activeProjectCount = await countOrgProjects(supabase, organizationId)
+      approvedWorkerCount = await countApprovedWorkers(supabase, organizationId)
     }
   }
 
@@ -113,6 +119,7 @@ export async function loadUserAccess(): Promise<{
       entitlements,
       aiSummariesUsed,
       activeProjectCount,
+      approvedWorkerCount,
       workerPermissions,
     }),
   }

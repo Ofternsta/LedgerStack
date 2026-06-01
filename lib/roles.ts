@@ -45,6 +45,11 @@ export type UserAccess = {
   canUseTeamMessages: boolean
   canUseClaimPacketExport: boolean
   canArchiveProject: boolean
+  downgradeReadOnly: boolean
+  overProjectLimit: boolean
+  overStaffLimit: boolean
+  workerBlockedByStaffLimit: boolean
+  downgradeNotice: string | null
 }
 
 export function buildAccess(input: {
@@ -58,6 +63,7 @@ export function buildAccess(input: {
   entitlements?: PlanEntitlements | null
   aiSummariesUsed?: number
   activeProjectCount?: number
+  approvedWorkerCount?: number
   workerPermissions?: WorkerPermissions | null
 }): UserAccess {
   const { role, organizationId, workerStatus } = input
@@ -76,6 +82,20 @@ export function buildAccess(input: {
         : null
   const aiLimit = ent?.aiSummariesPerMonth ?? 0
   const projectLimit = ent?.maxActiveProjects ?? 0
+  const staffLimit = ent?.maxStaffUsers ?? 0
+  const activeProjectCount = input.activeProjectCount ?? 0
+  const approvedWorkerCount = input.approvedWorkerCount ?? 0
+  const staffCountIncludingAdmin = isAdmin
+    ? 1 + approvedWorkerCount
+    : approvedWorkerCount + 1
+  const overProjectLimit = Boolean(
+    hasPlan && ent && ent.maxActiveProjects >= 0 && activeProjectCount > ent.maxActiveProjects
+  )
+  const overStaffLimit = Boolean(
+    hasPlan && ent && ent.maxStaffUsers >= 0 && staffCountIncludingAdmin > ent.maxStaffUsers
+  )
+  const workerBlockedByStaffLimit = role === 'worker' && workerApproved && overStaffLimit
+  const downgradeReadOnly = isAdmin && overProjectLimit
 
   const canManageTeam = isAdmin && Boolean(ent?.workerAccounts)
   const canManageProjectClients = isAdmin && Boolean(ent?.clientPortal)
@@ -86,28 +106,38 @@ export function buildAccess(input: {
     canViewCalendar && Boolean(isAdmin || wp?.can_add_events)
   const canViewFiles =
     isClient ||
-    (staffCapable && hasPlan && Boolean(isAdmin || wp?.can_view_files))
+    (staffCapable &&
+      hasPlan &&
+      !workerBlockedByStaffLimit &&
+      Boolean(isAdmin || wp?.can_view_files))
   const canViewAnalytics =
     isAdmin &&
     Boolean(ent?.analyticsDashboard || ent?.advancedAnalytics)
   const canUseTeamMessages = staffCapable && Boolean(ent?.teamMessages)
   const canExportPdf =
     staffCapable &&
+    !downgradeReadOnly &&
     Boolean(ent?.standardPdfExport || ent?.claimPacketExport)
   const canExportHtml =
     staffCapable &&
+    !downgradeReadOnly &&
     Boolean(ent?.standardPdfExport || ent?.claimPacketExport)
 
   let canCreateProject = isAdmin
   if (hasPlan && ent && ent.maxActiveProjects >= 0) {
-    const count = input.activeProjectCount ?? 0
-    if (count >= ent.maxActiveProjects) {
+    if (activeProjectCount >= ent.maxActiveProjects) {
       canCreateProject = false
     }
   }
   if (!hasPlan && isAdmin) {
     canCreateProject = false
   }
+
+  const downgradeNotice = workerBlockedByStaffLimit
+    ? `Your organization currently has ${staffCountIncludingAdmin} staff users, but your plan allows ${staffLimit}. Workers are blocked from projects until the org is within the staff limit or upgrades.`
+    : downgradeReadOnly
+      ? `Your organization currently has ${activeProjectCount} projects, but your plan allows ${projectLimit}. Admin access is read-only until projects are completed/deleted to the limit or the plan is upgraded.`
+      : null
 
   return {
     role,
@@ -123,18 +153,28 @@ export function buildAccess(input: {
     canCreateProject,
     canDeleteProject: isAdmin,
     canUploadEvidence:
-      staffCapable && hasPlan && Boolean(isAdmin || wp?.can_upload),
+      staffCapable &&
+      hasPlan &&
+      !workerBlockedByStaffLimit &&
+      !downgradeReadOnly &&
+      Boolean(isAdmin || wp?.can_upload),
     canViewFiles,
-    canEditEvidenceSummary: isAdmin,
+    canEditEvidenceSummary: isAdmin && !downgradeReadOnly,
     canDeleteEvidence:
-      isAdmin || (workerApproved && hasPlan && Boolean(wp?.can_delete)),
+      (isAdmin && !downgradeReadOnly) ||
+      (workerApproved &&
+        hasPlan &&
+        !workerBlockedByStaffLimit &&
+        Boolean(wp?.can_delete)),
     canManageTeam,
     canManageProjectClients,
-    canUpdateClaimInfo: staffCapable && hasPlan,
+    canUpdateClaimInfo:
+      staffCapable && hasPlan && !workerBlockedByStaffLimit && !downgradeReadOnly,
     canUpdateReportStatus: isAdmin && hasPlan,
-    canViewInternalNotes,
-    canViewCalendar,
-    canManageSchedule,
+    canViewInternalNotes: canViewInternalNotes && !downgradeReadOnly,
+    canViewCalendar:
+      canViewCalendar && !workerBlockedByStaffLimit && !downgradeReadOnly,
+    canManageSchedule: canManageSchedule && !downgradeReadOnly && !workerBlockedByStaffLimit,
     canViewAnalytics,
     canManageBilling: isAdmin,
     canManageSystemSettings: isAdmin,
@@ -142,11 +182,17 @@ export function buildAccess(input: {
     canApproveDocuments: isClient,
     canExportPdf,
     canExportHtml,
-    canUseTeamMessages,
+    canUseTeamMessages: canUseTeamMessages && !downgradeReadOnly,
     canUseClaimPacketExport: Boolean(ent?.claimPacketExport),
     canArchiveProject:
       isAdmin &&
       hasPlan &&
+      !downgradeReadOnly &&
       Boolean(ent?.claimPacketExport || ent?.standardPdfExport),
+    downgradeReadOnly,
+    overProjectLimit,
+    overStaffLimit,
+    workerBlockedByStaffLimit,
+    downgradeNotice,
   }
 }

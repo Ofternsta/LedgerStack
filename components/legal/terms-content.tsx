@@ -62,6 +62,15 @@ export function TermsContent() {
           required by law. You authorize us and Stripe to charge your payment
           method for renewals until you cancel.
         </p>
+        <p>
+          Upgrades may take effect immediately and may be prorated by Stripe.
+          Downgrades may be scheduled for renewal based on your Stripe settings.
+          If your organization exceeds lower-tier limits after downgrade, we may
+          enforce read-only or restricted access (including worker-access
+          restrictions) until usage is within plan limits or you upgrade again.
+          We do not delete projects, files, or worker accounts solely because of
+          a downgrade.
+        </p>
       </LegalSection>
 
       <LegalSection title="Your content">

@@ -58,6 +58,7 @@ export function PrivacyContent() {
             'Run automatic backups and data retention according to your organization settings and this Policy.',
             'Improve reliability, security, and support.',
             'Comply with law and enforce our Terms.',
+            'Enforce plan limits after subscription changes while preserving data (for example, read-only access when over project limits).',
           ]}
         />
       </LegalSection>
@@ -115,6 +116,14 @@ export function PrivacyContent() {
           Organization admins may delete individual backups in billing settings to
           free space. Backup ZIPs may still exist for a deleted project until pruned
           or removed. Backups are not a guarantee of recovery.
+        </p>
+        <p>
+          <strong className="text-foreground">Plan downgrade safeguards:</strong>{' '}
+          if your organization downgrades and exceeds lower-tier limits, we may
+          restrict actions (such as creating projects or worker project access)
+          until limits are satisfied. These restrictions are access controls only;
+          we do not automatically delete project files, projects, or worker
+          accounts solely due to downgrade overages.
         </p>
         <p>
           <strong className="text-foreground">Account and organization deletion:</strong>{' '}

@@ -1,5 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { isOrganizationAdmin } from '@/lib/org-admin'
+import { getOrgPlanContext } from '@/lib/org-plan'
+import { countApprovedWorkers } from '@/lib/plan-usage'
 import { clientCanAccessProject } from '@/lib/project-client-access'
 import {
   type WorkerPermissionKey,
@@ -77,6 +79,29 @@ export async function assertProjectMemberPermission(
       ok: false,
       error: 'You do not have access to this project.',
       status: 403,
+    }
+  }
+
+  if (profile?.role === 'worker') {
+    const plan = await getOrgPlanContext(supabase, organizationId)
+    if (!plan) {
+      return {
+        ok: false,
+        error: 'Active subscription required.',
+        status: 403,
+      }
+    }
+    if (
+      plan.entitlements.maxStaffUsers >= 0 &&
+      1 + (await countApprovedWorkers(supabase, organizationId)) >
+        plan.entitlements.maxStaffUsers
+    ) {
+      return {
+        ok: false,
+        error:
+          'This organization is over the worker limit on its current plan. Workers cannot access projects until limits are satisfied or the organization upgrades.',
+        status: 403,
+      }
     }
   }
 

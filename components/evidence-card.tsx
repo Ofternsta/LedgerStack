@@ -138,6 +138,30 @@ export function EvidenceCard({
     setRescanning(false)
   }
 
+  async function downloadFile() {
+    setError(null)
+    try {
+      const params = new URLSearchParams({
+        file_path: doc.file_path,
+        project_id: projectId || '',
+      })
+      const res = await fetch(`/api/evidence/open?${params.toString()}`)
+      const payload = await res.json().catch(() => ({}))
+      if (!res.ok || !payload.signedUrl) {
+        setError(payload.error || 'Could not download file')
+        return
+      }
+      const link = document.createElement('a')
+      link.href = String(payload.signedUrl)
+      link.download = doc.file_name
+      link.rel = 'noopener'
+      link.target = '_blank'
+      link.click()
+    } catch {
+      setError('Could not download file')
+    }
+  }
+
   return (
     <article
       className={
@@ -207,6 +231,15 @@ export function EvidenceCard({
             <span className="text-xs text-muted-dim">
               Uploaded by {doc.uploaded_by_label}
             </span>
+          )}
+          {canEdit && projectId && (
+            <button
+              type="button"
+              onClick={downloadFile}
+              className="text-sm font-medium text-foreground min-h-[40px]"
+            >
+              Download
+            </button>
           )}
         </div>
       )}

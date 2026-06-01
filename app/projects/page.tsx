@@ -80,25 +80,18 @@ export default function ProjectsPage() {
   }
 
   async function fetchProjects(role: UserAccess['role']) {
-    if (role === 'client') {
-      const res = await fetch('/api/projects')
-      const payload = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        console.error(payload.error || 'Failed to load projects')
-        setProjects([])
-        return
-      }
-      setProjects((payload.projects || []) as Project[])
-      return
-    }
-
-    const { data, error } = await supabase.from('projects').select('*')
-    if (error) {
-      console.error(error)
+    const res = await fetch('/api/projects')
+    const payload = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      console.error(payload.error || 'Failed to load projects')
       setProjects([])
       return
     }
-    setProjects((data || []) as Project[])
+    if (payload.blocked && role === 'worker') {
+      setProjects([])
+      return
+    }
+    setProjects((payload.projects || []) as Project[])
   }
 
   async function signOut() {
@@ -272,10 +265,23 @@ export default function ProjectsPage() {
             <PlanUpgradeBanner message="You have reached your project limit on this plan. Upgrade in Billing to add more projects." />
           )}
 
+        {access.downgradeNotice && (
+          <p className="text-sm bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-3">
+            {access.downgradeNotice}
+          </p>
+        )}
+
         {access.role === 'worker' && (
           <p className="text-sm text-muted bg-surface-elevated border border-border rounded-xl p-3">
             Workers cannot create projects. Your admin creates jobs and assigns you
             under each project&apos;s &quot;Assign workers&quot; section.
+          </p>
+        )}
+        {access.workerBlockedByStaffLimit && (
+          <p className="text-sm bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-3">
+            Your organization currently has too many workers for this plan.
+            Workers cannot access projects until the company upgrades or reduces
+            approved workers.
           </p>
         )}
 
@@ -357,15 +363,22 @@ export default function ProjectsPage() {
                 key={p.id}
                 className="border border-border rounded-xl bg-surface-elevated shadow-sm overflow-hidden"
               >
-                <Link
-                  href={`/project/${p.id}`}
-                  className="block p-4 active:bg-surface min-h-[64px]"
-                >
-                  <p className="font-bold text-lg">{p.customer_name}</p>
-                  <p className="text-sm text-muted mt-1">
-                    {p.project_address}
-                  </p>
-                </Link>
+                {access.workerBlockedByStaffLimit ? (
+                  <div className="block p-4 min-h-[64px] opacity-80">
+                    <p className="font-bold text-lg">{p.customer_name}</p>
+                    <p className="text-sm text-muted mt-1">{p.project_address}</p>
+                  </div>
+                ) : (
+                  <Link
+                    href={`/project/${p.id}`}
+                    className="block p-4 active:bg-surface min-h-[64px]"
+                  >
+                    <p className="font-bold text-lg">{p.customer_name}</p>
+                    <p className="text-sm text-muted mt-1">
+                      {p.project_address}
+                    </p>
+                  </Link>
+                )}
                 {access.canDeleteProject && (
                   <button
                     type="button"

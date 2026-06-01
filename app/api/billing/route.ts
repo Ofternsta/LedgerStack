@@ -11,6 +11,12 @@ import {
   type BillingPlanId,
   isStripeConfigured,
 } from '@/lib/stripe-config'
+import {
+  countApprovedWorkers,
+  countCompletedBackups,
+  getAiUsageThisMonth,
+} from '@/lib/plan-usage'
+import { getPlanEntitlements } from '@/lib/plan-entitlements'
 
 export async function GET() {
   try {
@@ -55,12 +61,24 @@ export async function GET() {
       ? !(await emailHasUsedTrial(user.email))
       : false
 
+    const workerCount = await countApprovedWorkers(supabase, org.id)
+    const backupCount = await countCompletedBackups(supabase, org.id)
+    const aiUsed = await getAiUsageThisMonth(supabase, org.id)
+    const currentPlan = (sub?.plan as BillingPlanId | undefined) || null
+    const aiLimit = currentPlan
+      ? getPlanEntitlements(currentPlan).aiSummariesPerMonth
+      : null
+
     return NextResponse.json({
       plans: BILLING_PLANS,
       subscription: sub,
       needsPlanSelection,
       trialAvailable,
       projectCount: projectCount ?? 0,
+      workerCount,
+      backupCount,
+      aiUsed,
+      aiLimit,
       stripeConfigured: isStripeConfigured(),
     })
   } catch (err: unknown) {

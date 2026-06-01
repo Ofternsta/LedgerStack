@@ -23,11 +23,31 @@ type PlanInfo = {
 
 type BillingData = {
   plans: Record<string, PlanInfo>
-  subscription: { plan: string; status: string } | null
+  subscription: {
+    plan: string
+    status: string
+    current_period_end?: string | null
+  } | null
   needsPlanSelection?: boolean
   trialAvailable?: boolean
   projectCount: number
+  workerCount: number
+  backupCount: number
+  aiUsed: number
+  aiLimit: number | null
   stripeConfigured: boolean
+}
+
+const PLAN_ORDER: BillingPlanId[] = [
+  'trial',
+  'starter',
+  'professional',
+  'enterprise',
+]
+
+function planRank(plan: BillingPlanId | string | null | undefined) {
+  if (!plan) return -1
+  return PLAN_ORDER.indexOf(plan as BillingPlanId)
 }
 
 function BillingContent() {
@@ -78,9 +98,64 @@ function BillingContent() {
     router.push(`/checkout?plan=${encodeURIComponent(plan)}`)
   }
 
+  async function handlePlanAction(planId: BillingPlanId) {
+    if (!data) return
+    const currentPlan = (data.subscription?.plan || null) as BillingPlanId | null
+    if (currentPlan === planId) return
+
+    const currentRank = planRank(currentPlan)
+    const targetRank = planRank(planId)
+    const isDowngrade = currentRank >= 0 && targetRank < currentRank
+    const hasActiveSubscription =
+      data.subscription?.status === 'active' ||
+      data.subscription?.status === 'trialing' ||
+      data.subscription?.status === 'past_due'
+
+    if (isDowngrade && currentPlan) {
+      const target = PLAN_ENTITLEMENTS[planId]
+      const warnings: string[] = []
+      if (target.maxActiveProjects >= 0 && data.projectCount > target.maxActiveProjects) {
+        warnings.push(
+          `- Projects: ${data.projectCount} now vs ${target.maxActiveProjects} on ${planId}. After renewal you will be read-only until project count is reduced.`
+        )
+      }
+      if (target.maxStaffUsers >= 0 && data.workerCount + 1 > target.maxStaffUsers) {
+        warnings.push(
+          `- Workers: ${data.workerCount + 1} staff users now (admin + approved workers) vs ${target.maxStaffUsers} allowed. After renewal workers lose project access until staff count is reduced.`
+        )
+      }
+      if (target.maxOrganizationBackups >= 0 && data.backupCount > target.maxOrganizationBackups) {
+        warnings.push(
+          `- Backups: ${data.backupCount} retained vs ${target.maxOrganizationBackups} allowed. Older backups will be pruned to the new limit.`
+        )
+      }
+      const msg = [
+        `You are downgrading from ${currentPlan} to ${planId}.`,
+        '',
+        'You keep current-plan benefits until renewal.',
+        'At renewal, lower-tier limits apply.',
+        'AI monthly usage does not roll over; each month is capped at your active plan limit.',
+        warnings.length ? `\nPotential limit issues:\n${warnings.join('\n')}` : '',
+        '\nContinue to billing to confirm downgrade?',
+      ].join('\n')
+      if (!window.confirm(msg)) return
+    }
+
+    if (hasActiveSubscription && currentPlan) {
+      setMessage(
+        isDowngrade
+          ? 'Complete this downgrade in Stripe billing portal. Downgrades take effect at renewal in Stripe settings.'
+          : 'Complete this upgrade in Stripe billing portal. Stripe applies prorated credits automatically.'
+      )
+      await openPortal()
+      return
+    }
+
+    await selectPlan(planId)
+  }
+
   async function openPortal() {
     setLoading('portal')
-    setMessage(null)
     const res = await fetch('/api/billing/portal', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -116,6 +191,13 @@ function BillingContent() {
           Current:{' '}
           <strong className="capitalize">{data.subscription.plan}</strong> (
           {data.subscription.status}) · {data.projectCount} project(s)
+        </p>
+      )}
+      {!data.needsPlanSelection && data.subscription && (
+        <p className="text-xs text-muted">
+          Current usage: {data.projectCount} projects · {data.workerCount + 1} staff
+          users · {data.backupCount} backups · AI {data.aiUsed}/
+          {data.aiLimit ?? 'unlimited'} this month.
         </p>
       )}
 
@@ -173,19 +255,23 @@ function BillingContent() {
                     ))}
                 </ul>
               </div>
-              {data.subscription?.plan !== planId && (
+              {data.subscription?.plan !== planId ? (
                 <button
                   type="button"
                   disabled={loading !== null}
-                  onClick={() => selectPlan(planId)}
+                  onClick={() => void handlePlanAction(planId)}
                   className="shrink-0 btn-primary text-[#052e16] text-sm px-4 py-2 rounded-lg min-h-[40px] disabled:opacity-50"
                 >
                   {loading === planId
                     ? '…'
-                    : planId === 'trial'
-                      ? 'Verify card'
-                      : 'Pay with card'}
+                    : planRank(planId) > planRank(data.subscription?.plan)
+                      ? 'Upgrade'
+                      : 'Downgrade'}
                 </button>
+              ) : (
+                <span className="shrink-0 text-xs font-semibold border border-border rounded-lg px-2.5 py-2 text-muted">
+                  Current plan
+                </span>
               )}
             </div>
           </div>
