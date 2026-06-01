@@ -31,42 +31,78 @@ const BILLABLE_SUBSCRIPTION_STATUSES = new Set<Stripe.Subscription.Status>([
   'past_due',
 ])
 
-function pickBestSubscription(subscriptions: Stripe.Subscription[]) {
-  if (!subscriptions.length) return null
-  const billable = subscriptions.filter((s) =>
-    BILLABLE_SUBSCRIPTION_STATUSES.has(s.status)
+function pickBillableSubscription(subscriptions: Stripe.Subscription[]) {
+  return (
+    subscriptions
+      .filter((s) => BILLABLE_SUBSCRIPTION_STATUSES.has(s.status))
+      .sort((a, b) => b.created - a.created)[0] ?? null
   )
-  const pool = billable.length ? billable : subscriptions
-  return pool.sort((a, b) => b.created - a.created)[0]
 }
 
-export type ResolveStripeSubscriptionInput = {
+function addCustomerId(ids: string[], seen: Set<string>, id: string | null | undefined) {
+  if (id && !seen.has(id)) {
+    seen.add(id)
+    ids.push(id)
+  }
+}
+
+export type StripeBillingContext = {
   customerId: string
-  storedSubscriptionId?: string | null
+  subscription: Stripe.Subscription
+  repairedStoredIds: boolean
 }
 
-/** Resolve subscription in the current Stripe mode (repairs stale Supabase IDs). */
-export async function resolveStripeSubscription(
+/** Find the live Stripe customer + billable subscription for an organization. */
+export async function resolveStripeBillingContext(
   stripe: Stripe,
-  input: ResolveStripeSubscriptionInput
+  input: ResolveStripeCustomerInput
 ): Promise<
-  | { subscription: Stripe.Subscription; repairedFromStoredId?: string }
-  | { error: string }
+  | { context: StripeBillingContext }
+  | { error: string; staleModeMismatch?: boolean }
 > {
-  const { customerId, storedSubscriptionId } = input
+  const { organizationId, email, storedCustomerId, storedSubscriptionId } =
+    input
+
+  const candidateCustomerIds: string[] = []
+  const seen = new Set<string>()
+
+  addCustomerId(candidateCustomerIds, seen, storedCustomerId)
+
+  try {
+    const byOrg = await stripe.customers.search({
+      query: `metadata['organization_id']:'${organizationId}'`,
+      limit: 10,
+    })
+    for (const customer of byOrg.data) {
+      addCustomerId(candidateCustomerIds, seen, customer.id)
+    }
+  } catch {
+    // Customer search may be unavailable on some accounts; email listing still works.
+  }
+
+  if (email) {
+    const listed = await stripe.customers.list({ email, limit: 20 })
+    const orgMatch = listed.data.find(
+      (c) => c.metadata?.organization_id === organizationId
+    )
+    if (orgMatch) {
+      addCustomerId(candidateCustomerIds, seen, orgMatch.id)
+    }
+    for (const customer of listed.data) {
+      addCustomerId(candidateCustomerIds, seen, customer.id)
+    }
+  }
 
   if (storedSubscriptionId) {
     try {
       const subscription = await stripe.subscriptions.retrieve(
         storedSubscriptionId
       )
-      const subCustomerId =
+      const customerId =
         typeof subscription.customer === 'string'
           ? subscription.customer
           : subscription.customer?.id
-      if (subCustomerId === customerId) {
-        return { subscription }
-      }
+      addCustomerId(candidateCustomerIds, seen, customerId)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : ''
       if (!stripeResourceMissing(message)) {
@@ -75,13 +111,92 @@ export async function resolveStripeSubscription(
     }
   }
 
+  type CandidateMatch = {
+    customerId: string
+    subscription: Stripe.Subscription
+    orgMatch: boolean
+  }
+
+  let best: CandidateMatch | null = null
+
+  for (const customerId of candidateCustomerIds) {
+    try {
+      const customer = await stripe.customers.retrieve(customerId)
+      if (customer.deleted) continue
+
+      const listed = await stripe.subscriptions.list({
+        customer: customerId,
+        status: 'all',
+        limit: 20,
+      })
+
+      const subscription = pickBillableSubscription(listed.data)
+      if (!subscription) continue
+
+      const orgMatch =
+        customer.metadata?.organization_id === organizationId ||
+        subscription.metadata?.organization_id === organizationId
+
+      const match: CandidateMatch = { customerId, subscription, orgMatch }
+
+      if (!best || (orgMatch && !best.orgMatch)) {
+        best = match
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : ''
+      if (stripeCustomerMissing(message)) continue
+      if (!stripeResourceMissing(message)) {
+        return { error: message || 'Could not load billing profile' }
+      }
+    }
+  }
+
+  if (best) {
+    return {
+      context: {
+        customerId: best.customerId,
+        subscription: best.subscription,
+        repairedStoredIds:
+          storedCustomerId !== best.customerId ||
+          storedSubscriptionId !== best.subscription.id,
+      },
+    }
+  }
+
+  if (storedCustomerId || storedSubscriptionId) {
+    return {
+      error:
+        'Your billing profile was created in Stripe test mode, but this site uses live payments (or the opposite). Choose a plan below to set up billing again for this environment.',
+      staleModeMismatch: true,
+    }
+  }
+
+  return {
+    error:
+      'No active subscription found in Stripe. Open Billing and subscribe to a plan, or contact support.',
+  }
+}
+
+export type ResolveStripeSubscriptionInput = {
+  customerId: string
+  storedSubscriptionId?: string | null
+}
+
+/** @deprecated Prefer resolveStripeBillingContext */
+export async function resolveStripeSubscription(
+  stripe: Stripe,
+  input: ResolveStripeSubscriptionInput
+): Promise<
+  | { subscription: Stripe.Subscription; repairedFromStoredId?: string }
+  | { error: string }
+> {
   const listed = await stripe.subscriptions.list({
-    customer: customerId,
+    customer: input.customerId,
     status: 'all',
     limit: 20,
   })
 
-  const best = pickBestSubscription(listed.data)
+  const best = pickBillableSubscription(listed.data)
   if (!best) {
     return {
       error:
@@ -92,8 +207,8 @@ export async function resolveStripeSubscription(
   return {
     subscription: best,
     repairedFromStoredId:
-      storedSubscriptionId && storedSubscriptionId !== best.id
-        ? storedSubscriptionId
+      input.storedSubscriptionId && input.storedSubscriptionId !== best.id
+        ? input.storedSubscriptionId
         : undefined,
   }
 }
@@ -103,7 +218,8 @@ export async function resolveStripeCustomerId(
   stripe: Stripe,
   input: ResolveStripeCustomerInput
 ): Promise<{ customerId: string } | { error: string; staleModeMismatch?: boolean }> {
-  const { organizationId, email, storedCustomerId, storedSubscriptionId } = input
+  const { organizationId, email, storedCustomerId, storedSubscriptionId } =
+    input
 
   if (storedCustomerId) {
     try {
@@ -137,6 +253,18 @@ export async function resolveStripeCustomerId(
         return { error: message || 'Could not load subscription' }
       }
     }
+  }
+
+  try {
+    const byOrg = await stripe.customers.search({
+      query: `metadata['organization_id']:'${organizationId}'`,
+      limit: 5,
+    })
+    if (byOrg.data[0]) {
+      return { customerId: byOrg.data[0].id }
+    }
+  } catch {
+    // ignore
   }
 
   if (email) {

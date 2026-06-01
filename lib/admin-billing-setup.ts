@@ -15,10 +15,11 @@ import {
   type CheckoutUiMode,
 } from '@/lib/stripe-checkout-sessions'
 import {
+  resolveStripeBillingContext,
   resolveStripeCustomerId,
-  resolveStripeSubscription,
 } from '@/lib/stripe-customer-resolve'
 import { syncStripeSubscription } from '@/lib/stripe-billing'
+import { createServiceClient } from '@/lib/supabase/service'
 
 export function parseBillingPlan(raw: unknown): BillingPlanId | null {
   if (typeof raw !== 'string') return null
@@ -165,39 +166,24 @@ export async function createBillingPortalSession(
     .maybeSingle()
 
   const stripe = createStripeClient()
-  const resolved = await resolveStripeCustomerId(stripe, {
+  const billing = await resolveStripeBillingContext(stripe, {
     organizationId,
     email: options.adminEmail,
     storedCustomerId: sub?.stripe_customer_id,
     storedSubscriptionId: sub?.stripe_subscription_id,
   })
 
-  if ('error' in resolved) {
-    return { error: resolved.error }
+  if ('error' in billing) {
+    return { error: billing.error }
   }
 
-  const customerId = resolved.customerId
-
-  const subscriptionResolved = await resolveStripeSubscription(stripe, {
-    customerId,
-    storedSubscriptionId: sub?.stripe_subscription_id,
-  })
-
-  if ('error' in subscriptionResolved) {
-    return { error: subscriptionResolved.error }
-  }
-
-  const subscription = subscriptionResolved.subscription
+  const { customerId, subscription, repairedStoredIds } = billing.context
   const subscriptionId = subscription.id
   const itemId = subscription.items.data[0]?.id
 
-  const stripeIdsChanged =
-    sub &&
-    (customerId !== sub.stripe_customer_id ||
-      subscriptionId !== sub.stripe_subscription_id)
-
-  if (stripeIdsChanged) {
-    await supabase
+  if (repairedStoredIds) {
+    const service = createServiceClient()
+    const { error: updateError } = await service
       .from('subscriptions')
       .update({
         stripe_customer_id: customerId,
@@ -205,6 +191,13 @@ export async function createBillingPortalSession(
         updated_at: new Date().toISOString(),
       })
       .eq('organization_id', organizationId)
+
+    if (updateError) {
+      console.warn(
+        'Could not persist repaired Stripe IDs:',
+        updateError.message
+      )
+    }
 
     try {
       await syncStripeSubscription(subscription)
@@ -227,23 +220,46 @@ export async function createBillingPortalSession(
       return { error: 'Could not load subscription for plan change.' }
     }
 
-    const session = await stripe.billingPortal.sessions.create({
-      customer: customerId,
-      return_url: returnUrlBase,
-      flow_data: {
-        type: 'subscription_update_confirm',
-        subscription_update_confirm: {
-          subscription: subscriptionId,
-          items: [{ id: itemId, price: targetPriceId, quantity: 1 }],
+    try {
+      const session = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: returnUrlBase,
+        flow_data: {
+          type: 'subscription_update_confirm',
+          subscription_update_confirm: {
+            subscription: subscriptionId,
+            items: [{ id: itemId, price: targetPriceId, quantity: 1 }],
+          },
+          after_completion: {
+            type: 'redirect',
+            redirect: { return_url: afterReturnUrl },
+          },
         },
-        after_completion: {
-          type: 'redirect',
-          redirect: { return_url: afterReturnUrl },
+      })
+      return { url: session.url }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : ''
+      if (!message.includes('No such subscription')) {
+        throw err
+      }
+      console.warn(
+        'Portal confirm flow failed; falling back to plan picker:',
+        message
+      )
+      const session = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: returnUrlBase,
+        flow_data: {
+          type: 'subscription_update',
+          subscription_update: { subscription: subscriptionId },
+          after_completion: {
+            type: 'redirect',
+            redirect: { return_url: afterReturnUrl },
+          },
         },
-      },
-    })
-
-    return { url: session.url }
+      })
+      return { url: session.url }
+    }
   }
 
   const session = await stripe.billingPortal.sessions.create({
