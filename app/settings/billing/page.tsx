@@ -21,12 +21,25 @@ type PlanInfo = {
   projects: number
 }
 
+type DuplicateSubscriptionsWarning = {
+  message: string
+  preferredSubscriptionId: string | null
+  activeSubscriptions: Array<{
+    id: string
+    planLabel: string
+    status: string
+    created: string
+    isPreferred: boolean
+  }>
+}
+
 type BillingData = {
   plans: Record<string, PlanInfo>
   subscription: {
     plan: string
     status: string
     current_period_end?: string | null
+    stripe_subscription_id?: string | null
   } | null
   needsPlanSelection?: boolean
   trialAvailable?: boolean
@@ -36,6 +49,7 @@ type BillingData = {
   aiUsed: number
   aiLimit: number | null
   stripeConfigured: boolean
+  duplicateSubscriptions?: DuplicateSubscriptionsWarning | null
 }
 
 const PLAN_ORDER: BillingPlanId[] = [
@@ -191,6 +205,36 @@ function BillingContent() {
         <p className="text-sm bg-green-50 border border-green-200 text-green-900 p-3 rounded-xl">
           {message}
         </p>
+      )}
+
+      {data.duplicateSubscriptions && (
+        <div className="text-sm text-amber-950 bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-2">
+          <p>{data.duplicateSubscriptions.message}</p>
+          <ul className="space-y-1.5 text-xs">
+            {data.duplicateSubscriptions.activeSubscriptions.map((s) => (
+              <li
+                key={s.id}
+                className={
+                  s.isPreferred
+                    ? 'font-medium text-amber-950'
+                    : 'text-amber-900'
+                }
+              >
+                {s.planLabel} · {s.status} · started{' '}
+                {new Date(s.created).toLocaleString()}
+                {s.isPreferred ? ' · used by LedgerStack' : ''}
+                <span className="block font-mono text-[10px] opacity-80">
+                  {s.id}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-amber-900">
+            In Stripe Dashboard → Customers → Subscriptions, cancel every extra
+            active subscription. Use Upgrade/Downgrade here to change plan—not
+            Checkout again.
+          </p>
+        </div>
       )}
 
       {data.needsPlanSelection || !data.subscription ? (

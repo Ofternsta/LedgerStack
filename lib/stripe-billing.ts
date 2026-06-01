@@ -5,11 +5,18 @@ import type { Stripe as StripeTypes } from 'stripe'
 import { createStripeClient } from '@/lib/stripe-checkout-sessions'
 import { createServiceClient } from '@/lib/supabase/service'
 import { isActiveSubscriptionStatus } from '@/lib/admin-subscription-status'
+import { stripeResourceMissing } from '@/lib/stripe-customer-resolve'
 import {
   type BillingPlanId,
   planFromStripePriceId,
   trialEndsAtFromNow,
 } from '@/lib/stripe-config'
+
+const BILLABLE_STRIPE_STATUSES = new Set<StripeTypes.Subscription.Status>([
+  'active',
+  'trialing',
+  'past_due',
+])
 
 type SubscriptionStatus =
   | 'pending'
@@ -142,9 +149,39 @@ export async function syncStripeSubscription(subscription: StripeTypes.Subscript
 
   const { data: existing } = await supabase
     .from('subscriptions')
-    .select('status, current_period_end')
+    .select('status, current_period_end, stripe_subscription_id')
     .eq('organization_id', organizationId)
     .maybeSingle()
+
+  if (
+    existing?.stripe_subscription_id &&
+    existing.stripe_subscription_id !== subscription.id &&
+    BILLABLE_STRIPE_STATUSES.has(subscription.status)
+  ) {
+    let storedStillBillable = false
+    try {
+      const stripe = createStripeClient()
+      const stored = await stripe.subscriptions.retrieve(
+        existing.stripe_subscription_id
+      )
+      storedStillBillable = BILLABLE_STRIPE_STATUSES.has(stored.status)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : ''
+      if (!stripeResourceMissing(message)) {
+        console.warn('Could not verify stored subscription:', message)
+      }
+    }
+
+    if (storedStillBillable) {
+      console.warn(
+        'Ignoring Stripe webhook for secondary subscription',
+        subscription.id,
+        'preferred',
+        existing.stripe_subscription_id
+      )
+      return
+    }
+  }
 
   const periodEnd =
     subscriptionPeriodEndIso(subscription) ?? existing?.current_period_end ?? null

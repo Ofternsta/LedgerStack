@@ -230,6 +230,7 @@ Codes are entered on the Stripe payment form, not on a separate LedgerStack scre
 | Banner “Stripe is not configured” | Set secret key, publishable key, and all three price IDs; redeploy |
 | Upgrade works in Stripe but app plan unchanged | Webhook `customer.subscription.updated` must reach `/api/billing/webhook`; check `STRIPE_WEBHOOK_SECRET` and Vercel logs |
 | Downgrade limits apply too early | Portal downgrade must be **at end of billing period**; app uses Stripe’s current price until renewal |
+| Two active subscriptions (Enterprise + Starter) | Cancel the extra subscription in Stripe; use **Billing → Upgrade/Downgrade** only. Billing page shows a warning when Stripe has multiple active subs |
 | Checkout works but plan stays trial | Check webhook secret, endpoint URL, and Vercel logs for `/api/billing/webhook` |
 | Webhook 401 / redirect to login | Deploy latest code (webhook path is public in middleware) |
 | Webhook 500 | Ensure `SUPABASE_SERVICE_ROLE_KEY` is set on Vercel |

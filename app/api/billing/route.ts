@@ -6,6 +6,8 @@ import {
 import { adminNeedsSubscription } from '@/lib/admin-subscription-status'
 import { emailHasUsedTrial } from '@/lib/trial-eligibility'
 import { requireAuth } from '@/lib/require-auth'
+import { createStripeClient } from '@/lib/stripe-checkout-sessions'
+import { getStripeDuplicateSubscriptionsWarning } from '@/lib/stripe-customer-resolve'
 import {
   BILLING_PLANS,
   type BillingPlanId,
@@ -69,6 +71,24 @@ export async function GET() {
       ? getPlanEntitlements(currentPlan).aiSummariesPerMonth
       : null
 
+    let duplicateSubscriptions = null
+    if (isStripeConfigured() && sub?.stripe_customer_id) {
+      try {
+        const stripe = createStripeClient()
+        duplicateSubscriptions = await getStripeDuplicateSubscriptionsWarning(
+          stripe,
+          {
+            organizationId: org.id,
+            email: user.email,
+            storedCustomerId: sub.stripe_customer_id,
+            storedSubscriptionId: sub.stripe_subscription_id,
+          }
+        )
+      } catch (err) {
+        console.warn('Stripe duplicate subscription check failed:', err)
+      }
+    }
+
     return NextResponse.json({
       plans: BILLING_PLANS,
       subscription: sub,
@@ -80,6 +100,7 @@ export async function GET() {
       aiUsed,
       aiLimit,
       stripeConfigured: isStripeConfigured(),
+      duplicateSubscriptions,
     })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Billing failed'

@@ -1,6 +1,11 @@
 import 'server-only'
 
 import type Stripe from 'stripe'
+import {
+  BILLING_PLANS,
+  type BillingPlanId,
+  planFromStripePriceId,
+} from '@/lib/stripe-config'
 
 export type ResolveStripeCustomerInput = {
   organizationId: string
@@ -31,35 +36,40 @@ const BILLABLE_SUBSCRIPTION_STATUSES = new Set<Stripe.Subscription.Status>([
   'past_due',
 ])
 
-function pickBillableSubscription(subscriptions: Stripe.Subscription[]) {
-  return (
-    subscriptions
-      .filter((s) => BILLABLE_SUBSCRIPTION_STATUSES.has(s.status))
-      .sort((a, b) => b.created - a.created)[0] ?? null
-  )
+function isBillableSubscription(subscription: Stripe.Subscription) {
+  return BILLABLE_SUBSCRIPTION_STATUSES.has(subscription.status)
 }
 
-function addCustomerId(ids: string[], seen: Set<string>, id: string | null | undefined) {
-  if (id && !seen.has(id)) {
-    seen.add(id)
-    ids.push(id)
+function pickBillableSubscription(
+  subscriptions: Stripe.Subscription[],
+  preferredId?: string | null
+) {
+  const billable = subscriptions.filter((s) => isBillableSubscription(s))
+  if (!billable.length) return null
+  if (preferredId) {
+    const preferred = billable.find((s) => s.id === preferredId)
+    if (preferred) return preferred
   }
+  return billable.sort((a, b) => b.created - a.created)[0]
 }
 
-export type StripeBillingContext = {
-  customerId: string
-  subscription: Stripe.Subscription
-  repairedStoredIds: boolean
+function subscriptionPlanLabel(subscription: Stripe.Subscription): string {
+  const priceId = subscription.items.data[0]?.price?.id
+  const planId = priceId ? planFromStripePriceId(priceId) : null
+  if (planId && planId in BILLING_PLANS) {
+    return BILLING_PLANS[planId as BillingPlanId].name
+  }
+  const product = subscription.items.data[0]?.price?.product
+  if (typeof product === 'object' && product && 'name' in product && product.name) {
+    return String(product.name)
+  }
+  return 'Subscription'
 }
 
-/** Find the live Stripe customer + billable subscription for an organization. */
-export async function resolveStripeBillingContext(
+async function collectCandidateCustomerIds(
   stripe: Stripe,
   input: ResolveStripeCustomerInput
-): Promise<
-  | { context: StripeBillingContext }
-  | { error: string; staleModeMismatch?: boolean }
-> {
+): Promise<string[]> {
   const { organizationId, email, storedCustomerId, storedSubscriptionId } =
     input
 
@@ -77,7 +87,7 @@ export async function resolveStripeBillingContext(
       addCustomerId(candidateCustomerIds, seen, customer.id)
     }
   } catch {
-    // Customer search may be unavailable on some accounts; email listing still works.
+    // Customer search may be unavailable on some accounts.
   }
 
   if (email) {
@@ -106,9 +116,121 @@ export async function resolveStripeBillingContext(
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : ''
       if (!stripeResourceMissing(message)) {
-        return { error: message || 'Could not load subscription' }
+        throw err
       }
     }
+  }
+
+  return candidateCustomerIds
+}
+
+export type StripeActiveSubscriptionSummary = {
+  id: string
+  planLabel: string
+  status: string
+  created: string
+  isPreferred: boolean
+}
+
+export type StripeDuplicateSubscriptionsWarning = {
+  message: string
+  activeSubscriptions: StripeActiveSubscriptionSummary[]
+  preferredSubscriptionId: string | null
+}
+
+/** List billable subscriptions across Stripe customers tied to this org. */
+export async function listBillableStripeSubscriptionsForOrganization(
+  stripe: Stripe,
+  input: ResolveStripeCustomerInput
+): Promise<Stripe.Subscription[]> {
+  const candidateCustomerIds = await collectCandidateCustomerIds(stripe, input)
+  const byId = new Map<string, Stripe.Subscription>()
+
+  for (const customerId of candidateCustomerIds) {
+    try {
+      const listed = await stripe.subscriptions.list({
+        customer: customerId,
+        status: 'all',
+        limit: 20,
+      })
+      for (const subscription of listed.data) {
+        if (isBillableSubscription(subscription)) {
+          byId.set(subscription.id, subscription)
+        }
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : ''
+      if (stripeCustomerMissing(message)) continue
+      if (!stripeResourceMissing(message)) {
+        throw err
+      }
+    }
+  }
+
+  return [...byId.values()].sort((a, b) => b.created - a.created)
+}
+
+export async function getStripeDuplicateSubscriptionsWarning(
+  stripe: Stripe,
+  input: ResolveStripeCustomerInput
+): Promise<StripeDuplicateSubscriptionsWarning | null> {
+  const active = await listBillableStripeSubscriptionsForOrganization(
+    stripe,
+    input
+  )
+  if (active.length <= 1) return null
+
+  const preferredId =
+    input.storedSubscriptionId &&
+    active.some((s) => s.id === input.storedSubscriptionId)
+      ? input.storedSubscriptionId
+      : active[0]?.id ?? null
+
+  const summaries: StripeActiveSubscriptionSummary[] = active.map((s) => ({
+    id: s.id,
+    planLabel: subscriptionPlanLabel(s),
+    status: s.status,
+    created: new Date(s.created * 1000).toISOString(),
+    isPreferred: s.id === preferredId,
+  }))
+
+  return {
+    message:
+      'Stripe shows more than one active subscription for this account. LedgerStack uses the subscription saved in billing (marked below). Cancel the extra subscription(s) in the Stripe Dashboard so you are not charged twice.',
+    activeSubscriptions: summaries,
+    preferredSubscriptionId: preferredId,
+  }
+}
+
+function addCustomerId(ids: string[], seen: Set<string>, id: string | null | undefined) {
+  if (id && !seen.has(id)) {
+    seen.add(id)
+    ids.push(id)
+  }
+}
+
+export type StripeBillingContext = {
+  customerId: string
+  subscription: Stripe.Subscription
+  repairedStoredIds: boolean
+}
+
+/** Find the live Stripe customer + billable subscription for an organization. */
+export async function resolveStripeBillingContext(
+  stripe: Stripe,
+  input: ResolveStripeCustomerInput
+): Promise<
+  | { context: StripeBillingContext }
+  | { error: string; staleModeMismatch?: boolean }
+> {
+  const { organizationId, storedCustomerId, storedSubscriptionId } = input
+
+  let candidateCustomerIds: string[]
+  try {
+    candidateCustomerIds = await collectCandidateCustomerIds(stripe, input)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : ''
+    return { error: message || 'Could not load subscription' }
   }
 
   type CandidateMatch = {
@@ -130,7 +252,10 @@ export async function resolveStripeBillingContext(
         limit: 20,
       })
 
-      const subscription = pickBillableSubscription(listed.data)
+      const subscription = pickBillableSubscription(
+        listed.data,
+        storedSubscriptionId
+      )
       if (!subscription) continue
 
       const orgMatch =
