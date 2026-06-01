@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import {
+  countCompletedOrganizationBackups,
   createBackupServiceClient,
   enforceOrganizationBackupLimit,
   getOrganizationBackupLimit,
@@ -38,10 +39,20 @@ export async function GET() {
     }
 
     const service = createBackupServiceClient()
+    const maxBackups = await getOrganizationBackupLimit(service, organizationId)
+    const completedBeforePrune = await countCompletedOrganizationBackups(
+      service,
+      organizationId
+    )
     await enforceOrganizationBackupLimit(service, organizationId)
 
     const settings = await loadBackupSettings(supabase, organizationId)
-    const maxBackups = await getOrganizationBackupLimit(service, organizationId)
+    if (!settings) {
+      return NextResponse.json(
+        { error: 'Organization not found.' },
+        { status: 404 }
+      )
+    }
     const planCtx = await getOrgPlanContext(supabase, organizationId)
     const { data: projects } = await supabase
       .from('projects')
@@ -68,14 +79,20 @@ export async function GET() {
       project_limit: projectLimit,
       project_count: allProjects.length,
       allowed_projects: allowedProjects,
+      completed_backup_count: completedBeforePrune,
       backup_prune_warning:
-        !isUnlimited(maxBackups) && maxBackups >= 0
-          ? `If your plan backup limit is lower than current retained backups, oldest backups are automatically pruned down to ${maxBackups}.`
-          : null,
+        completedBeforePrune > maxBackups
+          ? `You had ${completedBeforePrune} backups; the oldest were removed to match your plan limit of ${maxBackups}.`
+          : completedBeforePrune === maxBackups && maxBackups > 0
+            ? `You are at your plan limit of ${maxBackups} retained backups. If you downgrade, older backups may be removed automatically to match the lower limit.`
+            : null,
     })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to load settings'
-    return NextResponse.json({ error: message }, { status: 500 })
+    const hint = message.includes('backup_')
+      ? ' Run supabase/automatic-backups.sql on your Supabase project.'
+      : ''
+    return NextResponse.json({ error: message + hint }, { status: 500 })
   }
 }
 
@@ -156,13 +173,22 @@ export async function PATCH(req: Request) {
     }
 
     const settings = await loadBackupSettings(supabase, organizationId)
-    const maxBackups = await getOrganizationBackupLimit(supabase, organizationId)
+    if (!settings) {
+      return NextResponse.json({ error: 'Organization not found.' }, { status: 404 })
+    }
+    const service = createBackupServiceClient()
+    const maxBackups = await getOrganizationBackupLimit(service, organizationId)
+    const completedCount = await countCompletedOrganizationBackups(
+      service,
+      organizationId
+    )
     return NextResponse.json({
       settings,
       max_backups: maxBackups,
+      completed_backup_count: completedCount,
       backup_prune_warning:
-        !isUnlimited(maxBackups) && maxBackups >= 0
-          ? `If your plan backup limit is lower than current retained backups, oldest backups are automatically pruned down to ${maxBackups}.`
+        completedCount >= maxBackups && maxBackups > 0
+          ? `You are at your plan limit of ${maxBackups} retained backups. If you downgrade, older backups may be removed automatically to match the lower limit.`
           : null,
     })
   } catch (err: unknown) {

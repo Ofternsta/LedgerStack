@@ -69,7 +69,12 @@ export function BackupSettingsPanel({ canManage }: { canManage: boolean }) {
     const backupsPayload = await backupsRes.json().catch(() => ({}))
 
     if (settingsRes.ok) {
-      setSettings(settingsPayload.settings || null)
+      if (!settingsPayload.settings) {
+        setError('Backup settings could not be loaded for your organization.')
+        setSettings(null)
+      } else {
+        setSettings(settingsPayload.settings)
+      }
       if (typeof settingsPayload.max_backups === 'number') {
         setMaxBackups(settingsPayload.max_backups)
       }
@@ -253,12 +258,6 @@ export function BackupSettingsPanel({ canManage }: { canManage: boolean }) {
           automatically).
         </p>
       </div>
-      {backupPruneWarning && (
-        <p className="text-sm text-amber-900 bg-amber-50 border border-amber-100 rounded-lg p-2">
-          {backupPruneWarning}
-        </p>
-      )}
-
       {error && (
         <p className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg p-2">
           {error}
@@ -267,6 +266,20 @@ export function BackupSettingsPanel({ canManage }: { canManage: boolean }) {
       {message && (
         <p className="text-sm text-green-800 bg-green-50 border border-green-100 rounded-lg p-2">
           {message}
+        </p>
+      )}
+
+      {!settings && !error && (
+        <p className="text-sm text-muted">
+          Backup settings are unavailable. Run{' '}
+          <code className="text-xs">supabase/automatic-backups.sql</code> in Supabase
+          SQL Editor, then refresh this page.
+        </p>
+      )}
+
+      {settings && backupPruneWarning && (
+        <p className="text-sm text-amber-900 bg-amber-50 border border-amber-100 rounded-lg p-2">
+          {backupPruneWarning}
         </p>
       )}
 

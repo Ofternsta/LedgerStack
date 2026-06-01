@@ -37,32 +37,76 @@ export async function orgCanUseBackups(
   return ent.maxOrganizationBackups > 0
 }
 
-export async function loadBackupSettings(
-  supabase: SupabaseClient,
-  organizationId: string
-): Promise<BackupSettings | null> {
-  const { data } = await supabase
-    .from('organizations')
-    .select(
-      'backup_enabled, backup_frequency, backup_on_report_completed, last_scheduled_backup_at, backup_project_ids'
-    )
-    .eq('id', organizationId)
-    .maybeSingle()
+const BACKUP_SETTINGS_COLUMNS =
+  'backup_enabled, backup_frequency, backup_on_report_completed, last_scheduled_backup_at, backup_project_ids'
 
-  if (!data) return null
+const BACKUP_SETTINGS_COLUMNS_LEGACY =
+  'backup_enabled, backup_frequency, backup_on_report_completed, last_scheduled_backup_at'
 
+function mapBackupSettingsRow(
+  data: Record<string, unknown>
+): BackupSettings {
   return {
     backup_enabled: Boolean(data.backup_enabled),
     backup_frequency:
       data.backup_frequency === 'daily' ? 'daily' : 'weekly',
     backup_on_report_completed: Boolean(data.backup_on_report_completed),
-    last_scheduled_backup_at: data.last_scheduled_backup_at,
-    backup_project_ids: Array.isArray((data as { backup_project_ids?: unknown }).backup_project_ids)
-      ? ((data as { backup_project_ids: unknown[] }).backup_project_ids
+    last_scheduled_backup_at:
+      (data.last_scheduled_backup_at as string | null) ?? null,
+    backup_project_ids: Array.isArray(data.backup_project_ids)
+      ? (data.backup_project_ids as unknown[])
           .map((id) => String(id))
-          .filter(Boolean))
+          .filter(Boolean)
       : [],
   }
+}
+
+export async function loadBackupSettings(
+  supabase: SupabaseClient,
+  organizationId: string
+): Promise<BackupSettings | null> {
+  const { data, error } = await supabase
+    .from('organizations')
+    .select(BACKUP_SETTINGS_COLUMNS)
+    .eq('id', organizationId)
+    .maybeSingle()
+
+  if (error) {
+    const missingColumn =
+      error.message.includes('backup_project_ids') ||
+      error.code === '42703'
+    if (missingColumn) {
+      const legacy = await supabase
+        .from('organizations')
+        .select(BACKUP_SETTINGS_COLUMNS_LEGACY)
+        .eq('id', organizationId)
+        .maybeSingle()
+      if (legacy.error) {
+        throw new Error(legacy.error.message)
+      }
+      if (!legacy.data) return null
+      return mapBackupSettingsRow(legacy.data as Record<string, unknown>)
+    }
+    throw new Error(error.message)
+  }
+
+  if (!data) return null
+
+  return mapBackupSettingsRow(data as Record<string, unknown>)
+}
+
+export async function countCompletedOrganizationBackups(
+  service: SupabaseClient,
+  organizationId: string
+): Promise<number> {
+  const { count, error } = await service
+    .from('organization_backups')
+    .select('id', { count: 'exact', head: true })
+    .eq('organization_id', organizationId)
+    .eq('status', 'completed')
+
+  if (error) throw new Error(error.message)
+  return count ?? 0
 }
 
 function backupDue(settings: BackupSettings): boolean {
