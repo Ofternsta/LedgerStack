@@ -58,16 +58,25 @@ function BillingContent() {
   const [message, setMessage] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch('/api/billing')
-      .then((r) => r.json())
-      .then((payload) => {
-        if (payload.needsPlanSelection) {
-          router.replace('/onboarding/subscription?renew=1')
-          return
-        }
-        setData(payload)
-      })
+    function loadBilling() {
+      return fetch('/api/billing')
+        .then((r) => r.json())
+        .then((payload) => {
+          if (payload.needsPlanSelection) {
+            router.replace('/onboarding/subscription?renew=1')
+            return
+          }
+          setData(payload)
+        })
+    }
 
+    void loadBilling()
+
+    if (searchParams.get('portal') && searchParams.get('updated')) {
+      setMessage(
+        'Billing updated in Stripe. Upgrades apply immediately; downgrades apply at your next renewal.'
+      )
+    }
     if (searchParams.get('success')) {
       setMessage('Subscription updated successfully.')
     }
@@ -77,7 +86,11 @@ function BillingContent() {
     if (searchParams.get('setup')) {
       setMessage('Choose a subscription plan to use LedgerStack.')
     }
-  }, [searchParams])
+
+    if (searchParams.get('portal') && searchParams.get('updated')) {
+      void loadBilling()
+    }
+  }, [searchParams, router])
 
   async function selectPlan(plan: string) {
     if (!data?.stripeConfigured) {
@@ -142,24 +155,22 @@ function BillingContent() {
     }
 
     if (hasActiveSubscription && currentPlan) {
-      setMessage(
-        isDowngrade
-          ? 'Complete this downgrade in Stripe billing portal. Downgrades take effect at renewal in Stripe settings.'
-          : 'Complete this upgrade in Stripe billing portal. Stripe applies prorated credits automatically.'
-      )
-      await openPortal()
+      setLoading(planId)
+      await openPortal(planId)
       return
     }
 
     await selectPlan(planId)
   }
 
-  async function openPortal() {
-    setLoading('portal')
+  async function openPortal(targetPlan?: BillingPlanId) {
+    setLoading(targetPlan ?? 'portal')
     const res = await fetch('/api/billing/portal', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({}),
+      body: JSON.stringify(
+        targetPlan ? { target_plan: targetPlan } : {}
+      ),
     })
     const payload = await res.json().catch(() => ({}))
     if (payload.url) {
@@ -198,8 +209,25 @@ function BillingContent() {
           Current usage: {data.projectCount} projects · {data.workerCount + 1} staff
           users · {data.backupCount} backups · AI {data.aiUsed}/
           {data.aiLimit ?? 'unlimited'} this month.
+          {data.subscription.current_period_end && (
+            <>
+              {' '}
+              · Renews{' '}
+              {new Date(data.subscription.current_period_end).toLocaleDateString()}
+            </>
+          )}
         </p>
       )}
+
+      {data.stripeConfigured &&
+        (data.subscription?.status === 'active' ||
+          data.subscription?.status === 'trialing' ||
+          data.subscription?.status === 'past_due') && (
+          <p className="text-xs text-muted">
+            Upgrades bill a prorated amount now. Downgrades stay on your current plan
+            until renewal, then lower limits apply.
+          </p>
+        )}
 
       {!data.stripeConfigured && (
         <p className="text-xs text-amber-800 bg-amber-50 border border-amber-100 p-3 rounded-xl">
@@ -215,7 +243,7 @@ function BillingContent() {
           <button
             type="button"
             disabled={loading !== null}
-            onClick={openPortal}
+            onClick={() => void openPortal()}
             className="w-full border border-border py-3 rounded-xl text-sm font-medium min-h-[48px] disabled:opacity-50"
           >
             {loading === 'portal' ? 'Opening…' : 'Manage card & billing'}

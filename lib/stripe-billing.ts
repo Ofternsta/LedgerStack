@@ -2,6 +2,7 @@ import 'server-only'
 
 import Stripe from 'stripe'
 import type { Stripe as StripeTypes } from 'stripe'
+import { createStripeClient } from '@/lib/stripe-checkout-sessions'
 import { createServiceClient } from '@/lib/supabase/service'
 import { isActiveSubscriptionStatus } from '@/lib/admin-subscription-status'
 import {
@@ -156,6 +157,23 @@ export async function syncStripeSubscription(subscription: StripeTypes.Subscript
     stripeSubscriptionId: subscription.id,
     currentPeriodEnd: periodEnd,
   })
+
+  const metaPlan = subscription.metadata?.plan
+  const metaOrg = subscription.metadata?.organization_id
+  if (metaPlan !== plan || metaOrg !== organizationId) {
+    try {
+      const stripe = createStripeClient()
+      await stripe.subscriptions.update(subscription.id, {
+        metadata: {
+          ...subscription.metadata,
+          organization_id: organizationId,
+          plan,
+        },
+      })
+    } catch (err) {
+      console.warn('Stripe subscription metadata update failed:', err)
+    }
+  }
 }
 
 export async function handleCheckoutSessionCompleted(

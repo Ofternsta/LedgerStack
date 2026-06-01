@@ -7,6 +7,7 @@ import {
   type BillingPlanId,
   billingAppUrl,
   isStripeConfigured,
+  stripePriceIds,
 } from '@/lib/stripe-config'
 import {
   createStripeCheckoutSession,
@@ -78,7 +79,7 @@ export async function setupAdminSubscription(
   if (existing?.status === 'active' && plan !== 'trial') {
     return {
       error:
-        'To change plans, use Manage payment method or contact support. Cancel in the portal first if needed.',
+        'You already have an active subscription. Use Settings → Billing → Upgrade or Downgrade to change plans in Stripe.',
     }
   }
 
@@ -132,15 +133,26 @@ export async function setupAdminSubscription(
   }
 }
 
+export type CreateBillingPortalSessionOptions = {
+  returnPath?: string
+  adminEmail?: string | null
+  /** Opens Stripe portal on the confirm screen for this plan (uses portal proration rules). */
+  targetPlan?: BillingPlanId
+}
+
 export async function createBillingPortalSession(
   supabase: SupabaseClient,
   organizationId: string,
-  returnPath = '/settings/billing',
-  adminEmail?: string | null
+  options: CreateBillingPortalSessionOptions = {}
 ): Promise<{ url?: string; error?: string }> {
   if (!isStripeConfigured()) {
     return { error: 'Stripe is not configured.' }
   }
+
+  const returnPath = options.returnPath ?? '/settings/billing'
+  const returnUrlBase = `${billingAppUrl()}${
+    returnPath.startsWith('/') ? returnPath : `/${returnPath}`
+  }`
 
   const { data: sub } = await supabase
     .from('subscriptions')
@@ -151,7 +163,7 @@ export async function createBillingPortalSession(
   const stripe = createStripeClient()
   const resolved = await resolveStripeCustomerId(stripe, {
     organizationId,
-    email: adminEmail,
+    email: options.adminEmail,
     storedCustomerId: sub?.stripe_customer_id,
     storedSubscriptionId: sub?.stripe_subscription_id,
   })
@@ -172,10 +184,49 @@ export async function createBillingPortalSession(
       .eq('organization_id', organizationId)
   }
 
-  const appUrl = billingAppUrl()
+  const subscriptionId = sub?.stripe_subscription_id
+  const afterReturnUrl = `${returnUrlBase}?portal=1&updated=1`
+
+  if (
+    options.targetPlan &&
+    options.targetPlan !== 'trial' &&
+    subscriptionId
+  ) {
+    const targetPriceId = stripePriceIds()[options.targetPlan]
+    if (!targetPriceId) {
+      return {
+        error: `Stripe price not configured for ${options.targetPlan}.`,
+      }
+    }
+
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+    const itemId = subscription.items.data[0]?.id
+    if (!itemId) {
+      return { error: 'Could not load subscription for plan change.' }
+    }
+
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: returnUrlBase,
+      flow_data: {
+        type: 'subscription_update_confirm',
+        subscription_update_confirm: {
+          subscription: subscriptionId,
+          items: [{ id: itemId, price: targetPriceId, quantity: 1 }],
+        },
+        after_completion: {
+          type: 'redirect',
+          redirect: { return_url: afterReturnUrl },
+        },
+      },
+    })
+
+    return { url: session.url }
+  }
+
   const session = await stripe.billingPortal.sessions.create({
     customer: customerId,
-    return_url: `${appUrl}${returnPath.startsWith('/') ? returnPath : `/${returnPath}`}`,
+    return_url: returnUrlBase,
   })
 
   return { url: session.url }

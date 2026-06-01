@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
-import { createBillingPortalSession } from '@/lib/admin-billing-setup'
+import {
+  createBillingPortalSession,
+  parseBillingPlan,
+} from '@/lib/admin-billing-setup'
 import { requireAuth } from '@/lib/require-auth'
 
 export async function POST(req: Request) {
@@ -35,12 +38,13 @@ export async function POST(req: Request) {
         ? body.return_path
         : '/settings/billing'
 
-    const result = await createBillingPortalSession(
-      supabase,
-      org.id,
+    const targetPlan = parseBillingPlan(body.target_plan)
+
+    const result = await createBillingPortalSession(supabase, org.id, {
       returnPath,
-      user.email
-    )
+      adminEmail: user.email,
+      targetPlan: targetPlan ?? undefined,
+    })
 
     if (result.error) {
       return NextResponse.json({ error: result.error }, { status: 400 })

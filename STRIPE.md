@@ -113,7 +113,26 @@ Run `supabase/platform-security.sql` if you have not already (creates `subscript
 
 **Manage card:** use **Manage card & billing (Stripe)** on the Billing page (Stripe Customer Portal).
 
+**Upgrade / Downgrade (active subscribers):** use the plan buttons on the Billing page. LedgerStack opens the Stripe Customer Portal on a **confirm plan change** screen for the selected price. Stripe applies your portal rules:
+
+- **Upgrade** → prorated charge, new price immediately (`customer.subscription.updated` webhook updates Supabase).
+- **Downgrade** → no immediate price drop; new price at **end of billing period** (app keeps current entitlements until the webhook shows the new price).
+
 In Stripe Dashboard → **Customers** / **Subscriptions**, confirm the customer was created with metadata `organization_id`.
+
+### Customer portal — plan change rules (required)
+
+Configure in **Settings → Billing → Customer portal → Subscriptions** (in **Test** and **Live** mode separately):
+
+| Setting | Value |
+|---------|--------|
+| Allow customers to update subscriptions | On |
+| Subscription products | Starter, Professional, Enterprise (all three prices) |
+| When customers change plans | **Prorate charges and credits** |
+| Charge timing | **Invoice prorations immediately** |
+| Downgrades → cheaper plan | **At end of billing period** (not “Update immediately”) |
+
+LedgerStack portal deep links use `subscription_update_confirm` so admins land on Stripe’s confirmation screen for the plan they chose.
 
 ## 8. Go live (real card payments)
 
@@ -153,7 +172,7 @@ Still in **Live** mode: **Developers → Webhooks → Add endpoint**
 
 ### E. Customer portal (live)
 
-**Settings → Billing → Customer portal** — enable while in **Live** mode (test portal settings do not apply to live customers).
+**Settings → Billing → Customer portal** — enable while in **Live** mode (test portal settings do not apply to live customers). Copy the same **plan change rules** table from [Customer portal — plan change rules](#customer-portal--plan-change-rules-required) above.
 
 ### F. Vercel Production environment
 
@@ -209,6 +228,8 @@ Codes are entered on the Stripe payment form, not on a separate LedgerStack scre
 | Symptom | Fix |
 |---------|-----|
 | Banner “Stripe is not configured” | Set secret key, publishable key, and all three price IDs; redeploy |
+| Upgrade works in Stripe but app plan unchanged | Webhook `customer.subscription.updated` must reach `/api/billing/webhook`; check `STRIPE_WEBHOOK_SECRET` and Vercel logs |
+| Downgrade limits apply too early | Portal downgrade must be **at end of billing period**; app uses Stripe’s current price until renewal |
 | Checkout works but plan stays trial | Check webhook secret, endpoint URL, and Vercel logs for `/api/billing/webhook` |
 | Webhook 401 / redirect to login | Deploy latest code (webhook path is public in middleware) |
 | Webhook 500 | Ensure `SUPABASE_SERVICE_ROLE_KEY` is set on Vercel |
