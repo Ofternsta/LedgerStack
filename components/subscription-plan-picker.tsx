@@ -68,7 +68,7 @@ export function SubscriptionPlanPicker({
                 {formatAiSummariesPerMonth(ent.aiSummariesPerMonth)} AI/mo
               </span>
               <ul className="mt-2 space-y-1 text-xs text-brand-bright/90">
-                {copy.includes.slice(0, 5).map((line) => (
+                {copy.includes.map((line) => (
                   <li key={line}>✓ {line}</li>
                 ))}
               </ul>

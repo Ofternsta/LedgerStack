@@ -141,11 +141,11 @@ export const PLAN_FEATURE_COPY: Record<
   professional: {
     includes: [
       'Up to 15 team members · 25 projects',
+      '50 AI summaries per month',
       'Automatic cloud backups — 15 retained per organization',
       'Worker accounts, client portal & permissions',
       'Calendar, internal notes & team messages',
       'Job packet exports, project archives & analytics',
-      '50 AI summaries per month',
     ],
   },
   enterprise: {

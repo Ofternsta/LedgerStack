@@ -246,9 +246,7 @@ export function MarketingHome() {
                       : `${formatPlanLimit(PLAN_ENTITLEMENTS[id].maxActiveProjects, 'projects')} · ${formatAiSummariesPerMonth(PLAN_ENTITLEMENTS[id].aiSummariesPerMonth)} AI summaries/mo`}
                   </p>
                   <ul className="mt-3 text-xs text-muted space-y-1 flex-1">
-                    {PLAN_FEATURE_COPY[id].includes
-                      .slice(0, id === 'professional' ? 5 : 4)
-                      .map((line) => (
+                    {PLAN_FEATURE_COPY[id].includes.map((line) => (
                         <li key={line} className="text-brand-bright/90">
                           ✓ {line}
                         </li>

@@ -9,6 +9,7 @@ import Link from 'next/link'
 import {
   PLAN_ENTITLEMENTS,
   PLAN_FEATURE_COPY,
+  formatAiSummariesPerMonth,
 } from '@/lib/plan-entitlements'
 import type { BillingPlanId } from '@/lib/stripe-config'
 import { loadUserAccess } from '@/lib/load-access'
@@ -329,11 +330,14 @@ function BillingContent() {
                   {plan.projects > 0
                     ? ` · up to ${plan.projects} projects`
                     : ' · unlimited projects'}
+                  {' · '}
+                  {formatAiSummariesPerMonth(
+                    PLAN_ENTITLEMENTS[planId].aiSummariesPerMonth
+                  )}{' '}
+                  AI summaries/mo
                 </p>
                 <ul className="mt-2 space-y-0.5 text-xs text-muted">
-                  {PLAN_FEATURE_COPY[planId].includes
-                    .slice(0, planId === 'enterprise' ? 6 : 5)
-                    .map((line) => (
+                  {PLAN_FEATURE_COPY[planId].includes.map((line) => (
                       <li key={line}>✓ {line}</li>
                     ))}
                 </ul>
