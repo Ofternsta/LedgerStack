@@ -12,6 +12,7 @@ import {
   formatAiSummariesPerMonth,
 } from '@/lib/plan-entitlements'
 import type { BillingPlanId } from '@/lib/stripe-config'
+import { SUPPORT_EMAIL, supportMailtoUrl } from '@/lib/support'
 import { loadUserAccess } from '@/lib/load-access'
 import type { UserAccess } from '@/lib/roles'
 import { supabase } from '@/lib/supabase'
@@ -52,6 +53,7 @@ type BillingData = {
   aiLimitLabel?: string | null
   stripeConfigured: boolean
   duplicateSubscriptions?: DuplicateSubscriptionsWarning | null
+  cancelAtPeriodEnd?: boolean
 }
 
 const PLAN_ORDER: BillingPlanId[] = [
@@ -196,6 +198,57 @@ function BillingContent() {
     setMessage(payload.error || 'Could not open billing portal')
     setLoading(null)
   }
+
+  async function handleEndSubscription() {
+    if (!data) return
+    if (
+      !window.confirm('Are you sure you want to end your subscription?')
+    ) {
+      return
+    }
+
+    setLoading('end')
+    setMessage(null)
+
+    const res = await fetch('/api/billing/cancel-subscription', {
+      method: 'POST',
+    })
+    const payload = await res.json().catch(() => ({}))
+    setLoading(null)
+
+    if (!res.ok) {
+      setMessage(payload.error || 'Could not end subscription.')
+      return
+    }
+
+    const endsAt =
+      typeof payload.endsAt === 'string' ? payload.endsAt : null
+    const endLabel = endsAt
+      ? new Date(endsAt).toLocaleDateString()
+      : data.subscription?.current_period_end
+        ? new Date(data.subscription.current_period_end).toLocaleDateString()
+        : 'the end of your billing period'
+
+    setMessage(
+      payload.alreadyScheduled
+        ? `Your subscription was already scheduled to end on ${endLabel}.`
+        : `Your subscription will end on ${endLabel}. You keep access until then; it will not renew in Stripe.`
+    )
+
+    const refresh = await fetch('/api/billing')
+    const refreshed = await refresh.json().catch(() => ({}))
+    if (!refreshed.needsPlanSelection) {
+      setData(refreshed)
+    }
+  }
+
+  const canEndSubscription =
+    data?.stripeConfigured &&
+    !data.needsPlanSelection &&
+    data.subscription &&
+    (data.subscription.status === 'active' ||
+      data.subscription.status === 'trialing' ||
+      data.subscription.status === 'past_due')
 
   if (!data) {
     return <p className="text-muted">Loading billing…</p>
@@ -365,6 +418,40 @@ function BillingContent() {
         )
         )}
       </div>
+
+      {canEndSubscription && (
+        <section className="pt-6 mt-2 border-t border-border space-y-3">
+          {data.cancelAtPeriodEnd ? (
+            <p className="text-sm text-amber-900 bg-amber-50 border border-amber-100 rounded-xl p-3">
+              Your subscription is scheduled to end
+              {data.subscription?.current_period_end
+                ? ` on ${new Date(data.subscription.current_period_end).toLocaleDateString()}`
+                : ' at the close of this billing period'}
+              . You keep access until then; it will not renew in Stripe.
+            </p>
+          ) : (
+            <button
+              type="button"
+              disabled={loading !== null}
+              onClick={() => void handleEndSubscription()}
+              className="w-full border border-red-300 text-red-800 bg-red-50 py-3 rounded-xl text-sm font-medium min-h-[48px] disabled:opacity-50 hover:bg-red-100"
+            >
+              {loading === 'end' ? 'Ending…' : 'End subscription'}
+            </button>
+          )}
+          <p className="text-xs text-muted leading-relaxed">
+            To have the Admin account and all its related data completely removed,
+            contact{' '}
+            <a
+              href={supportMailtoUrl('Account deletion request')}
+              className="text-brand-bright font-medium hover:underline"
+            >
+              {SUPPORT_EMAIL}
+            </a>
+            .
+          </p>
+        </section>
+      )}
     </>
   )
 }

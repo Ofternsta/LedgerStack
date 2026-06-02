@@ -291,3 +291,76 @@ export async function createBillingPortalSession(
 
   return { url: session.url }
 }
+
+export async function cancelOrganizationSubscription(
+  supabase: SupabaseClient,
+  organizationId: string,
+  adminEmail?: string | null
+): Promise<
+  | { ok: true; endsAt: string | null; alreadyScheduled: boolean }
+  | { error: string }
+> {
+  if (!isStripeConfigured()) {
+    return { error: 'Stripe is not configured.' }
+  }
+
+  const { data: sub } = await supabase
+    .from('subscriptions')
+    .select('stripe_customer_id, stripe_subscription_id, status')
+    .eq('organization_id', organizationId)
+    .maybeSingle()
+
+  const status = sub?.status
+  if (
+    !status ||
+    (status !== 'active' && status !== 'trialing' && status !== 'past_due')
+  ) {
+    return { error: 'No active subscription to cancel.' }
+  }
+
+  const stripe = createStripeClient()
+  const billing = await resolveStripeBillingContext(stripe, {
+    organizationId,
+    email: adminEmail,
+    storedCustomerId: sub?.stripe_customer_id,
+    storedSubscriptionId: sub?.stripe_subscription_id,
+  })
+
+  if ('error' in billing) {
+    return { error: billing.error }
+  }
+
+  const { customerId, subscription, repairedStoredIds } = billing.context
+  const subscriptionId = subscription.id
+
+  if (subscription.cancel_at_period_end) {
+    const unix = subscription.items.data[0]?.current_period_end
+    const endsAt =
+      typeof unix === 'number' ? new Date(unix * 1000).toISOString() : null
+    return { ok: true, endsAt, alreadyScheduled: true }
+  }
+
+  const updated = await stripe.subscriptions.update(subscriptionId, {
+    cancel_at_period_end: true,
+  })
+
+  if (repairedStoredIds) {
+    const service = createServiceClient()
+    await service
+      .from('subscriptions')
+      .update({
+        stripe_customer_id: customerId,
+        stripe_subscription_id: subscriptionId,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('organization_id', organizationId)
+  }
+
+  await syncStripeSubscription(updated)
+
+  const unix = updated.items.data[0]?.current_period_end
+  const endsAt =
+    typeof unix === 'number' ? new Date(unix * 1000).toISOString() : null
+
+  return { ok: true, endsAt, alreadyScheduled: false }
+}

@@ -79,6 +79,26 @@ export async function GET() {
     const aiLimitLabel =
       aiCap !== null ? formatAiSummariesPerMonth(aiCap) : null
 
+    let cancelAtPeriodEnd = false
+    if (
+      isStripeConfigured() &&
+      sub?.stripe_subscription_id &&
+      sub.status &&
+      (sub.status === 'active' ||
+        sub.status === 'trialing' ||
+        sub.status === 'past_due')
+    ) {
+      try {
+        const stripe = createStripeClient()
+        const stripeSub = await stripe.subscriptions.retrieve(
+          sub.stripe_subscription_id
+        )
+        cancelAtPeriodEnd = Boolean(stripeSub.cancel_at_period_end)
+      } catch (err) {
+        console.warn('Stripe subscription status check failed:', err)
+      }
+    }
+
     let duplicateSubscriptions = null
     if (isStripeConfigured() && sub?.stripe_customer_id) {
       try {
@@ -110,6 +130,7 @@ export async function GET() {
       aiLimitLabel,
       stripeConfigured: isStripeConfigured(),
       duplicateSubscriptions,
+      cancelAtPeriodEnd,
     })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Billing failed'
