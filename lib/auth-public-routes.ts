@@ -22,7 +22,11 @@ export function isPublicSeoPath(pathname: string): boolean {
   return pathname === '/robots.txt' || pathname === '/sitemap.xml'
 }
 
-/** Legal pages — public without login. */
+/** Legal / marketing docs — public without login. */
 export function isPublicLegalPath(pathname: string): boolean {
-  return pathname === '/privacy' || pathname === '/terms'
+  return (
+    pathname === '/privacy' ||
+    pathname === '/terms' ||
+    pathname === '/how-to'
+  )
 }

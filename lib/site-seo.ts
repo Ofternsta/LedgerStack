@@ -59,9 +59,6 @@ export function rootSiteMetadata(): Metadata {
         'max-snippet': -1,
       },
     },
-    alternates: {
-      canonical: '/',
-    },
     openGraph: {
       type: 'website',
       locale: 'en_US',

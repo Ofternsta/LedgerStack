@@ -24,6 +24,12 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.ledgerstack.org" }],
+        destination: "https://ledgerstack.org/:path*",
+        permanent: true,
+      },
+      {
         source: "/favicon.ico",
         destination: "/icon.png?v=2",
         permanent: false,
