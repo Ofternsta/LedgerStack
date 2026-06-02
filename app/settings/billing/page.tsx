@@ -48,6 +48,7 @@ type BillingData = {
   backupCount: number
   aiUsed: number
   aiLimit: number | null
+  aiLimitLabel?: string | null
   stripeConfigured: boolean
   duplicateSubscriptions?: DuplicateSubscriptionsWarning | null
 }
@@ -252,7 +253,7 @@ function BillingContent() {
         <p className="text-xs text-muted">
           Current usage: {data.projectCount} projects · {data.workerCount + 1} staff
           users · {data.backupCount} backups · AI {data.aiUsed}/
-          {data.aiLimit ?? 'unlimited'} this month.
+          {data.aiLimitLabel ?? 'unlimited'} this month.
           {data.subscription.current_period_end && (
             <>
               {' '}

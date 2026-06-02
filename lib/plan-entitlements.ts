@@ -48,7 +48,7 @@ export const PLAN_ENTITLEMENTS: Record<BillingPlanId, PlanEntitlements> = {
     tagline: 'Solo contractor — organized documentation for one-person shops',
     maxStaffUsers: 1,
     maxActiveProjects: 10,
-    aiSummariesPerMonth: 50,
+    aiSummariesPerMonth: 25,
     maxUploadBytes: 25 * 1024 * 1024,
     basicUploadsOnly: false,
     standardPdfExport: true,
@@ -66,7 +66,7 @@ export const PLAN_ENTITLEMENTS: Record<BillingPlanId, PlanEntitlements> = {
     tagline: 'Crew and clients on the same page — built for teams in the field',
     maxStaffUsers: 15,
     maxActiveProjects: 25,
-    aiSummariesPerMonth: 100,
+    aiSummariesPerMonth: 50,
     maxUploadBytes: 50 * 1024 * 1024,
     basicUploadsOnly: false,
     standardPdfExport: true,
@@ -127,7 +127,7 @@ export const PLAN_FEATURE_COPY: Record<
     includes: [
       '1 user · up to 10 active projects',
       'Automatic cloud backups — 5 retained per organization',
-      'Full job workflow, timeline & AI summaries',
+      '25 AI summaries per month · full job workflow & timeline',
       'Standard PDF export · mobile uploads',
       '25 MB uploads (photos, PDFs & video)',
     ],
@@ -145,7 +145,7 @@ export const PLAN_FEATURE_COPY: Record<
       'Worker accounts, client portal & permissions',
       'Calendar, internal notes & team messages',
       'Job packet exports, project archives & analytics',
-      'Higher AI limits (100 summaries/month)',
+      '50 AI summaries per month',
     ],
   },
   enterprise: {
@@ -193,4 +193,10 @@ export function isUnlimited(limit: number) {
 export function formatPlanLimit(limit: number, unit: string) {
   if (isUnlimited(limit)) return `Unlimited ${unit}`
   return `${limit} ${unit}`
+}
+
+/** User-facing AI cap (never shows internal -1). */
+export function formatAiSummariesPerMonth(limit: number): string {
+  if (isUnlimited(limit)) return 'unlimited'
+  return String(limit)
 }

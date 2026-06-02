@@ -18,7 +18,11 @@ import {
   countCompletedBackups,
   getAiUsageThisMonth,
 } from '@/lib/plan-usage'
-import { getPlanEntitlements } from '@/lib/plan-entitlements'
+import {
+  formatAiSummariesPerMonth,
+  getPlanEntitlements,
+  isUnlimited,
+} from '@/lib/plan-entitlements'
 
 export async function GET() {
   try {
@@ -67,9 +71,13 @@ export async function GET() {
     const backupCount = await countCompletedBackups(supabase, org.id)
     const aiUsed = await getAiUsageThisMonth(supabase, org.id)
     const currentPlan = (sub?.plan as BillingPlanId | undefined) || null
-    const aiLimit = currentPlan
+    const aiCap = currentPlan
       ? getPlanEntitlements(currentPlan).aiSummariesPerMonth
       : null
+    const aiLimit =
+      aiCap !== null && !isUnlimited(aiCap) ? aiCap : null
+    const aiLimitLabel =
+      aiCap !== null ? formatAiSummariesPerMonth(aiCap) : null
 
     let duplicateSubscriptions = null
     if (isStripeConfigured() && sub?.stripe_customer_id) {
@@ -99,6 +107,7 @@ export async function GET() {
       backupCount,
       aiUsed,
       aiLimit,
+      aiLimitLabel,
       stripeConfigured: isStripeConfigured(),
       duplicateSubscriptions,
     })

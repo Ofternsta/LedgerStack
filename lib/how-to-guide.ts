@@ -40,8 +40,8 @@ export const GUIDE_PARTS: GuidePart[] = [
         ],
         bullets: [
           'Trial — 7 days, card required; 2 projects, 10 AI summaries/month, images/PDF only; no exports, workers, clients, calendar, or team chat.',
-          'Starter ($20/mo) — solo contractor; 10 projects, 50 AI summaries/month, standard PDF export, automatic backups (5 retained).',
-          'Professional ($70/mo) — up to 15 workers, 25 projects, 100 AI summaries/month, client portal, calendar, internal notes, project messages, DM/group chat, job packet exports, analytics, backups (15).',
+          'Starter ($20/mo) — solo contractor; 10 projects, 25 AI summaries/month, standard PDF export, automatic backups (5 retained).',
+          'Professional ($70/mo) — up to 15 workers, 25 projects, 50 AI summaries/month, client portal, calendar, internal notes, project messages, DM/group chat, job packet exports, analytics, backups (15).',
           'Enterprise ($150/mo) — unlimited staff and projects, unlimited AI, advanced analytics, backups (30).',
         ],
       },
