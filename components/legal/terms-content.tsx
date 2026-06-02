@@ -9,6 +9,7 @@ import {
   COMPLETED_PROJECT_RETENTION_DAYS,
   INACTIVE_PROJECT_RETENTION_MONTHS,
   MAX_PROJECT_STATUS_STAGES,
+  PLAN_TIER_LEGAL_SUMMARIES,
 } from '@/lib/legal-policy-constants'
 import {
   LEGAL_CONTACT_EMAIL,
@@ -57,19 +58,39 @@ export function TermsContent() {
       <LegalSection title="Subscriptions and payment">
         <p>
           Paid plans are billed on a recurring basis through Stripe unless
-          canceled. Prices and features are described at signup and in your
-          billing settings. Fees are generally non-refundable except where
-          required by law. You authorize us and Stripe to charge your payment
-          method for renewals until you cancel.
+          canceled. Prices and features are described at signup, on the marketing
+          site, and in your billing settings. Fees are generally non-refundable
+          except where required by law. You authorize us and Stripe to charge your
+          payment method for renewals until you cancel.
+        </p>
+        <p>
+          <strong className="text-foreground">Plan tiers and limits</strong>{' '}
+          (current as of the date shown at the top of this page):
+        </p>
+        <LegalList items={[...PLAN_TIER_LEGAL_SUMMARIES]} />
+        <p>
+          AI summary and timeline generation counts are measured per organization
+          per calendar month. Unused AI allowance does not roll over.
+        </p>
+        <p>
+          <strong className="text-foreground">Changing plans:</strong> use the
+          Upgrade or Downgrade buttons in Billing to change subscription tier.
+          Those flows use Stripe&apos;s plan-change experience (including proration
+          rules configured in Stripe). The Manage card &amp; invoices link is for
+          payment methods and invoice history only — not for switching plans.
+          Starting a new Checkout while you already have an active paid
+          subscription may create duplicate Stripe subscriptions; keep only one
+          active subscription per organization.
         </p>
         <p>
           Upgrades may take effect immediately and may be prorated by Stripe.
-          Downgrades may be scheduled for renewal based on your Stripe settings.
-          If your organization exceeds lower-tier limits after downgrade, we may
-          enforce read-only or restricted access (including worker-access
-          restrictions) until usage is within plan limits or you upgrade again.
-          We do not delete projects, files, or worker accounts solely because of
-          a downgrade.
+          Downgrades may be scheduled for the end of the current billing period
+          based on your Stripe Customer Portal settings. If your organization
+          exceeds lower-tier limits after a downgrade takes effect, we may enforce
+          read-only or restricted access (including blocking worker project
+          access) until usage is within plan limits or you upgrade again. We do
+          not delete projects, files, or worker accounts solely because of a
+          downgrade.
         </p>
       </LegalSection>
 

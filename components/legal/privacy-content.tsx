@@ -7,6 +7,8 @@ import {
   BACKUP_LIMITS_DISPLAY,
   COMPLETED_PROJECT_RETENTION_DAYS,
   INACTIVE_PROJECT_RETENTION_MONTHS,
+  PLAN_AI_LIMITS_DISPLAY,
+  PLAN_TIER_LEGAL_SUMMARIES,
 } from '@/lib/legal-policy-constants'
 import {
   LEGAL_CONTACT_EMAIL,
@@ -58,9 +60,26 @@ export function PrivacyContent() {
             'Run automatic backups and data retention according to your organization settings and this Policy.',
             'Improve reliability, security, and support.',
             'Comply with law and enforce our Terms.',
-            'Enforce plan limits after subscription changes while preserving data (for example, read-only access when over project limits).',
+            'Enforce plan limits after subscription changes while preserving data (for example, read-only admin access when over project limits, or blocking worker access when over staff limits).',
+            'Track monthly AI summary usage per organization against your plan cap.',
           ]}
         />
+      </LegalSection>
+
+      <LegalSection title="Subscription plans and usage limits">
+        <p>
+          Your organization&apos;s plan determines feature access and numeric
+          limits. Current tiers:
+        </p>
+        <LegalList items={[...PLAN_TIER_LEGAL_SUMMARIES]} />
+        <p>
+          AI-assisted summaries and timelines count against your monthly
+          organization limit ({PLAN_AI_LIMITS_DISPLAY.trial} on Trial,{' '}
+          {PLAN_AI_LIMITS_DISPLAY.starter} on Starter,{' '}
+          {PLAN_AI_LIMITS_DISPLAY.professional} on Professional,{' '}
+          {PLAN_AI_LIMITS_DISPLAY.enterprise} on Enterprise). Usage resets each
+          calendar month and does not roll over.
+        </p>
       </LegalSection>
 
       <LegalSection title="How we share information">
@@ -78,9 +97,15 @@ export function PrivacyContent() {
       <LegalSection title="AI processing">
         <p>
           When you use AI features, document content may be sent to third-party AI
-          providers to generate summaries or classifications. Output may be
-          inaccurate. You are responsible for reviewing AI results before relying
-          on them.
+          providers to generate summaries, timelines, or classifications. Output
+          may be inaccurate. You are responsible for reviewing AI results before
+          relying on them or sharing them with clients.
+        </p>
+        <p>
+          Each organization has a monthly cap on AI summary generation based on
+          its subscription tier (see Subscription plans and usage limits above).
+          When the cap is reached, further AI generation is blocked until the next
+          calendar month or until you upgrade.
         </p>
       </LegalSection>
 
@@ -156,7 +181,9 @@ export function PrivacyContent() {
             'Organization admins: configure per-project workflow stages, client access, worker access, and default worker permissions in organization settings.',
             'Organization admins: enable, schedule, download, or remove organization backups in billing settings.',
             'Control client access and shared files per project.',
-            'Cancel your subscription through billing settings or the Stripe customer portal.',
+            'Change subscription tier using Upgrade or Downgrade in Billing (Stripe plan-change flow).',
+            'Update payment methods and view invoices using Manage card & invoices (Stripe billing portal).',
+            'Cancel your subscription through the Stripe customer portal or by contacting us.',
             'Contact us to request access, correction, or account deletion where applicable.',
           ]}
         />

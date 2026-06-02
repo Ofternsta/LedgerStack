@@ -34,7 +34,7 @@ export const LEGAL_NOTICES: Record<LegalNoticeId, LegalNoticeContent> = {
   'data-retention': {
     title: 'Data retention & deletion',
     body:
-      'Completed projects are deleted 7 days after all jobs reach the final completed stage. Inactive projects are deleted after 12 months with no activity. Organization backup limits depend on your plan (5–30). Full account deletion: email support@ledgerstack.org. See our Privacy Policy.',
+      'Completed projects are deleted 7 days after all jobs reach the final completed stage. Inactive projects are deleted after 12 months with no activity. Plan limits apply to projects, staff, AI summaries per month, and retained backups (see Privacy Policy). Full account deletion: email support@ledgerstack.org.',
   },
   'client-access': {
     title: 'Client access warning',

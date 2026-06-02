@@ -7,6 +7,7 @@ import {
 import {
   PLAN_ENTITLEMENTS,
   PLAN_FEATURE_COPY,
+  formatAiSummariesPerMonth,
   formatPlanLimit,
 } from '@/lib/plan-entitlements'
 
@@ -63,6 +64,8 @@ export function SubscriptionPlanPicker({
                   : `$${plan.price}/month`}
                 {' · '}
                 {formatPlanLimit(ent.maxActiveProjects, 'projects')}
+                {' · '}
+                {formatAiSummariesPerMonth(ent.aiSummariesPerMonth)} AI/mo
               </span>
               <ul className="mt-2 space-y-1 text-xs text-brand-bright/90">
                 {copy.includes.slice(0, 5).map((line) => (

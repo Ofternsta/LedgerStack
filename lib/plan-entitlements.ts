@@ -166,9 +166,9 @@ export const PLAN_STRIPE_DESCRIPTIONS: Record<
   string
 > = {
   starter:
-    'LedgerStack Starter ($20/mo) — For solo contractors: 1 user, up to 10 active projects, job timeline & workflow, AI summaries, standard PDF export, mobile field uploads, and automatic cloud backups (5 ZIPs retained per organization).',
+    'LedgerStack Starter ($20/mo) — For solo contractors: 1 user, up to 10 active projects, job timeline & workflow, 25 AI summaries/month, standard PDF export, mobile field uploads, and automatic cloud backups (5 ZIPs retained per organization).',
   professional:
-    'LedgerStack Professional ($70/mo) — Coordinate crew and clients: up to 15 workers, up to 25 active projects, client portal, scheduling, internal notes, team messages, job packet exports, project archives, analytics dashboard, 100 AI summaries/month, and automatic cloud backups (15 ZIPs retained per organization).',
+    'LedgerStack Professional ($70/mo) — Coordinate crew and clients: up to 15 workers, up to 25 active projects, client portal, scheduling, internal notes, team messages, job packet exports, project archives, analytics dashboard, 50 AI summaries/month, and automatic cloud backups (15 ZIPs retained per organization).',
   enterprise:
     'LedgerStack Enterprise ($150/mo) — Company infrastructure: unlimited workers & projects, advanced analytics, unlimited AI, automatic cloud backups (30 ZIPs retained per organization), priority support, and onboarding. Ask about SSO, API access, audit logs, and custom integrations.',
 }

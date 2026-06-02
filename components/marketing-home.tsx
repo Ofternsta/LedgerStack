@@ -5,6 +5,7 @@ import { SupportLink } from '@/components/support-link'
 import {
   PLAN_ENTITLEMENTS,
   PLAN_FEATURE_COPY,
+  formatAiSummariesPerMonth,
   formatPlanLimit,
 } from '@/lib/plan-entitlements'
 import { BILLING_PLANS } from '@/lib/stripe-config'
@@ -241,11 +242,8 @@ export function MarketingHome() {
                   <p className="text-xs text-muted mt-1">{PLAN_ENTITLEMENTS[id].tagline}</p>
                   <p className="mt-3 text-sm text-muted">
                     {id === 'trial'
-                      ? `${plan.days}-day trial · ${formatPlanLimit(PLAN_ENTITLEMENTS[id].maxActiveProjects, 'projects')}`
-                      : formatPlanLimit(
-                          PLAN_ENTITLEMENTS[id].maxActiveProjects,
-                          'projects'
-                        )}
+                      ? `${plan.days}-day trial · ${formatPlanLimit(PLAN_ENTITLEMENTS[id].maxActiveProjects, 'projects')} · ${formatAiSummariesPerMonth(PLAN_ENTITLEMENTS[id].aiSummariesPerMonth)} AI/mo`
+                      : `${formatPlanLimit(PLAN_ENTITLEMENTS[id].maxActiveProjects, 'projects')} · ${formatAiSummariesPerMonth(PLAN_ENTITLEMENTS[id].aiSummariesPerMonth)} AI summaries/mo`}
                   </p>
                   <ul className="mt-3 text-xs text-muted space-y-1 flex-1">
                     {PLAN_FEATURE_COPY[id].includes

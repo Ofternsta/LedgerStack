@@ -286,7 +286,10 @@ export const GUIDE_PARTS: GuidePart[] = [
         id: 'billing',
         title: 'Billing (/settings/billing)',
         paragraphs: [
-          'View current plan and subscription status, change plan (through checkout), and open the Stripe customer portal to update payment method or cancel. Trial requires a card up front for the 7-day period.',
+          'View current plan, usage (projects, staff, AI summaries this month, backups), and subscription status.',
+          'Upgrade or Downgrade — opens Stripe to change tier on your existing subscription (upgrades may prorate; downgrades may apply at renewal).',
+          'Manage card & invoices — payment method and invoice history only; do not use this to switch plans (that can create a second subscription).',
+          'New organizations use Checkout once; active subscribers should not run Checkout again for a plan change.',
         ],
       },
     ],
