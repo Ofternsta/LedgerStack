@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { LegalNotice } from '@/components/legal-notice'
 import { isUnlimited } from '@/lib/plan-entitlements'
 import type {
@@ -20,6 +21,33 @@ type ProjectAiChatProps = {
   onUsageUpdated?: () => void
 }
 
+const LAUNCHER_BUTTON_CLASS =
+  'relative flex items-center justify-center w-11 h-11 rounded-full border border-border bg-surface-elevated text-brand-bright hover:bg-surface shadow-sm'
+
+function RobotIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M9 3v2M15 3v2M9.5 17h5M7 8h10a2 2 0 012 2v6a2 2 0 01-2 2H7a2 2 0 01-2-2v-6a2 2 0 012-2z"
+      />
+      <circle cx="9.5" cy="12.5" r="0.75" fill="currentColor" stroke="none" />
+      <circle cx="14.5" cy="12.5" r="0.75" fill="currentColor" stroke="none" />
+      <path strokeLinecap="round" d="M12 8V5.5" />
+      <circle cx="12" cy="4.25" r="0.85" fill="currentColor" stroke="none" />
+      <path strokeLinecap="round" d="M5 11H3.5M20.5 11H19" />
+    </svg>
+  )
+}
+
 export function ProjectAiChat({
   projectId,
   aiSummariesLimit,
@@ -27,6 +55,7 @@ export function ProjectAiChat({
   onNavigateToDocument,
   onUsageUpdated,
 }: ProjectAiChatProps) {
+  const [mounted, setMounted] = useState(false)
   const [open, setOpen] = useState(false)
   const [input, setInput] = useState('')
   const [turns, setTurns] = useState<ChatTurn[]>([])
@@ -37,6 +66,10 @@ export function ProjectAiChat({
 
   const aiAtLimit =
     !isUnlimited(aiSummariesLimit) && aiSummariesUsed >= aiSummariesLimit
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     if (open && listRef.current) {
@@ -93,29 +126,36 @@ export function ProjectAiChat({
     setError(null)
   }
 
-  return (
-    <>
-      {open && (
-        <div
-          className="fixed inset-0 z-40 bg-black/40 sm:bg-transparent sm:pointer-events-none"
-          aria-hidden
-          onClick={() => setOpen(false)}
-        />
-      )}
+  function closePanel() {
+    setOpen(false)
+  }
 
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2 safe-bottom safe-x pointer-events-none">
+  if (!mounted) return null
+
+  return createPortal(
+    <>
+      <div className="fixed z-[78] bottom-[max(env(safe-area-inset-bottom,0px),0.75rem)] right-3 pointer-events-none flex flex-col items-end gap-2">
         {open && (
           <div
-            className="pointer-events-auto w-[min(100vw-2rem,24rem)] sm:w-96 h-[min(70vh,32rem)] flex flex-col border border-border rounded-2xl shadow-xl bg-surface-elevated overflow-hidden"
+            className="pointer-events-auto w-[min(calc(100vw-1.5rem),24rem)] sm:w-96 h-[min(70vh,32rem)] flex flex-col border border-border rounded-2xl shadow-xl bg-surface-elevated overflow-hidden mb-1"
             role="dialog"
             aria-label="Project AI chat"
           >
             <header className="flex items-center justify-between gap-2 px-4 py-3 border-b border-border bg-surface shrink-0">
-              <div>
-                <h2 className="font-bold text-sm text-foreground">Project AI</h2>
-                <p className="text-[11px] text-muted">This project only</p>
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="flex items-center justify-center w-8 h-8 rounded-full border border-border bg-surface-elevated text-brand-bright shrink-0">
+                  <RobotIcon className="w-4 h-4" />
+                </span>
+                <div className="min-w-0">
+                  <h2 className="font-bold text-sm text-foreground truncate">
+                    Project AI
+                  </h2>
+                  <p className="text-[11px] text-muted truncate">
+                    This project only
+                  </p>
+                </div>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 shrink-0">
                 {turns.length > 0 && (
                   <button
                     type="button"
@@ -127,11 +167,11 @@ export function ProjectAiChat({
                 )}
                 <button
                   type="button"
-                  onClick={() => setOpen(false)}
+                  onClick={closePanel}
                   className="text-sm text-muted px-2 py-1 rounded-lg hover:bg-surface min-h-[36px]"
                   aria-label="Close chat"
                 >
-                  ✕
+                  Close
                 </button>
               </div>
             </header>
@@ -243,16 +283,29 @@ export function ProjectAiChat({
           </div>
         )}
 
+        <div className="pointer-events-auto">
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className={LAUNCHER_BUTTON_CLASS}
+            aria-expanded={open}
+            aria-label={open ? 'Close project AI chat' : 'Open project AI chat'}
+            title="Project AI"
+          >
+            <RobotIcon className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {open && (
         <button
           type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="pointer-events-auto h-14 w-14 rounded-full btn-primary shadow-lg flex items-center justify-center text-[#052e16] font-bold text-sm min-h-[56px] min-w-[56px]"
-          aria-expanded={open}
-          aria-label={open ? 'Close project AI chat' : 'Open project AI chat'}
-        >
-          {open ? '✕' : 'AI'}
-        </button>
-      </div>
-    </>
+          className="fixed inset-0 z-[77] bg-black/40 sm:bg-transparent sm:pointer-events-none"
+          aria-label="Close project AI chat"
+          onClick={closePanel}
+        />
+      )}
+    </>,
+    document.body
   )
 }
