@@ -106,6 +106,8 @@ export async function GET(req: Request) {
       .order('starts_at', { ascending: true })
 
     if (claimId) query = query.eq('claim_id', claimId)
+    if (from) query = query.gte('starts_at', from)
+    if (to) query = query.lte('starts_at', to)
     if (!includeCompleted) query = query.is('completed_at', null)
 
     const { data, error } = await query

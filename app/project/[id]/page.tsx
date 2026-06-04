@@ -640,6 +640,7 @@ export default function ProjectPageClient() {
               <JobTimelinePanel
                 claimId={activeClaim.id}
                 projectId={id}
+                jobLabel={activeClaim.client_name}
                 timelineRefreshKey={timelineRefreshKey}
                 canGenerate={access.canUpdateClaimInfo}
                 aiSummariesLimit={access.aiSummariesLimit}
