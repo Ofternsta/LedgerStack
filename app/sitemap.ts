@@ -12,16 +12,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1,
     },
     {
-      url: absoluteUrl('/login'),
-      lastModified,
-      changeFrequency: 'monthly',
-      priority: 0.5,
-    },
-    {
       url: absoluteUrl('/how-to'),
       lastModified,
       changeFrequency: 'monthly',
-      priority: 0.6,
+      priority: 0.7,
+    },
+    {
+      url: absoluteUrl('/login'),
+      lastModified,
+      changeFrequency: 'monthly',
+      priority: 0.4,
     },
     {
       url: absoluteUrl('/privacy'),

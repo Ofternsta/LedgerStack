@@ -1,11 +1,13 @@
 import type { Metadata } from 'next'
-import { absoluteUrl } from '@/lib/site-seo'
+import { createPageMetadata } from '@/lib/site-seo'
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
   title: 'Reset password',
-  alternates: { canonical: absoluteUrl('/login/reset-password') },
-  robots: { index: false, follow: false },
-}
+  description:
+    'Reset your LedgerStack account password. Contractor project management sign-in recovery.',
+  path: '/login/reset-password',
+  index: false,
+})
 
 export default function ResetPasswordLayout({
   children,

@@ -1,13 +1,11 @@
 import type { Metadata } from 'next'
-import { absoluteUrl, SITE_NAME } from '@/lib/site-seo'
+import { createPageMetadata, SITE_NAME } from '@/lib/site-seo'
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
   title: 'Sign in',
-  description: `Sign in to ${SITE_NAME} — field jobs, client sharing, crew coordination, and project documents.`,
-  alternates: { canonical: absoluteUrl('/login') },
-  robots: { index: true, follow: true },
-  openGraph: { url: absoluteUrl('/login') },
-}
+  description: `Sign in or create your ${SITE_NAME} account — contractor project management for jobs, field documentation, crew coordination, and client sharing.`,
+  path: '/login',
+})
 
 export default function LoginLayout({
   children,

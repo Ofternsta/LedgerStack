@@ -1,10 +1,11 @@
 import type { MetadataRoute } from 'next'
+import { SITE_DESCRIPTION, SITE_NAME } from '@/lib/site-seo'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'LedgerStack',
-    short_name: 'LedgerStack',
-    description: 'Manage contractor jobs, field documents, clients, and crew from one app',
+    name: SITE_NAME,
+    short_name: SITE_NAME,
+    description: SITE_DESCRIPTION,
     start_url: '/',
     display: 'standalone',
     orientation: 'portrait',

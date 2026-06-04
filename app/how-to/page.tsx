@@ -1,16 +1,21 @@
 import type { Metadata } from 'next'
 import { HowToContent } from '@/components/how-to-content'
-import { absoluteUrl, SITE_NAME } from '@/lib/site-seo'
+import { HowToStructuredData } from '@/components/how-to-structured-data'
+import { createPageMetadata, SITE_NAME } from '@/lib/site-seo'
 
 export const dynamic = 'force-static'
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
   title: `How to use ${SITE_NAME}`,
-  description: `Learn how ${SITE_NAME} works: projects, jobs, workers, clients, AI, billing, backups, and organization settings.`,
-  alternates: { canonical: absoluteUrl('/how-to') },
-  robots: { index: true, follow: true },
-}
+  description: `Step-by-step guide to ${SITE_NAME}: create projects, manage jobs, upload field documents, invite workers and clients, use AI summaries, calendar, backups, and billing.`,
+  path: '/how-to',
+})
 
 export default function HowToPage() {
-  return <HowToContent />
+  return (
+    <>
+      <HowToStructuredData />
+      <HowToContent />
+    </>
+  )
 }

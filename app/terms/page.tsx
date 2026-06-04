@@ -1,16 +1,21 @@
 import type { Metadata } from 'next'
 import { TermsContent } from '@/components/legal/terms-content'
-import { absoluteUrl, SITE_NAME } from '@/lib/site-seo'
+import { LegalStructuredData } from '@/components/legal-structured-data'
+import { createPageMetadata, SITE_NAME } from '@/lib/site-seo'
 
 export const dynamic = 'force-static'
 
-export const metadata: Metadata = {
-  title: `Terms of Service — ${SITE_NAME}`,
-  description: `Terms governing use of ${SITE_NAME}.`,
-  alternates: { canonical: absoluteUrl('/terms') },
-  robots: { index: true, follow: true },
-}
+export const metadata: Metadata = createPageMetadata({
+  title: `Terms of Service`,
+  description: `Terms governing use of ${SITE_NAME} — subscriptions, plans, AI features, data retention, worker access, and contractor responsibilities.`,
+  path: '/terms',
+})
 
 export default function TermsPage() {
-  return <TermsContent />
+  return (
+    <>
+      <LegalStructuredData pageName="Terms of Service" path="/terms" />
+      <TermsContent />
+    </>
+  )
 }

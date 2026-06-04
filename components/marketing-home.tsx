@@ -9,6 +9,7 @@ import {
   formatPlanLimit,
 } from '@/lib/plan-entitlements'
 import { BILLING_PLANS } from '@/lib/stripe-config'
+import { MARKETING_FAQ } from '@/lib/site-seo'
 
 const FEATURES = [
   {
@@ -66,6 +67,9 @@ export function MarketingHome() {
             </a>
             <a href="#pricing" className="hover:text-brand-bright transition-colors duration-200">
               Pricing
+            </a>
+            <a href="#faq" className="hover:text-brand-bright transition-colors duration-200">
+              FAQ
             </a>
           </nav>
           <div className="flex items-center gap-2 sm:gap-3">
@@ -266,6 +270,35 @@ export function MarketingHome() {
           </Reveal>
         </section>
 
+        <section
+          id="faq"
+          className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20 scroll-mt-20"
+        >
+          <Reveal>
+            <h2 className="text-3xl font-bold tracking-tight">
+              Frequently asked questions
+            </h2>
+            <p className="mt-3 text-muted text-lg max-w-2xl">
+              Quick answers about LedgerStack for contractors evaluating field
+              project software.
+            </p>
+          </Reveal>
+          <dl className="mt-10 space-y-6">
+            {MARKETING_FAQ.map((item, i) => (
+              <Reveal key={item.question} delay={i * 60}>
+                <div className="card-elevated p-6">
+                  <dt className="font-bold text-lg text-foreground">
+                    {item.question}
+                  </dt>
+                  <dd className="mt-2 text-muted leading-relaxed">
+                    {item.answer}
+                  </dd>
+                </div>
+              </Reveal>
+            ))}
+          </dl>
+        </section>
+
         <section className="border-t border-border bg-surface">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20 text-center">
             <Reveal>
@@ -302,6 +335,9 @@ export function MarketingHome() {
             <Link href="/how-to" className="hover:text-brand-bright transition-colors duration-200">
               How-to
             </Link>
+            <a href="#faq" className="hover:text-brand-bright transition-colors duration-200">
+              FAQ
+            </a>
             <Link href="/privacy" className="hover:text-brand-bright transition-colors duration-200">
               Privacy
             </Link>
