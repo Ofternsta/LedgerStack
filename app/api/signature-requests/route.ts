@@ -4,6 +4,8 @@ import { requireOrgPlanFeature } from '@/lib/plan-guard'
 import { requireAuth } from '@/lib/require-auth'
 import { createServiceClient } from '@/lib/supabase/service'
 
+export const maxDuration = 60
+
 /** GET signature requests for a project (admin) or current client */
 export async function GET(req: Request) {
   const { supabase, user } = await requireAuth()

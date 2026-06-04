@@ -57,6 +57,20 @@ Should return JSON: `{"ok":true,"service":"ledgerstack-signwell-webhook",...}`
 
 E-signatures require the **client portal** entitlement (Professional or Enterprise).
 
-## Free tier
+## Troubleshooting
+
+### `SignWell request failed (400)` or similar
+
+After deploy, LedgerStack shows SignWell’s **detailed error** (not just the status code). Common causes:
+
+1. **`SIGNWELL_TEST_MODE`** — In Vercel, set `SIGNWELL_TEST_MODE=true` while testing. Production signatures without a paid SignWell API plan return **402**, not 400.
+2. **API key** — Use the key from SignWell → Settings → API (paste exactly, no extra quotes). Rotate if it was exposed.
+3. **Requester email** — `custom_requester_email` is your admin’s email. It should be a real address on your SignWell account.
+4. **Embedded signing plan** — Some SignWell API tiers require **Standard** for embedded signing. If create succeeds but no signing URL, upgrade SignWell or contact their support.
+5. **File type** — Must match [SignWell-supported formats](https://developers.signwell.com/reference/createdocument) (PDF, Word, images, etc.).
+
+LedgerStack uploads files to SignWell as **base64** (not a Supabase URL), so SignWell does not need public access to your storage bucket.
+
+Check Vercel **Functions** logs for `[signwell api]` or `[signwell create document]` with the full SignWell message.
 
 SignWell offers **25 API documents/month free**, then pay-as-you-go. Use `SIGNWELL_TEST_MODE=true` for unlimited non-binding test documents during development.

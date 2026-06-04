@@ -115,17 +115,6 @@ export async function createSignatureRequest(input: {
     }
   }
 
-  const { data: blob, error: downloadError } = await service.storage
-    .from(BUCKET)
-    .download(input.sourceFilePath)
-
-  if (downloadError || !blob) {
-    return { ok: false, error: 'Could not read the document file.', status: 500 }
-  }
-
-  const buffer = Buffer.from(await blob.arrayBuffer())
-  const fileBase64 = buffer.toString('base64')
-
   const { data: adminProfile } = await service
     .from('profiles')
     .select('email, full_name')
@@ -136,6 +125,20 @@ export async function createSignatureRequest(input: {
     adminProfile?.email?.trim() || `support@ledgerstack.org`
   const requesterName =
     adminProfile?.full_name?.trim() || org.name || 'LedgerStack'
+
+  const { data: fileBlob, error: downloadError } = await service.storage
+    .from(BUCKET)
+    .download(input.sourceFilePath)
+
+  if (downloadError || !fileBlob) {
+    return {
+      ok: false,
+      error: downloadError?.message || 'Could not read the document file.',
+      status: 500,
+    }
+  }
+
+  const fileBase64 = Buffer.from(await fileBlob.arrayBuffer()).toString('base64')
 
   const requestId = crypto.randomUUID()
   const signUrl = signatureSignPageUrl(input.projectId, requestId)
@@ -155,12 +158,17 @@ export async function createSignatureRequest(input: {
     metadata: {
       signature_request_id: requestId,
       project_id: input.projectId,
-      organization_id: project.organization_id,
+      organization_id: String(project.organization_id),
     },
   })
 
   if (!signwell.ok) {
-    return { ok: false, error: signwell.error, status: 502 }
+    console.error('[signwell create document]', signwell.error)
+    return {
+      ok: false,
+      error: signwell.error,
+      status: signwell.status >= 400 && signwell.status < 500 ? signwell.status : 502,
+    }
   }
 
   const now = new Date().toISOString()

@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { fileExtension } from '@/lib/signwell-file-types'
 import {
   SIGNWELL_API_BASE,
   signwellApiKey,
@@ -28,7 +29,8 @@ export type SignWellDocument = {
 type CreateDocumentInput = {
   name: string
   fileName: string
-  fileBase64: string
+  fileUrl?: string
+  fileBase64?: string
   recipientEmail: string
   recipientName: string
   metadata: Record<string, string>
@@ -39,10 +41,45 @@ type CreateDocumentInput = {
   message: string
 }
 
+function formatSignWellError(payload: unknown, status: number): string {
+  const p = payload as Record<string, unknown>
+
+  if (typeof p.message === 'string' && p.message.trim()) {
+    return p.message.trim()
+  }
+
+  const errors = p.errors as Record<string, string[] | string> | undefined
+  if (errors && typeof errors === 'object') {
+    const parts = Object.entries(errors).flatMap(([key, value]) => {
+      const messages = Array.isArray(value) ? value : [String(value)]
+      return messages.map((msg) => `${key}: ${msg}`)
+    })
+    if (parts.length) return parts.join('; ')
+  }
+
+  const meta = p.meta as { message?: string; messages?: string[] } | undefined
+  if (meta?.messages?.length) return meta.messages.join('; ')
+  if (meta?.message) return meta.message
+
+  const raw = (p as { raw?: string }).raw
+  if (typeof raw === 'string' && raw.trim()) {
+    return raw.trim().slice(0, 500)
+  }
+
+  if (status === 402) {
+    return 'SignWell API billing required — enable test mode or upgrade your SignWell API plan.'
+  }
+
+  return `SignWell request failed (${status})`
+}
+
 async function signwellFetch<T>(
   path: string,
   init?: RequestInit
-): Promise<{ ok: true; data: T } | { ok: false; error: string; status: number }> {
+): Promise<
+  | { ok: true; data: T }
+  | { ok: false; error: string; status: number }
+> {
   const apiKey = signwellApiKey()
   if (!apiKey) {
     return { ok: false, error: 'SignWell API key not configured', status: 500 }
@@ -66,60 +103,74 @@ async function signwellFetch<T>(
   }
 
   if (!res.ok) {
-    const message =
-      typeof (payload as { message?: string }).message === 'string'
-        ? (payload as { message: string }).message
-        : `SignWell request failed (${res.status})`
-    return { ok: false, error: message, status: res.status }
+    console.error('[signwell api]', path, res.status, text.slice(0, 1000))
+    return {
+      ok: false,
+      error: formatSignWellError(payload, res.status),
+      status: res.status,
+    }
   }
 
   return { ok: true, data: payload as T }
+}
+
+/** SignWell expects a clean filename with a supported extension. */
+export function signWellUploadFileName(rawName: string): string {
+  const base = rawName.split(/[/\\]/).pop()?.trim() || 'document.pdf'
+  const ext = fileExtension(base)
+  if (ext) return base.slice(0, 120)
+  return `${base.slice(0, 110)}.pdf`
 }
 
 export async function createSignWellDocument(
   input: CreateDocumentInput
 ): Promise<
   | { ok: true; document: SignWellDocument; embeddedSigningUrl: string }
-  | { ok: false; error: string }
+  | { ok: false; error: string; status: number }
 > {
+  if (!input.fileUrl && !input.fileBase64) {
+    return {
+      ok: false,
+      error: 'SignWell requires a file URL or file content.',
+      status: 400,
+    }
+  }
+
+  const uploadName = signWellUploadFileName(input.fileName)
+  const filePayload = input.fileUrl
+    ? { name: uploadName, file_url: input.fileUrl }
+    : { name: uploadName, file_base64: input.fileBase64! }
+
   const result = await signwellFetch<SignWellDocument>('/documents', {
     method: 'POST',
     body: JSON.stringify({
       test_mode: signwellTestMode(),
-      name: input.name,
+      name: input.name.slice(0, 120) || uploadName,
       draft: false,
       with_signature_page: true,
       embedded_signing: true,
-      embedded_signing_notifications: true,
       allow_decline: true,
-      reminders: true,
-      custom_requester_name: input.requesterName,
+      reminders: false,
+      custom_requester_name: input.requesterName.slice(0, 80),
       custom_requester_email: input.requesterEmail,
       redirect_url: input.redirectUrl,
-      subject: input.subject,
-      message: input.message,
+      subject: input.subject.slice(0, 200),
+      message: input.message.slice(0, 2000),
       metadata: input.metadata,
-      files: [
-        {
-          name: input.fileName,
-          file_base64: input.fileBase64,
-        },
-      ],
+      files: [filePayload],
       recipients: [
         {
           id: '1',
           email: input.recipientEmail,
-          name: input.recipientName,
-          send_email: true,
-          send_email_delay: 0,
+          name: input.recipientName.slice(0, 80) || input.recipientEmail,
+          send_email: false,
         },
       ],
-      fields: [[]],
     }),
   })
 
   if (!result.ok) {
-    return { ok: false, error: result.error }
+    return { ok: false, error: result.error, status: result.status }
   }
 
   const document = result.data
@@ -130,7 +181,9 @@ export async function createSignWellDocument(
   if (!document.id || !embeddedSigningUrl) {
     return {
       ok: false,
-      error: 'SignWell did not return a signing URL for this document.',
+      error:
+        'SignWell created the document but did not return an embedded signing URL. Your SignWell plan may require embedded signing on a higher tier.',
+      status: 502,
     }
   }
 
@@ -167,11 +220,10 @@ export async function getSignWellCompletedPdfUrl(
 
   const payload = await res.json().catch(() => ({}))
   if (!res.ok) {
-    const message =
-      typeof payload.message === 'string'
-        ? payload.message
-        : `Could not fetch completed PDF (${res.status})`
-    return { ok: false, error: message }
+    return {
+      ok: false,
+      error: formatSignWellError(payload, res.status),
+    }
   }
 
   const fileUrl = payload.file_url as string | undefined
