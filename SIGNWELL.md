@@ -1,6 +1,6 @@
 # SignWell e-signatures (LedgerStack)
 
-LedgerStack uses [SignWell](https://www.signwell.com/api/) for legally binding typed e-signatures on PDFs shared with clients.
+LedgerStack uses [SignWell](https://www.signwell.com/api/) for legally binding typed e-signatures on project files shared with clients.
 
 ## Setup
 
@@ -19,15 +19,31 @@ SIGNWELL_TEST_MODE=true
 supabase/signature-requests.sql
 ```
 
-4. Register a webhook in SignWell (**Settings → Webhooks**). Use the **apex** URL (not `www`):
+4. **Register the webhook via API** (SignWell does not always show a Webhooks page in the dashboard). From a terminal, with your API key:
+
+```bash
+curl -X POST "https://www.signwell.com/api/v1/hooks" \
+  -H "X-Api-Key: YOUR_SIGNWELL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d "{\"callback_url\":\"https://ledgerstack.org/api/webhooks/signwell\"}"
+```
+
+List existing hooks:
+
+```bash
+curl "https://www.signwell.com/api/v1/hooks" \
+  -H "X-Api-Key: YOUR_SIGNWELL_API_KEY"
+```
+
+SignWell posts **all** document lifecycle events to that URL (there is no per-event checkbox in the API). LedgerStack handles `document_viewed`, `document_completed`, `document_declined`, and `document_expired`.
+
+Your LedgerStack endpoint health check (browser GET):
 
 ```
 https://ledgerstack.org/api/webhooks/signwell
 ```
 
-Opening that link in a browser should return JSON (`ok: true`). SignWell delivers events via **POST**; a blank browser visit is only a health check.
-
-Subscribe at least to: `document_viewed`, `document_completed`, `document_declined`, `document_expired`.
+Should return JSON: `{"ok":true,"service":"ledgerstack-signwell-webhook",...}`
 
 5. Ensure transactional email works (`RESEND_API_KEY`) so clients and admins receive signature emails.
 

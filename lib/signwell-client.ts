@@ -190,3 +190,39 @@ export async function downloadUrlAsBuffer(url: string): Promise<Buffer> {
   const arrayBuffer = await res.arrayBuffer()
   return Buffer.from(arrayBuffer)
 }
+
+export async function registerSignWellWebhook(
+  callbackUrl: string
+): Promise<
+  | { ok: true; id: string; callback_url: string }
+  | { ok: false; error: string }
+> {
+  const result = await signwellFetch<{ id: string; callback_url: string }>(
+    '/hooks',
+    {
+      method: 'POST',
+      body: JSON.stringify({ callback_url: callbackUrl }),
+    }
+  )
+  if (!result.ok) {
+    return { ok: false, error: result.error }
+  }
+  return {
+    ok: true,
+    id: result.data.id,
+    callback_url: result.data.callback_url,
+  }
+}
+
+export async function listSignWellWebhooks(): Promise<
+  | { ok: true; hooks: Array<{ id: string; callback_url: string }> }
+  | { ok: false; error: string }
+> {
+  const result = await signwellFetch<
+    Array<{ id: string; callback_url: string }>
+  >('/hooks')
+  if (!result.ok) {
+    return { ok: false, error: result.error }
+  }
+  return { ok: true, hooks: result.data }
+}

@@ -20,8 +20,12 @@ import {
   signatureProjectUrl,
   signatureSignPageUrl,
 } from '@/lib/signature-emails'
-import { billingAppUrl } from '@/lib/stripe-config'
+import {
+  isSignWellSignableFile,
+  SIGNWELL_SIGNABLE_FORMATS_LABEL,
+} from '@/lib/signwell-file-types'
 import type { SignatureRequestRow } from '@/lib/signature-request-types'
+import { billingAppUrl } from '@/lib/stripe-config'
 import { createServiceClient } from '@/lib/supabase/service'
 
 const BUCKET = 'project-files'
@@ -87,11 +91,10 @@ export async function createSignatureRequest(input: {
     return { ok: false, error: 'File not found on this project.', status: 404 }
   }
 
-  const lowerName = file.file_name.toLowerCase()
-  if (!lowerName.endsWith('.pdf')) {
+  if (!isSignWellSignableFile(file)) {
     return {
       ok: false,
-      error: 'Only PDF files can be sent for signature.',
+      error: `This file type cannot be sent for signature. Use ${SIGNWELL_SIGNABLE_FORMATS_LABEL}.`,
       status: 400,
     }
   }

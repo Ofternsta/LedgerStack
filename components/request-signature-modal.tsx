@@ -1,10 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import {
+  isSignWellSignableFile,
+  SIGNWELL_SIGNABLE_FORMATS_LABEL,
+} from '@/lib/signwell-file-types'
 
 type ProjectFile = {
   file_path: string
   file_name: string
+  file_type?: string
 }
 
 type Props = {
@@ -40,15 +45,13 @@ export function RequestSignatureModal({
     )
       .then((r) => r.json())
       .then((d) => {
-        const pdfs = (d.files || [])
-          .filter((f: ProjectFile) =>
-            String(f.file_name || '').toLowerCase().endsWith('.pdf')
-          )
+        const signable = (d.files || [])
+          .filter((f: ProjectFile) => isSignWellSignableFile(f))
           .map((f: ProjectFile) => ({
             file_path: f.file_path,
             file_name: f.file_name,
           }))
-        setFiles(pdfs)
+        setFiles(signable)
       })
       .catch(() => setFiles([]))
       .finally(() => setLoading(false))
@@ -96,8 +99,9 @@ export function RequestSignatureModal({
           <div>
             <h2 className="font-bold text-lg">Request signature</h2>
             <p className="text-sm text-muted mt-1">
-              Send a PDF to <span className="text-foreground">{clientEmail}</span>{' '}
-              for a typed electronic signature via SignWell.
+              Send a document to{' '}
+              <span className="text-foreground">{clientEmail}</span> for a typed
+              electronic signature via SignWell.
             </p>
           </div>
           <button
@@ -114,8 +118,8 @@ export function RequestSignatureModal({
           <p className="text-sm text-muted-dim">Loading project files…</p>
         ) : files.length === 0 ? (
           <p className="text-sm text-muted-dim">
-            No PDF files on this project yet. Upload a PDF first, then request a
-            signature.
+            No signable files on this project yet. Upload a file first (
+            {SIGNWELL_SIGNABLE_FORMATS_LABEL}), then request a signature.
           </p>
         ) : (
           <ul className="space-y-2 max-h-48 overflow-y-auto">
