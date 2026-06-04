@@ -9,7 +9,7 @@ import {
   formatPlanLimit,
 } from '@/lib/plan-entitlements'
 import { BILLING_PLANS } from '@/lib/stripe-config'
-import { MARKETING_FAQ, SITE_LONG_DESCRIPTION } from '@/lib/site-seo'
+import { MARKETING_FAQ } from '@/lib/site-seo'
 
 const FEATURES = [
   {
@@ -149,16 +149,6 @@ export function MarketingHome() {
                 />
               </div>
             </div>
-          </div>
-        </section>
-
-        <section className="border-b border-border bg-surface/40">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-14">
-            <Reveal>
-              <p className="text-muted leading-relaxed max-w-4xl text-base sm:text-lg">
-                {SITE_LONG_DESCRIPTION}
-              </p>
-            </Reveal>
           </div>
         </section>
 
