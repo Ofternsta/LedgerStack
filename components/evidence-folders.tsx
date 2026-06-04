@@ -31,6 +31,9 @@ type EvidenceFoldersProps = {
   onOpen: (filePath: string) => void
   onDelete: (filePath: string) => void
   onUpdated: () => void
+  /** Scroll to and expand this file (e.g. from AI chat citation). */
+  focusFilePath?: string | null
+  onFocusFilePathHandled?: () => void
 }
 
 function formatUploadedAt(createdAt?: string) {
@@ -47,6 +50,10 @@ function sortChronological(a: EvidenceDoc, b: EvidenceDoc) {
   return ta - tb
 }
 
+export function evidenceFileDomId(filePath: string) {
+  return `evidence-file-${filePath.replace(/[^a-zA-Z0-9_-]/g, '_')}`
+}
+
 export function EvidenceFolders({
   documents,
   projectId,
@@ -59,6 +66,8 @@ export function EvidenceFolders({
   onOpen,
   onDelete,
   onUpdated,
+  focusFilePath,
+  onFocusFilePathHandled,
 }: EvidenceFoldersProps) {
   const categories = categoriesProp?.length
     ? categoriesProp
@@ -95,6 +104,25 @@ export function EvidenceFolders({
       setSelectedPath(null)
     }
   }, [documents, selectedPath])
+
+  useEffect(() => {
+    if (!focusFilePath) return
+    const doc = documents.find((d) => d.file_path === focusFilePath)
+    if (!doc) return
+
+    const label = normalizeFileCategoryLabel(doc.evidence_type, categories)
+    const cat = categories.find((c) => c.label === label) ?? categories[0]
+    setExpanded((prev) => new Set(prev).add(cat.key))
+    setSelectedPath(focusFilePath)
+
+    const frame = requestAnimationFrame(() => {
+      document
+        .getElementById(evidenceFileDomId(focusFilePath))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      onFocusFilePathHandled?.()
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [focusFilePath, documents, categories, onFocusFilePathHandled])
 
   function toggleFolder(key: string) {
     setExpanded((prev) => {
@@ -180,7 +208,7 @@ export function EvidenceFolders({
                 {files.map((doc) => {
                   const isSelected = selectedPath === doc.file_path
                   return (
-                    <li key={doc.id}>
+                    <li key={doc.id} id={evidenceFileDomId(doc.file_path)}>
                       <button
                         type="button"
                         onClick={() => selectFile(doc.file_path, cat.key)}

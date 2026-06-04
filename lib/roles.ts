@@ -45,6 +45,8 @@ export type UserAccess = {
   canUseTeamMessages: boolean
   canUseClaimPacketExport: boolean
   canArchiveProject: boolean
+  /** Per-project worker flag (set on project page from assignment permissions). */
+  canUseProjectAiChat?: boolean
   downgradeReadOnly: boolean
   overProjectLimit: boolean
   overStaffLimit: boolean

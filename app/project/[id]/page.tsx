@@ -24,6 +24,7 @@ import { LedgerStackLoader } from '@/components/ledgerstack-loader'
 import { InternalNotesPanel } from '@/components/internal-notes-panel'
 import { MessagePanel } from '@/components/message-panel'
 import { AddJobDialog, ProjectJobsList } from '@/components/project-jobs-list'
+import { ProjectAiChat } from '@/components/project-ai-chat'
 import { ProjectSchedulePanel } from '@/components/project-schedule-panel'
 import { isUnlimited } from '@/lib/plan-entitlements'
 import { loadUserAccess } from '@/lib/load-access'
@@ -81,6 +82,7 @@ export default function ProjectPageClient() {
   const [projectNotes, setProjectNotes] = useState<string | null>(null)
   const [addJobOpen, setAddJobOpen] = useState(false)
   const [deletingJob, setDeletingJob] = useState(false)
+  const [highlightFilePath, setHighlightFilePath] = useState<string | null>(null)
 
   function mergeWorkerProjectAccess(
     base: UserAccess,
@@ -94,6 +96,7 @@ export default function ProjectPageClient() {
       canManageSchedule: base.canViewCalendar && wp.can_add_events,
       canUpdateClaimInfo:
         wp.can_upload || wp.can_add_events || wp.can_view_files,
+      canUseProjectAiChat: wp.can_use_ai_chat,
     }
   }
 
@@ -170,6 +173,38 @@ export default function ProjectPageClient() {
     setClaims(safe)
     setSelectedClaim(safe.length > 0 ? safe[0] : null)
     setLoading(false)
+  }
+
+  async function refreshAccess() {
+    const { access: next } = await loadUserAccess()
+    if (!next) return
+    if (next.role === 'worker') {
+      const res = await fetch(`/api/projects/${id}/my-access`)
+      const payload = await res.json().catch(() => ({}))
+      if (res.ok && payload.permissions) {
+        setAccess(mergeWorkerProjectAccess(next, payload.permissions))
+      }
+    } else {
+      setAccess(next)
+    }
+  }
+
+  async function navigateToDocument(claimId: string, filePath: string) {
+    const claim = claims.find((c) => c.id === claimId)
+    if (!claim) return
+
+    setSearch('')
+
+    if (selectedClaim?.id !== claimId) {
+      setSelectedClaim(claim)
+      await fetchEvidence(claimId)
+    }
+
+    setHighlightFilePath(filePath)
+    document.getElementById('project-documents')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    })
   }
 
   async function fetchEvidence(claimId?: string) {
@@ -693,7 +728,7 @@ export default function ProjectPageClient() {
             )}
 
             {access.canViewFiles ? (
-              <>
+              <div id="project-documents">
                 <input
                   className="input-field w-full"
                   placeholder="Search files, summaries, OCR text…"
@@ -714,11 +749,13 @@ export default function ProjectPageClient() {
                       ? 'No documents have been shared with you yet. Your contractor will select files for you to view.'
                       : undefined
                   }
+                  focusFilePath={highlightFilePath}
+                  onFocusFilePathHandled={() => setHighlightFilePath(null)}
                   onOpen={openFile}
                   onDelete={deleteFile}
                   onUpdated={() => fetchEvidence(activeClaim.id)}
                 />
-              </>
+              </div>
             ) : (
               <p className="text-sm text-muted border border-border rounded-xl p-4">
                 Your account cannot view project files. Contact your organization
@@ -740,6 +777,20 @@ export default function ProjectPageClient() {
           </div>
         </div>
       </main>
+
+      {!isClientViewer &&
+        !access.workerBlockedByStaffLimit &&
+        (access.role === 'admin' || access.canUseProjectAiChat) && (
+        <ProjectAiChat
+          projectId={id}
+          aiSummariesLimit={access.aiSummariesLimit}
+          aiSummariesUsed={access.aiSummariesUsed}
+          onNavigateToDocument={(claimId, filePath) =>
+            void navigateToDocument(claimId, filePath)
+          }
+          onUsageUpdated={() => void refreshAccess()}
+        />
+      )}
     </div>
   )
 }

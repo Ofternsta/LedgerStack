@@ -61,7 +61,7 @@ export async function GET() {
   const { data: approved } = await supabase
     .from('organization_members')
     .select(
-      'id, user_id, status, created_at, job_title, can_upload, can_delete, can_add_events, can_view_files'
+      'id, user_id, status, created_at, job_title, can_upload, can_delete, can_add_events, can_view_files, can_use_ai_chat'
     )
     .eq('organization_id', org.id)
     .eq('status', 'approved')
@@ -174,6 +174,7 @@ export async function POST(req: Request) {
       can_delete: defaults.can_delete,
       can_add_events: defaults.can_add_events,
       can_view_files: defaults.can_view_files,
+      can_use_ai_chat: defaults.can_use_ai_chat,
     }
   }
 
@@ -235,6 +236,7 @@ export async function PATCH(req: Request) {
     update.can_delete = Boolean(permissions.can_delete)
     update.can_add_events = Boolean(permissions.can_add_events)
     update.can_view_files = Boolean(permissions.can_view_files)
+    update.can_use_ai_chat = Boolean(permissions.can_use_ai_chat)
   }
   if (hasTitle) {
     update.job_title = normalizeJobTitle(String(body.job_title ?? ''))

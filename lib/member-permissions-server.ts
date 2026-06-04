@@ -16,7 +16,7 @@ export async function getApprovedMemberPermissions(
 ) {
   const { data: member } = await supabase
     .from('organization_members')
-    .select('can_upload, can_delete, can_add_events, can_view_files, status')
+    .select('can_upload, can_delete, can_add_events, can_view_files, can_use_ai_chat, status')
     .eq('organization_id', organizationId)
     .eq('user_id', userId)
     .eq('status', 'approved')
@@ -68,7 +68,7 @@ export async function assertProjectMemberPermission(
   const { data: member } = await supabase
     .from('organization_members')
     .select(
-      'status, can_upload, can_delete, can_add_events, can_view_files'
+      'status, can_upload, can_delete, can_add_events, can_view_files, can_use_ai_chat'
     )
     .eq('organization_id', organizationId)
     .eq('user_id', userId)
@@ -112,6 +112,7 @@ export async function assertProjectMemberPermission(
       can_delete: 'You do not have permission to delete files.',
       can_add_events: 'You do not have permission to add calendar events.',
       can_view_files: 'You do not have permission to view project files.',
+      can_use_ai_chat: 'You do not have permission to use AI project chat.',
     }
     return { ok: false, error: messages[permission], status: 403 }
   }
