@@ -1,3 +1,5 @@
+export const SIGNED_DOCUMENTS_TYPE = 'Signed documents' as const
+
 export const EVIDENCE_TYPES = [
   'Site Photo',
   'Invoice',
@@ -5,6 +7,7 @@ export const EVIDENCE_TYPES = [
   'Measurements',
   'Correspondence',
   'Documents',
+  SIGNED_DOCUMENTS_TYPE,
   'Other',
 ] as const
 
@@ -39,6 +42,7 @@ export function normalizeEvidenceType(raw: string): EvidenceType {
   if (cleaned.includes('email') || cleaned.includes('letter')) {
     return 'Correspondence'
   }
+  if (cleaned.includes('signed')) return SIGNED_DOCUMENTS_TYPE
   if (
     cleaned.includes('report') ||
     cleaned.includes('document') ||

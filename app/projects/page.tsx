@@ -10,6 +10,7 @@ import { AppNav } from '@/components/app-nav'
 import { LegalNotice } from '@/components/legal-notice'
 import { PlanUpgradeBanner } from '@/components/plan-upgrade-banner'
 import { ClientSignatureBanner } from '@/components/client-signature-banner'
+import { AdminSignatureNotificationsBanner } from '@/components/admin-signature-notifications-banner'
 import { isUnlimited } from '@/lib/plan-entitlements'
 import { linkClientAccessByEmail } from '@/lib/auth-signup'
 import { deleteProject } from '@/lib/delete-project'
@@ -332,6 +333,8 @@ export default function ProjectsPage() {
             </button>
           </section>
         )}
+
+        {access.role === 'admin' && <AdminSignatureNotificationsBanner />}
 
         {access.role === 'client' && (
           <>

@@ -28,8 +28,18 @@ import type { SignatureRequestRow } from '@/lib/signature-request-types'
 import { billingAppUrl } from '@/lib/stripe-config'
 import { createServiceClient } from '@/lib/supabase/service'
 
+import {
+  ensureSignedDocumentsCategoryOnProject,
+  SIGNED_DOCUMENTS_CATEGORY_LABEL,
+} from '@/lib/project-file-categories'
+
 const BUCKET = 'project-files'
-export const SIGNED_DOCUMENTS_LABEL = 'Signed documents'
+
+export const SIGNED_DOCUMENTS_LABEL = SIGNED_DOCUMENTS_CATEGORY_LABEL
+
+function sanitizeSignedFileName(raw: string): string {
+  return raw.replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 80)
+}
 
 function displayNameFromEmail(email: string) {
   const local = email.split('@')[0] || 'Client'
@@ -114,6 +124,8 @@ export async function createSignatureRequest(input: {
       status: 409,
     }
   }
+
+  await ensureSignedDocumentsCategoryOnProject(service, input.projectId)
 
   const { data: adminProfile } = await service
     .from('profiles')
@@ -291,50 +303,19 @@ export async function completeSignatureRequest(
     return { ok: false, error: 'Missing SignWell document id' }
   }
 
-  const pdf = await getSignWellCompletedPdfUrl(request.signwell_document_id)
-  if (!pdf.ok) {
-    return { ok: false, error: pdf.error }
+  if (!['pending', 'viewed'].includes(request.status)) {
+    return { ok: false, error: `Request is ${request.status} and cannot be completed.` }
   }
 
-  const pdfBuffer = await downloadUrlAsBuffer(pdf.fileUrl)
   const claimId = request.claim_id as string | null
-  const signedName = `signed-${Date.now()}-${request.source_file_name.replace(/[^a-zA-Z0-9._-]+/g, '_')}`
   const prefix = claimId
     ? `${request.project_id}/${claimId}`
     : `${request.project_id}`
+  const signedName = `signed-${requestId.slice(0, 8)}-${sanitizeSignedFileName(request.source_file_name)}`
   const signedFilePath = `${prefix}/${signedName}`
-
-  const { error: uploadError } = await service.storage
-    .from(BUCKET)
-    .upload(signedFilePath, pdfBuffer, {
-      contentType: 'application/pdf',
-      upsert: false,
-    })
-
-  if (uploadError) {
-    return { ok: false, error: uploadError.message }
-  }
-
-  const sourceMeta = await readEvidenceMeta(service, request.source_file_path)
-  const record = {
-    id: newEvidenceId(),
-    claim_id: claimId || sourceMeta?.claim_id || request.project_id,
-    file_name: signedName,
-    file_path: signedFilePath,
-    file_type: 'application/pdf',
-    evidence_type: SIGNED_DOCUMENTS_LABEL,
-    summary: `Signed copy of ${request.source_file_name}`,
-    created_at: new Date().toISOString(),
-    uploaded_by_id: undefined,
-    uploaded_by_name: options?.typedSignerName || request.client_email,
-    uploaded_by_role: 'client' as const,
-    uploaded_by_label: options?.typedSignerName || request.client_email,
-  }
-
-  await saveEvidence(service, record)
-
   const completedAt = new Date().toISOString()
-  await service
+
+  const { data: claimed } = await service
     .from('signature_requests')
     .update({
       status: 'signed',
@@ -344,12 +325,101 @@ export async function completeSignatureRequest(
       updated_at: completedAt,
     })
     .eq('id', requestId)
+    .in('status', ['pending', 'viewed'])
+    .select('*')
+    .maybeSingle()
+
+  if (!claimed) {
+    const { data: existing } = await service
+      .from('signature_requests')
+      .select('status, signed_file_path')
+      .eq('id', requestId)
+      .maybeSingle()
+
+    if (existing?.status === 'signed' && existing.signed_file_path) {
+      return { ok: true }
+    }
+
+    return { ok: false, error: 'Could not complete signature request.' }
+  }
+
+  const existingMeta = await readEvidenceMeta(service, signedFilePath)
+  if (existingMeta) {
+    return { ok: true }
+  }
+
+  const pdf = await getSignWellCompletedPdfUrl(request.signwell_document_id)
+  if (!pdf.ok) {
+    await service
+      .from('signature_requests')
+      .update({
+        status: request.status,
+        signed_file_path: null,
+        typed_signer_name: null,
+        completed_at: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', requestId)
+      .eq('signed_file_path', signedFilePath)
+
+    return { ok: false, error: pdf.error }
+  }
+
+  const pdfBuffer = await downloadUrlAsBuffer(pdf.fileUrl)
+
+  const { error: uploadError } = await service.storage
+    .from(BUCKET)
+    .upload(signedFilePath, pdfBuffer, {
+      contentType: 'application/pdf',
+      upsert: true,
+    })
+
+  if (uploadError) {
+    await service
+      .from('signature_requests')
+      .update({
+        status: request.status,
+        signed_file_path: null,
+        typed_signer_name: null,
+        completed_at: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', requestId)
+      .eq('signed_file_path', signedFilePath)
+
+    return { ok: false, error: uploadError.message }
+  }
+
+  await ensureSignedDocumentsCategoryOnProject(service, request.project_id)
+
+  const sourceMeta = await readEvidenceMeta(service, request.source_file_path)
+  const signerLabel =
+    options?.typedSignerName?.trim() || request.client_email
+
+  const record = {
+    id: newEvidenceId(),
+    claim_id: claimId || sourceMeta?.claim_id || request.project_id,
+    file_name: signedName,
+    file_path: signedFilePath,
+    file_type: 'application/pdf',
+    evidence_type: SIGNED_DOCUMENTS_LABEL,
+    summary: `Signed copy of ${request.source_file_name} (signed by ${signerLabel})`,
+    created_at: completedAt,
+    uploaded_by_id: undefined,
+    uploaded_by_name: signerLabel,
+    uploaded_by_role: 'client' as const,
+    uploaded_by_label: signerLabel,
+  }
+
+  await saveEvidence(service, record)
 
   const sharedPaths = await getSharedFilePaths(request.project_client_access_id)
-  await setSharedFilePaths(request.project_client_access_id, request.project_id, [
-    ...sharedPaths,
-    signedFilePath,
-  ])
+  if (!sharedPaths.has(signedFilePath)) {
+    await setSharedFilePaths(request.project_client_access_id, request.project_id, [
+      ...sharedPaths,
+      signedFilePath,
+    ])
+  }
 
   const { data: project } = await service
     .from('projects')
@@ -382,14 +452,24 @@ export async function completeSignatureRequest(
   }
 
   if (org?.admin_user_id) {
-    await service.from('user_notifications').insert({
-      user_id: org.admin_user_id,
-      type: 'signature_completed',
-      title: 'Document signed',
-      body: `${request.client_email} signed ${request.source_file_name}.`,
-      href: signatureProjectUrl(request.project_id),
-      reference_id: requestId,
-    })
+    const { data: existingNotice } = await service
+      .from('user_notifications')
+      .select('id')
+      .eq('user_id', org.admin_user_id)
+      .eq('type', 'signature_completed')
+      .eq('reference_id', requestId)
+      .maybeSingle()
+
+    if (!existingNotice) {
+      await service.from('user_notifications').insert({
+        user_id: org.admin_user_id,
+        type: 'signature_completed',
+        title: 'Document signed',
+        body: `${signerLabel} signed ${request.source_file_name}.`,
+        href: `${signatureProjectUrl(request.project_id)}#signed-documents`,
+        reference_id: requestId,
+      })
+    }
   }
 
   if (request.project_client_access_id) {
@@ -400,14 +480,24 @@ export async function completeSignatureRequest(
       .maybeSingle()
 
     if (access?.user_id) {
-      await service.from('user_notifications').insert({
-        user_id: access.user_id,
-        type: 'signature_completed',
-        title: 'Thank you — document signed',
-        body: `You signed ${request.source_file_name}.`,
-        href: `${billingAppUrl()}/project/${request.project_id}`,
-        reference_id: requestId,
-      })
+      const { data: clientNotice } = await service
+        .from('user_notifications')
+        .select('id')
+        .eq('user_id', access.user_id)
+        .eq('type', 'signature_completed')
+        .eq('reference_id', requestId)
+        .maybeSingle()
+
+      if (!clientNotice) {
+        await service.from('user_notifications').insert({
+          user_id: access.user_id,
+          type: 'signature_completed',
+          title: 'Thank you — document signed',
+          body: `You signed ${request.source_file_name}.`,
+          href: `${billingAppUrl()}/project/${request.project_id}`,
+          reference_id: requestId,
+        })
+      }
     }
   }
 

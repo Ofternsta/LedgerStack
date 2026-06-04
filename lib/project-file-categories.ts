@@ -1,8 +1,12 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
 import {
   EVIDENCE_TYPES,
   LEGACY_EVIDENCE_TYPE_LABELS,
   normalizeEvidenceType,
+  SIGNED_DOCUMENTS_TYPE,
 } from '@/lib/evidence-types'
+
+export const SIGNED_DOCUMENTS_CATEGORY_LABEL = SIGNED_DOCUMENTS_TYPE
 
 /** Keys from the previous default category set → current default label. */
 const LEGACY_FILE_CATEGORY_KEYS: Record<string, string> = {
@@ -150,6 +154,45 @@ export function normalizeFileCategoryLabel(
 
 export function categoryLabels(categories: FileCategory[]): string[] {
   return categories.map((c) => c.label)
+}
+
+export function hasSignedDocumentsCategory(categories: FileCategory[]): boolean {
+  return categories.some(
+    (c) => c.label.toLowerCase() === SIGNED_DOCUMENTS_CATEGORY_LABEL.toLowerCase()
+  )
+}
+
+/** Ensures every project has a Signed documents folder (e.g. after first e-sign). */
+export async function ensureSignedDocumentsCategoryOnProject(
+  supabase: SupabaseClient,
+  projectId: string
+): Promise<FileCategory[]> {
+  const { data: project } = await supabase
+    .from('projects')
+    .select('file_categories')
+    .eq('id', projectId)
+    .maybeSingle()
+
+  const categories = parseProjectFileCategories(project?.file_categories)
+  if (hasSignedDocumentsCategory(categories)) {
+    return categories
+  }
+
+  const keys = new Set(categories.map((c) => c.key))
+  const updated = [
+    ...categories,
+    {
+      key: slugifyFileCategoryKey(SIGNED_DOCUMENTS_CATEGORY_LABEL, keys),
+      label: SIGNED_DOCUMENTS_CATEGORY_LABEL,
+    },
+  ].slice(0, MAX_FILE_CATEGORIES)
+
+  await supabase
+    .from('projects')
+    .update({ file_categories: serializeProjectFileCategories(updated) })
+    .eq('id', projectId)
+
+  return updated
 }
 
 export function normalizeFileCategoriesDraft(

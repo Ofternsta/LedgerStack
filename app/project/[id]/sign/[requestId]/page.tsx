@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { SignWellEmbeddedSign } from '@/components/signwell-embedded-sign'
 import { LedgerStackLoader } from '@/components/ledgerstack-loader'
 import { ProjectPageHeader } from '@/components/project-page-header'
@@ -21,6 +21,27 @@ export default function SignDocumentPage() {
   const [signingUrl, setSigningUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(searchParams.get('completed') === '1')
+  const completingRef = useRef(false)
+
+  const syncCompletion = useCallback(async () => {
+    if (completingRef.current) return
+    completingRef.current = true
+    setDone(true)
+
+    const res = await fetch(`/api/signature-requests/${requestId}`, {
+      method: 'POST',
+    })
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}))
+      setError(
+        payload.error ||
+          'Signing finished in SignWell, but we could not save the signed copy yet. Please refresh in a moment.'
+      )
+      completingRef.current = false
+      return
+    }
+    router.replace(`/project/${projectId}?signed=1`)
+  }, [requestId, projectId, router])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -70,19 +91,14 @@ export default function SignDocumentPage() {
     void load()
   }, [load])
 
+  useEffect(() => {
+    if (searchParams.get('completed') !== '1') return
+    if (!request || request.status === 'signed') return
+    void syncCompletion()
+  }, [request, searchParams, syncCompletion])
+
   async function handleCompleted() {
-    setDone(true)
-    const res = await fetch(`/api/signature-requests/${requestId}`, {
-      method: 'POST',
-    })
-    if (!res.ok) {
-      const payload = await res.json().catch(() => ({}))
-      setError(
-        payload.error ||
-          'Signing finished in SignWell, but we could not save the signed copy yet. Please refresh in a moment.'
-      )
-    }
-    router.replace(`/project/${projectId}?signed=1`)
+    await syncCompletion()
   }
 
   if (loading) {

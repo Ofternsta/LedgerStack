@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import { EvidenceFolders } from '@/components/evidence-folders'
 import { ProjectPageHeader } from '@/components/project-page-header'
 import { JobTimelinePanel } from '@/components/job-timeline-panel'
@@ -27,6 +27,7 @@ import { AddJobDialog, ProjectJobsList } from '@/components/project-jobs-list'
 import { ProjectAiChat } from '@/components/project-ai-chat'
 import { ProjectSchedulePanel } from '@/components/project-schedule-panel'
 import { ClientSignaturesPanel } from '@/components/client-signatures-panel'
+import { AdminSignatureRequestsPanel } from '@/components/admin-signature-requests-panel'
 import { isUnlimited } from '@/lib/plan-entitlements'
 import { loadUserAccess } from '@/lib/load-access'
 import type { UserAccess } from '@/lib/roles'
@@ -59,6 +60,7 @@ type Evidence = {
 
 export default function ProjectPageClient() {
   const params = useParams()
+  const searchParams = useSearchParams()
   const id = params.id as string
   const [access, setAccess] = useState<UserAccess | null>(null)
   const [claims, setClaims] = useState<Claim[]>([])
@@ -153,6 +155,14 @@ export default function ProjectPageClient() {
     void loadProjectConfig()
   }, [id])
 
+  useEffect(() => {
+    if (searchParams.get('signed') !== '1') return
+    void reloadProjectConfig()
+    if (selectedClaim) {
+      void fetchEvidence(selectedClaim.id)
+    }
+  }, [searchParams, selectedClaim?.id])
+
   async function fetchClaims() {
     setLoading(true)
 
@@ -174,6 +184,14 @@ export default function ProjectPageClient() {
     setClaims(safe)
     setSelectedClaim(safe.length > 0 ? safe[0] : null)
     setLoading(false)
+  }
+
+  async function reloadProjectConfig() {
+    const categoriesRes = await fetch(`/api/projects/${id}/file-categories`)
+    const categoriesPayload = await categoriesRes.json().catch(() => ({}))
+    if (categoriesRes.ok && categoriesPayload.categories) {
+      setFileCategories(categoriesPayload.categories as FileCategory[])
+    }
   }
 
   async function refreshAccess() {
@@ -730,6 +748,10 @@ export default function ProjectPageClient() {
 
             {access.canViewFiles ? (
               <div id="project-documents" className="space-y-4">
+                {access.role === 'admin' && (
+                  <AdminSignatureRequestsPanel projectId={id} />
+                )}
+
                 {isClientViewer && (
                   <ClientSignaturesPanel projectId={id} />
                 )}

@@ -8,6 +8,7 @@ import { AppHeader } from '@/components/app-header'
 import { LedgerStackLoader } from '@/components/ledgerstack-loader'
 import { AppFooter } from '@/components/app-footer'
 import { AppNav } from '@/components/app-nav'
+import { AdminSignatureNotificationsBanner } from '@/components/admin-signature-notifications-banner'
 import { loadUserAccess } from '@/lib/load-access'
 import type { UserAccess } from '@/lib/roles'
 import { supabase } from '@/lib/supabase'
@@ -84,6 +85,8 @@ export default function DashboardPage() {
 
       <main className="flex-1 safe-x px-4 py-4 max-w-3xl mx-auto w-full pb-8 safe-bottom space-y-6">
         <AppNav access={access} />
+
+        {access.role === 'admin' && <AdminSignatureNotificationsBanner />}
 
         {error && (
           <p className="text-sm text-red-400 border border-red-200 bg-red-50 p-3 rounded-xl">

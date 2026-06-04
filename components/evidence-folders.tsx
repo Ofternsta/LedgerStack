@@ -8,6 +8,14 @@ import {
   type FileCategory,
 } from '@/lib/project-file-categories'
 
+function categoryDomId(label: string): string {
+  return label
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
 export type EvidenceDoc = {
   id: string
   file_name: string
@@ -152,6 +160,7 @@ export function EvidenceFolders({
         {categories.map((cat) => (
           <div
             key={cat.key}
+            id={categoryDomId(cat.label)}
             className="border border-border rounded-xl bg-surface-elevated overflow-hidden"
           >
             <div className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left">
@@ -176,6 +185,7 @@ export function EvidenceFolders({
         return (
           <div
             key={cat.key}
+            id={categoryDomId(cat.label)}
             className="border border-border rounded-xl bg-surface-elevated overflow-hidden"
           >
             <button
