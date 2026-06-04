@@ -20,6 +20,14 @@ type SignWellWebhookBody = {
 }
 
 /** SignWell document lifecycle webhooks */
+export async function GET() {
+  return NextResponse.json({
+    ok: true,
+    service: 'ledgerstack-signwell-webhook',
+    message: 'POST SignWell events to this URL.',
+  })
+}
+
 export async function POST(req: Request) {
   const body = (await req.json().catch(() => ({}))) as SignWellWebhookBody
   const eventType = body.event?.type

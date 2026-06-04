@@ -19,11 +19,13 @@ SIGNWELL_TEST_MODE=true
 supabase/signature-requests.sql
 ```
 
-4. Register a webhook in SignWell (**Settings → Webhooks**):
+4. Register a webhook in SignWell (**Settings → Webhooks**). Use the **apex** URL (not `www`):
 
 ```
 https://ledgerstack.org/api/webhooks/signwell
 ```
+
+Opening that link in a browser should return JSON (`ok: true`). SignWell delivers events via **POST**; a blank browser visit is only a health check.
 
 Subscribe at least to: `document_viewed`, `document_completed`, `document_declined`, `document_expired`.
 
