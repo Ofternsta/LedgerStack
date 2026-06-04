@@ -32,8 +32,9 @@ type ProjectMonthCalendarProps = {
   projectId: string
   /** Attached to new events when created from a job context. */
   claimId?: string | null
-  /** Admin or worker with calendar permission — add events and mark complete. */
-  canEdit: boolean
+  canAddEvents?: boolean
+  canDeleteEvents?: boolean
+  canMarkComplete?: boolean
 }
 
 function formatDayHeading(date: Date): string {
@@ -55,7 +56,9 @@ function formatEventTime(iso: string): string {
 export function ProjectMonthCalendar({
   projectId,
   claimId,
-  canEdit,
+  canAddEvents = false,
+  canDeleteEvents = false,
+  canMarkComplete = false,
 }: ProjectMonthCalendarProps) {
   const [viewMonth, setViewMonth] = useState(() => {
     const d = new Date()
@@ -65,6 +68,7 @@ export function ProjectMonthCalendar({
   const [loadingEvents, setLoadingEvents] = useState(false)
   const [selectedDay, setSelectedDay] = useState<Date | null>(null)
   const [saving, setSaving] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const [eventType, setEventType] = useState<ScheduleEventType>('inspection')
@@ -114,7 +118,7 @@ export function ProjectMonthCalendar({
   }, [loadEvents])
 
   async function toggleComplete(ev: ProjectCalendarEvent) {
-    if (!canEdit) return
+    if (!canMarkComplete) return
     const res = await fetch('/api/schedule', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -129,7 +133,7 @@ export function ProjectMonthCalendar({
 
   async function addEventForDay(e: React.FormEvent) {
     e.preventDefault()
-    if (!canEdit || !selectedDay || !title.trim()) return
+    if (!canAddEvents || !selectedDay || !title.trim()) return
     setSaving(true)
     setError(null)
 
@@ -159,6 +163,29 @@ export function ProjectMonthCalendar({
     setEventTime('09:00')
     await loadEvents()
     setSaving(false)
+  }
+
+  async function deleteEvent(ev: ProjectCalendarEvent) {
+    if (!canDeleteEvents) return
+    if (
+      !window.confirm(`Delete "${ev.title}"? This cannot be undone.`)
+    ) {
+      return
+    }
+    setDeletingId(ev.id)
+    setError(null)
+    const params = new URLSearchParams({
+      id: ev.id,
+      project_id: projectId,
+    })
+    const res = await fetch(`/api/schedule?${params}`, { method: 'DELETE' })
+    const payload = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      setError(payload.error || 'Could not delete event')
+    } else {
+      await loadEvents()
+    }
+    setDeletingId(null)
   }
 
   function openDay(date: Date, inMonth: boolean) {
@@ -274,11 +301,13 @@ export function ProjectMonthCalendar({
           })}
         </div>
 
-        <p className="text-xs text-muted">
-          {canEdit
-            ? 'Click a day to view events or add a new one.'
-            : 'Click a day to view scheduled events.'}
-        </p>
+        {(canAddEvents || canMarkComplete) && (
+          <p className="text-xs text-muted">
+            {canAddEvents
+              ? 'Click a day to view events or add a new one.'
+              : 'Click a day to view scheduled events.'}
+          </p>
+        )}
       </div>
 
       {selectedDay && (
@@ -307,7 +336,7 @@ export function ProjectMonthCalendar({
                     ev.completed_at ? 'opacity-70' : ''
                   }`}
                 >
-                  {canEdit && (
+                  {canMarkComplete && (
                     <input
                       type="checkbox"
                       checked={Boolean(ev.completed_at)}
@@ -329,12 +358,22 @@ export function ProjectMonthCalendar({
                       {formatEventTime(ev.starts_at)}
                     </p>
                   </div>
+                  {canDeleteEvents && (
+                    <button
+                      type="button"
+                      onClick={() => void deleteEvent(ev)}
+                      disabled={deletingId === ev.id}
+                      className="text-xs text-red-700 border border-red-200 rounded-lg px-2 py-1 min-h-[32px] shrink-0 hover:bg-red-50 disabled:opacity-50"
+                    >
+                      {deletingId === ev.id ? '…' : 'Delete'}
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
           )}
 
-          {canEdit && (
+          {canAddEvents && (
             <form
               onSubmit={(e) => void addEventForDay(e)}
               className="border-t border-border pt-4 space-y-3"

@@ -5,11 +5,13 @@ import { ProjectMonthCalendar } from '@/components/project-month-calendar'
 
 type Props = {
   projectId: string
-  claimId?: string | null
-  canEdit: boolean
+  canMarkComplete?: boolean
 }
 
-export function ProjectSchedulePanel({ projectId, claimId, canEdit }: Props) {
+export function ProjectSchedulePanel({
+  projectId,
+  canMarkComplete = false,
+}: Props) {
   return (
     <section className="border border-border rounded-xl p-4 bg-surface-elevated space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -29,8 +31,7 @@ export function ProjectSchedulePanel({ projectId, claimId, canEdit }: Props) {
 
       <ProjectMonthCalendar
         projectId={projectId}
-        claimId={claimId}
-        canEdit={canEdit}
+        canMarkComplete={canMarkComplete}
       />
     </section>
   )

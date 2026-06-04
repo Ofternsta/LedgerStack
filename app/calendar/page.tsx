@@ -164,7 +164,9 @@ export default function CalendarPage() {
             <section className="card-elevated p-4">
               <ProjectMonthCalendar
                 projectId={selectedProjectId}
-                canEdit={isAdmin}
+                canAddEvents={isAdmin}
+                canDeleteEvents={isAdmin}
+                canMarkComplete={isAdmin}
               />
             </section>
           </>

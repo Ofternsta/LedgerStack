@@ -651,8 +651,9 @@ export default function ProjectPageClient() {
             {access.canViewCalendar && (
               <ProjectSchedulePanel
                 projectId={id}
-                claimId={activeClaim.id}
-                canEdit={access.canManageSchedule && access.canUpdateClaimInfo}
+                canMarkComplete={
+                  access.canManageSchedule && access.canUpdateClaimInfo
+                }
               />
             )}
 
