@@ -9,6 +9,7 @@ import { AppFooter } from '@/components/app-footer'
 import { AppNav } from '@/components/app-nav'
 import { LegalNotice } from '@/components/legal-notice'
 import { PlanUpgradeBanner } from '@/components/plan-upgrade-banner'
+import { ClientSignatureBanner } from '@/components/client-signature-banner'
 import { isUnlimited } from '@/lib/plan-entitlements'
 import { linkClientAccessByEmail } from '@/lib/auth-signup'
 import { deleteProject } from '@/lib/delete-project'
@@ -333,9 +334,12 @@ export default function ProjectsPage() {
         )}
 
         {access.role === 'client' && (
-          <p className="text-sm text-muted bg-blue-50 border border-blue-100 rounded-xl p-3">
-            You can only open projects your contractor has granted to your email.
-          </p>
+          <>
+            <ClientSignatureBanner />
+            <p className="text-sm text-muted bg-blue-50 border border-blue-100 rounded-xl p-3">
+              You can only open projects your contractor has granted to your email.
+            </p>
+          </>
         )}
 
         {access.role === 'admin' && (

@@ -51,7 +51,7 @@ export const MARKETING_FAQ = [
   {
     question: 'What is LedgerStack?',
     answer:
-      'LedgerStack is a web-based project and job management platform for contractors, restoration professionals, and insurance-adjacent field teams. It centralizes damage assessments, job documentation, claim-style workflows, crew coordination, and client sharing—with AI categorization, calendars, analytics, and document signatures (coming soon)—all usable from mobile devices on site.',
+      'LedgerStack is a web-based project and job management platform for contractors, restoration professionals, and insurance-adjacent field teams. It centralizes damage assessments, job documentation, claim-style workflows, crew coordination, and client sharing—with AI categorization, calendars, analytics, and SignWell e-signatures on Professional+ plans—all usable from mobile devices on site.',
   },
   {
     question: 'Who is LedgerStack for?',
@@ -74,9 +74,9 @@ export const MARKETING_FAQ = [
       'Yes. On Professional and Enterprise plans, you can grant clients view-only access to selected project files and keep them aligned on job status without giving them full account access.',
   },
   {
-    question: 'Will LedgerStack support document signatures?',
+    question: 'Does LedgerStack support document signatures?',
     answer:
-      'Yes — document signatures for approvals, authorizations, and completion paperwork are planned and marked coming soon on the marketing site. Existing plans already cover secure file storage, client sharing, and exports until e-sign is released.',
+      'Yes. On Professional and Enterprise plans, admins can request a client signature on a PDF. Clients sign with a typed name through SignWell (embedded in LedgerStack), receive email and in-app notifications, and the signed PDF is stored under Signed documents on the project.',
   },
 ] as const
 

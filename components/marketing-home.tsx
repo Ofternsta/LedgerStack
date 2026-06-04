@@ -35,7 +35,7 @@ const FEATURES = [
   {
     title: 'Document signatures',
     description:
-      'Collect signed approvals, authorizations, and completion documents on the job (coming soon) — so paperwork stays with the project, not lost in email.',
+      'Request typed e-signatures on PDFs from clients (Professional+). SignWell handles the legal signing flow; signed copies stay on the project.',
   },
 ]
 

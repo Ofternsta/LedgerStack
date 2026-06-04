@@ -26,6 +26,7 @@ import { MessagePanel } from '@/components/message-panel'
 import { AddJobDialog, ProjectJobsList } from '@/components/project-jobs-list'
 import { ProjectAiChat } from '@/components/project-ai-chat'
 import { ProjectSchedulePanel } from '@/components/project-schedule-panel'
+import { ClientSignaturesPanel } from '@/components/client-signatures-panel'
 import { isUnlimited } from '@/lib/plan-entitlements'
 import { loadUserAccess } from '@/lib/load-access'
 import type { UserAccess } from '@/lib/roles'
@@ -728,7 +729,11 @@ export default function ProjectPageClient() {
             )}
 
             {access.canViewFiles ? (
-              <div id="project-documents">
+              <div id="project-documents" className="space-y-4">
+                {isClientViewer && (
+                  <ClientSignaturesPanel projectId={id} />
+                )}
+
                 <input
                   className="input-field w-full"
                   placeholder="Search files, summaries, OCR text…"

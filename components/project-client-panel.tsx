@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { ClientSharedFilesEditor } from '@/components/client-shared-files-editor'
 import { LegalNotice } from '@/components/legal-notice'
+import { RequestSignatureModal } from '@/components/request-signature-modal'
 
 type AccessRow = {
   id: string
@@ -18,6 +19,10 @@ export function ProjectClientPanel({ projectId }: { projectId: string }) {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [expandedAccessId, setExpandedAccessId] = useState<string | null>(null)
+  const [signatureModal, setSignatureModal] = useState<{
+    accessId: string
+    email: string
+  } | null>(null)
 
   async function load() {
     setLoading(true)
@@ -162,6 +167,23 @@ export function ProjectClientPanel({ projectId }: { projectId: string }) {
                   </button>
                 </div>
 
+                {r.status === 'approved' && (
+                  <div className="px-3 pb-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSignatureModal({
+                          accessId: r.id,
+                          email: r.client_email,
+                        })
+                      }
+                      className="text-sm font-medium text-brand-bright min-h-[44px]"
+                    >
+                      Request signature →
+                    </button>
+                  </div>
+                )}
+
                 {isExpanded && r.status === 'approved' && (
                   <div className="px-3 pb-3">
                     <ClientSharedFilesEditor
@@ -178,6 +200,16 @@ export function ProjectClientPanel({ projectId }: { projectId: string }) {
       )}
 
       <LegalNotice id="client-access" />
+
+      {signatureModal && (
+        <RequestSignatureModal
+          projectId={projectId}
+          accessId={signatureModal.accessId}
+          clientEmail={signatureModal.email}
+          open
+          onClose={() => setSignatureModal(null)}
+        />
+      )}
     </section>
   )
 }
