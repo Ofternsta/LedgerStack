@@ -19,7 +19,7 @@ export const GUIDE_PARTS: GuidePart[] = [
     id: 'overview',
     title: 'What is LedgerStack?',
     intro:
-      'LedgerStack helps field contractors organize projects, run jobs through a clear status workflow, capture photos and documents from the site, coordinate workers, and share selected files with clients — all in one place instead of scattered folders and text threads.',
+      'LedgerStack helps contractors, restoration professionals, and insurance-adjacent field teams organize projects, run jobs through a clear status workflow, capture photos and documents from the site, coordinate workers, share selected files with clients, and track work from inspection through completion — including document signatures (coming soon) — all in one place instead of scattered folders and text threads.',
     sections: [
       {
         id: 'concepts',
@@ -106,7 +106,7 @@ export const GUIDE_PARTS: GuidePart[] = [
         bullets: [
           'Projects — everyone; default home after login.',
           'Team — admins on Professional+; invite code, approve workers, roster.',
-          'Calendar — staff on Professional+; org-wide schedule (two-month view).',
+          'Calendar — staff on Professional+; pick a project, then view or manage its monthly schedule.',
           'Analytics — admins on Professional+; counts, charts, recent activity (Enterprise adds advanced analytics).',
           'Settings — profile and security for all roles.',
           'Organization — admins only; retention, defaults, per-project access and labels.',
@@ -163,8 +163,18 @@ export const GUIDE_PARTS: GuidePart[] = [
         id: 'ai-export',
         title: 'Job intelligence, AI & exports',
         paragraphs: [
-          'The job intelligence panel (staff only, not clients) can generate a categorized AI project summary (status, timeline, messages, notes, calendar, documents), refresh an AI-built timeline, show status history, and export a formatted PDF or HTML report. Exports start on Starter (PDF); full job packets and project archives are on Professional+.',
+          'The job intelligence panel (staff only, not clients) can generate a categorized AI project summary (status, timeline, messages, notes, calendar, documents), refresh an AI-built timeline, and export a formatted PDF or HTML report. Exports start on Starter (PDF); full job packets and project archives are on Professional+.',
+          'The job timeline panel shows the latest update only, with Refresh timeline to regenerate and View full timeline for the complete history on a dedicated page.',
           'Monthly AI usage is capped by plan and shown on project pages. Uploads can be auto-categorized and summarized; admins can re-scan a file, edit its summary, or move it to another category from the expanded file detail view.',
+        ],
+      },
+      {
+        id: 'ai-chat',
+        title: 'Project AI chat (staff)',
+        paragraphs: [
+          'On project pages, eligible staff see a robot launcher (bottom right, same style as team messaging). It opens a project-scoped assistant that answers questions about this job only — documents, status, timeline, notes, messages, and schedule.',
+          'Replies may cite project files; tap a citation to jump to that document. Conversation stays in your browser session until you clear or close it; it is not saved as permanent chat history. Each reply counts toward your organization\'s monthly AI summary limit.',
+          'Admins always have access. Workers need the AI project chat permission (off by default) set org-wide or per project in Organization settings.',
         ],
       },
       {
@@ -181,7 +191,8 @@ export const GUIDE_PARTS: GuidePart[] = [
         id: 'schedule',
         title: 'Schedule (Professional+)',
         paragraphs: [
-          'Create calendar events on the project: inspections, deadlines, reminders, client follow-ups, assignments, and more. Assign a worker, set reminders, and mark events complete. The org Calendar page aggregates events across projects for the next two months.',
+          'Each project has a monthly calendar. On the project page, the schedule panel is a read-only preview — use Full calendar → to manage events. Workers with calendar permission may mark events complete from the project preview.',
+          'On Calendar (/calendar), pick a project first, then use the monthly grid (previous/next month) to view days with events. Admins click a day to add inspections, deadlines, reminders, and other event types, and may delete events from this page. Mark events complete with the checkbox on each item.',
         ],
       },
       {
@@ -217,7 +228,8 @@ export const GUIDE_PARTS: GuidePart[] = [
         bullets: [
           'Cannot create or delete projects.',
           'See assigned projects only; permissions merge org defaults and per-project overrides.',
-          'May upload, view, or delete files; add calendar events; send project messages; post internal notes — each optional per worker/project.',
+          'May upload, view, or delete files; mark calendar events complete; send project messages; post internal notes; use AI project chat — each optional per worker/project.',
+          'Cannot add or delete calendar events (admins only, on the Calendar page).',
           'Cannot change job status or open organization/billing settings.',
         ],
       },
@@ -241,7 +253,7 @@ export const GUIDE_PARTS: GuidePart[] = [
           'Projects list shows only shared projects.',
           'Read-only job status on the project page.',
           'Document list filtered to admin-selected shared files; empty state if nothing shared yet.',
-          'No upload, AI panel, internal notes, messages, calendar, or archive.',
+          'No upload, AI panel, AI chat, internal notes, messages, calendar management, or archive.',
         ],
       },
     ],
@@ -255,7 +267,7 @@ export const GUIDE_PARTS: GuidePart[] = [
         title: 'Organization-wide',
         bullets: [
           'Data retention — explains 7-day completed and 12-month inactive deletion; backup retention by plan; how to request account deletion.',
-          'Default worker access — org-wide toggles for upload, delete files, calendar events, and view files (starting point before per-project overrides).',
+          'Default worker access — org-wide toggles for upload, delete files, calendar completion, view files, and AI project chat (starting point before per-project overrides).',
         ],
       },
       {
@@ -266,7 +278,7 @@ export const GUIDE_PARTS: GuidePart[] = [
           'Job status stages — add, remove, or relabel workflow steps; Completed stays last.',
           'File categories — custom folder names used in the UI and for AI sorting.',
           'Client access — grant/revoke by email; pick shared files per client.',
-          'Project workers — assign workers and set per-project permission checkboxes.',
+          'Project workers — assign workers and set per-project permission checkboxes (upload, delete, view, calendar completion, AI chat).',
         ],
       },
     ],
@@ -289,6 +301,7 @@ export const GUIDE_PARTS: GuidePart[] = [
           'View current plan, usage (projects, staff, AI summaries this month, backups), and subscription status.',
           'Upgrade or Downgrade — opens Stripe to change tier on your existing subscription (upgrades may prorate; downgrades may apply at renewal).',
           'Manage card & invoices — payment method and invoice history only; do not use this to switch plans (that can create a second subscription).',
+          'End subscription — stops renewal at the end of the current billing period; access continues until then. For full removal of the admin account and all organization data, email support@ledgerstack.org.',
           'New organizations use Checkout once; active subscribers should not run Checkout again for a plan change.',
         ],
       },
@@ -343,7 +356,10 @@ export const GUIDE_PARTS: GuidePart[] = [
           'Change job status — Admin only; Worker and Client view only',
           'Upload/delete documents — Admin; Worker per permissions; Client never',
           'AI summary, timeline, export — Admin (plan limits); Worker if staff-capable; Client never',
-          'Calendar, project messages, internal notes — Professional+ staff with permission',
+          'Project AI chat — Admin; Worker with AI chat permission; Client never',
+          'Calendar add/delete events — Admin only (Calendar page)',
+          'Mark calendar events complete — Admin; Worker with calendar permission on project preview',
+          'Project messages, internal notes — Professional+ staff with permission',
           'DM / group messaging — Professional+ staff',
           'View files — Staff per permissions; Client sees admin-shared subset only',
           'Analytics — Admin on Professional+',

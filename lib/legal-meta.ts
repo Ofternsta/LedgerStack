@@ -9,4 +9,4 @@ export const LEGAL_WEBSITE = 'https://ledgerstack.org'
 export const LEGAL_CONTACT_EMAIL = SUPPORT_EMAIL
 
 /** Display date for “Last updated” on legal pages. Update when policies change. */
-export const LEGAL_LAST_UPDATED = 'May 29, 2026'
+export const LEGAL_LAST_UPDATED = 'May 31, 2026'

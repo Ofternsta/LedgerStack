@@ -9,11 +9,18 @@ export const SITE_TAGLINE =
 
 /** Primary SERP title for the homepage */
 export const SITE_SERP_TITLE =
-  'LedgerStack — Contractor Project Management Software'
+  'LedgerStack — Contractor & Restoration Project Management'
 
 /** Meta description (~155 chars) for search snippets */
 export const SITE_DESCRIPTION =
-  'LedgerStack helps contractors organize jobs, field photos, documents, and client updates in one place. Crew coordination, AI summaries, calendar, and client portal. Plans from $20/month.'
+  'LedgerStack helps contractors and restoration teams organize jobs, field evidence, and claim workflows in one place. AI, crew tools, client portal, document signatures coming soon.'
+
+/**
+ * Full product description for structured data, app listings, and marketing.
+ * Based on the restoration/insurance project-management positioning template.
+ */
+export const SITE_LONG_DESCRIPTION =
+  'LedgerStack is a comprehensive project and job management platform designed for contractors, restoration professionals, and insurance-adjacent field teams. It simplifies the organization, documentation, and tracking of damage assessments, job and claim statuses, and repair workflows within a centralized system accessible on mobile devices in the field. It includes automated evidence categorization using OCR and AI, seamless job lifecycle management from inspection through completion, team and client collaboration with secure role-based access, project calendars and messaging, AI-assisted summaries and project-scoped chat, customizable reporting and analytics, and document signatures (coming soon)—helping teams overcome disorganized documentation, inefficient communication, and tracking delays. LedgerStack is ideal for contractors, restoration crews, adjusters, and trade businesses seeking to streamline project workflows, improve crew coordination, enhance client transparency, and increase operational efficiency.'
 
 export const SITE_KEYWORDS = [
   'LedgerStack',
@@ -22,6 +29,10 @@ export const SITE_KEYWORDS = [
   'ledgerstack.org',
   'contractor project management',
   'contractor project management software',
+  'restoration contractor software',
+  'restoration project management',
+  'insurance claim documentation',
+  'damage assessment software',
   'field contractor software',
   'construction job documentation',
   'job site documentation',
@@ -32,18 +43,20 @@ export const SITE_KEYWORDS = [
   'contractor photo management',
   'construction project software',
   'small contractor software',
+  'document signatures contractor',
+  'e-signature restoration',
 ]
 
 export const MARKETING_FAQ = [
   {
     question: 'What is LedgerStack?',
     answer:
-      'LedgerStack is web-based project management software for contractors. It organizes jobs, field photos, documents, timelines, crew access, and client sharing in one place — built for work that happens on site, not just in the office.',
+      'LedgerStack is a web-based project and job management platform for contractors, restoration professionals, and insurance-adjacent field teams. It centralizes damage assessments, job documentation, claim-style workflows, crew coordination, and client sharing—with AI categorization, calendars, analytics, and document signatures (coming soon)—all usable from mobile devices on site.',
   },
   {
     question: 'Who is LedgerStack for?',
     answer:
-      'LedgerStack is built for contractors and trade businesses — solo operators on Starter, growing crews on Professional, and larger organizations on Enterprise. Workers get project access; clients can view shared files and status on eligible plans.',
+      'LedgerStack is built for contractors, restoration crews, adjusters, and trade businesses—from solo operators on Starter to larger organizations on Enterprise. Workers get scoped project access; clients can view shared files and status on eligible plans.',
   },
   {
     question: 'Does LedgerStack work on mobile?',
@@ -59,6 +72,11 @@ export const MARKETING_FAQ = [
     question: 'Can I share documents with clients?',
     answer:
       'Yes. On Professional and Enterprise plans, you can grant clients view-only access to selected project files and keep them aligned on job status without giving them full account access.',
+  },
+  {
+    question: 'Will LedgerStack support document signatures?',
+    answer:
+      'Yes — document signatures for approvals, authorizations, and completion paperwork are planned and marked coming soon on the marketing site. Existing plans already cover secure file storage, client sharing, and exports until e-sign is released.',
   },
 ] as const
 
@@ -217,7 +235,7 @@ export function marketingStructuredData() {
         alternateName: ['Ledger Stack', 'ledgerstack'],
         url,
         logo: absoluteUrl('/icon.png'),
-        description: SITE_DESCRIPTION,
+        description: SITE_LONG_DESCRIPTION,
         email: 'support@ledgerstack.org',
         contactPoint: {
           '@type': 'ContactPoint',
@@ -232,7 +250,7 @@ export function marketingStructuredData() {
         name: SITE_NAME,
         alternateName: ['Ledger Stack'],
         url,
-        description: SITE_DESCRIPTION,
+        description: SITE_LONG_DESCRIPTION,
         publisher: { '@id': orgId },
         inLanguage: 'en-US',
       },
@@ -243,7 +261,7 @@ export function marketingStructuredData() {
         applicationCategory: 'BusinessApplication',
         operatingSystem: 'Web',
         url,
-        description: SITE_DESCRIPTION,
+        description: SITE_LONG_DESCRIPTION,
         offers: planOffers(),
         provider: { '@id': orgId },
         isAccessibleForFree: false,

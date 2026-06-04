@@ -9,7 +9,7 @@ import {
   formatPlanLimit,
 } from '@/lib/plan-entitlements'
 import { BILLING_PLANS } from '@/lib/stripe-config'
-import { MARKETING_FAQ } from '@/lib/site-seo'
+import { MARKETING_FAQ, SITE_LONG_DESCRIPTION } from '@/lib/site-seo'
 
 const FEATURES = [
   {
@@ -31,6 +31,11 @@ const FEATURES = [
     title: 'Crew coordination',
     description:
       'Give workers project access, team chat, calendar events, and permissions — so you see what happened on the job when it happened.',
+  },
+  {
+    title: 'Document signatures',
+    description:
+      'Collect signed approvals, authorizations, and completion documents on the job (coming soon) — so paperwork stays with the project, not lost in email.',
   },
 ]
 
@@ -102,7 +107,7 @@ export function MarketingHome() {
             <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-12 xl:gap-16">
               <div className="flex-1 text-center lg:text-left">
                 <p className="marketing-hero-item marketing-hero-item--1 text-sm font-semibold text-brand-bright mb-4">
-                  Built for contractors in the field
+                  Built for contractors and restoration professionals
                 </p>
                 <h1 className="marketing-hero-item marketing-hero-item--2 text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1] max-w-3xl">
                   <span className="block text-2xl sm:text-3xl text-brand-bright mb-2">
@@ -112,10 +117,9 @@ export function MarketingHome() {
                   <span className="brand-gradient-text"> — in one stack.</span>
                 </h1>
                 <p className="marketing-hero-item marketing-hero-item--3 mt-6 text-lg sm:text-xl text-muted leading-relaxed max-w-2xl mx-auto lg:mx-0">
-                  Organize projects, capture work from the field, keep clients in the
-                  loop on what you share, and give your workers a clear view of status
-                  and documents as the job moves — without scattered folders or endless
-                  text threads.
+                  Organize projects, document damage assessments, track job and
+                  claim-style workflows from the field, and keep clients aligned on
+                  what you share — without scattered folders or endless text threads.
                 </p>
                 <div className="marketing-hero-item marketing-hero-item--4 mt-10 flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
                   <Link
@@ -148,6 +152,16 @@ export function MarketingHome() {
           </div>
         </section>
 
+        <section className="border-b border-border bg-surface/40">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-14">
+            <Reveal>
+              <p className="text-muted leading-relaxed max-w-4xl text-base sm:text-lg">
+                {SITE_LONG_DESCRIPTION}
+              </p>
+            </Reveal>
+          </div>
+        </section>
+
         <section
           id="features"
           className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20 scroll-mt-20"
@@ -157,11 +171,12 @@ export function MarketingHome() {
               Everything on the job, organized
             </h2>
             <p className="mt-3 text-muted text-lg max-w-2xl">
-              One system for the owner, the crew on site, and the clients you work
-              with closely — usable on mobile where the work actually happens.
+              One system for owners, crews on site, and clients — with AI-assisted
+              documentation, secure access controls, and mobile-friendly workflows for
+              restoration, insurance-adjacent, and general contracting work.
             </p>
           </Reveal>
-          <ul className="mt-10 grid sm:grid-cols-2 gap-6">
+          <ul className="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {FEATURES.map((f, i) => (
               <Reveal key={f.title} as="li" delay={i * 80} className="h-full">
                 <div className="marketing-card-lift card-elevated p-6 h-full hover:border-brand-dim/50">
@@ -302,13 +317,19 @@ export function MarketingHome() {
         <section className="border-t border-border bg-surface">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20 text-center">
             <Reveal>
-              <BrandLogo
-                href="/"
-                variant="icon"
-                size="cta"
-                className="mx-auto mb-6"
-                priority={false}
-              />
+              <a
+                href="https://saasbrowser.com/en/saas/1527608/ledgerstack"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block mx-auto mb-6"
+              >
+                <img
+                  src="https://static-files.saasbrowser.com/saas-browser-badge-11.svg"
+                  alt="LedgerStack - SaaS directory"
+                  width={200}
+                  className="mx-auto h-auto"
+                />
+              </a>
               <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
                 Ready to stack your paperwork?
               </h2>

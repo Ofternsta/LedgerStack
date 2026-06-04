@@ -49,9 +49,10 @@ export function TermsContent() {
           per-project settings (including project names and customizable job
           workflow stages). Each project may define its own sequence of status
           stages, with a required final completed stage. Workers and clients
-          receive only the permissions assigned by an admin. You are responsible
-          for invitations, role assignments, workflow configuration, and what data
-          you share with clients.
+          receive only the permissions assigned by an admin (including optional
+          access to AI project chat). You are responsible for invitations, role
+          assignments, workflow configuration, and what data you share with
+          clients.
         </p>
       </LegalSection>
 
@@ -120,7 +121,9 @@ export function TermsContent() {
       <LegalSection title="AI and professional disclaimers">
         <LegalList
           items={[
-            'AI-generated summaries, timelines, and categorizations are aids only and may be wrong.',
+            'AI-generated summaries, timelines, categorizations, and project chat replies are aids only and may be wrong.',
+            'Project AI chat is limited to the current project, may refuse off-topic questions, and is not stored as a permanent chat history in the Service.',
+            'Each AI chat reply counts against your organization\'s monthly AI summary allowance, the same as other AI generation features.',
             'The Service does not provide legal, engineering, or licensed professional advice for your trade.',
             'You are solely responsible for decisions made using the Service and for documents shared with clients, partners, or regulators.',
           ]}
@@ -204,10 +207,12 @@ export function TermsContent() {
 
       <LegalSection title="Termination">
         <p>
-          You may stop using the Service and cancel your subscription at any time
-          through billing settings. To request deletion of your account and
-          organization data, contact {LEGAL_CONTACT_EMAIL}; we will verify your
-          request before processing.
+          You may stop using the Service and cancel your subscription at any time.
+          Paid subscribers can use <strong className="text-foreground">End
+          subscription</strong> in billing settings to cancel renewal at the end
+          of the current billing period through Stripe. To request deletion of your
+          account and organization data, contact {LEGAL_CONTACT_EMAIL}; we will
+          verify your request before processing.
         </p>
         <p>
           We may suspend or terminate access for violation of these Terms or for

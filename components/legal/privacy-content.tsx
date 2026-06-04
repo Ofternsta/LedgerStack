@@ -49,6 +49,13 @@ export function PrivacyContent() {
           address, browser type, device information, and logs from our hosting and
           security systems.
         </p>
+        <p>
+          <strong className="text-foreground">AI chat messages:</strong> when you
+          use project AI chat, the messages you send in that session (and recent
+          turns in the same conversation) are transmitted for processing. We do
+          not store project AI chat as a permanent message history in your
+          account.
+        </p>
       </LegalSection>
 
       <LegalSection title="How we use information">
@@ -56,7 +63,7 @@ export function PrivacyContent() {
           items={[
             'Provide and operate the Service (accounts, projects, messaging, client sharing).',
             'Process subscriptions and send transactional emails (verification, invites, account notices).',
-            'Run AI-assisted features you request (summaries, categorization, timelines) on your uploaded content.',
+            'Run AI-assisted features you request (summaries, categorization, timelines, and project-scoped chat) on your uploaded content and project data.',
             'Run automatic backups and data retention according to your organization settings and this Policy.',
             'Improve reliability, security, and support.',
             'Comply with law and enforce our Terms.',
@@ -86,7 +93,7 @@ export function PrivacyContent() {
         <p>We share information only as needed to run the Service:</p>
         <LegalList
           items={[
-            'Service providers: Supabase (database, auth, storage), Stripe (payments), Resend or similar (email), and cloud hosting.',
+            'Service providers: Supabase (database, auth, storage), Stripe (payments), Groq (AI text and vision processing), Resend or similar (email), and cloud hosting.',
             'Your organization: admins, assigned workers, and clients you grant access to — clients only see files you explicitly share.',
             'Legal requirements: when required by law or to protect rights, safety, and security.',
           ]}
@@ -96,16 +103,26 @@ export function PrivacyContent() {
 
       <LegalSection title="AI processing">
         <p>
-          When you use AI features, document content may be sent to third-party AI
-          providers to generate summaries, timelines, or classifications. Output
+          When you use AI features, document content and relevant project context
+          may be sent to third-party AI providers (including Groq) to generate
+          summaries, timelines, classifications, or project chat replies. Output
           may be inaccurate. You are responsible for reviewing AI results before
           relying on them or sharing them with clients.
         </p>
         <p>
+          <strong className="text-foreground">Project AI chat</strong> sends your
+          question, recent conversation turns, and selected project data (such as
+          job status, notes, and document excerpts) for a single reply. Chat
+          messages are processed in real time and are not saved as a permanent
+          chat log in the Service. Replies may include citations to project files;
+          clicking a citation only navigates within your project.
+        </p>
+        <p>
           Each organization has a monthly cap on AI summary generation based on
           its subscription tier (see Subscription plans and usage limits above).
-          When the cap is reached, further AI generation is blocked until the next
-          calendar month or until you upgrade.
+          Project AI chat replies count toward that same monthly cap. When the cap
+          is reached, further AI generation (including chat) is blocked until the
+          next calendar month or until you upgrade.
         </p>
       </LegalSection>
 
@@ -178,12 +195,12 @@ export function PrivacyContent() {
         <LegalList
           items={[
             'Access and update profile information in account settings.',
-            'Organization admins: configure per-project workflow stages, client access, worker access, and default worker permissions in organization settings.',
+            'Organization admins: configure per-project workflow stages, client access, worker access, and default worker permissions (including AI project chat) in organization settings.',
             'Organization admins: enable, schedule, download, or remove organization backups in billing settings.',
             'Control client access and shared files per project.',
             'Change subscription tier using Upgrade or Downgrade in Billing (Stripe plan-change flow).',
+            'End subscription renewal at period end using End subscription in Billing.',
             'Update payment methods and view invoices using Manage card & invoices (Stripe billing portal).',
-            'Cancel your subscription through the Stripe customer portal or by contacting us.',
             'Contact us to request access, correction, or account deletion where applicable.',
           ]}
         />
