@@ -77,7 +77,27 @@ export function parseProjectFileCategories(raw: unknown): FileCategory[] {
     return defaultFileCategories()
   }
 
-  return categories.slice(0, MAX_FILE_CATEGORIES)
+  return ensureSignedDocumentsInCategories(
+    categories.slice(0, MAX_FILE_CATEGORIES)
+  )
+}
+
+/** Adds Signed documents when missing (does not write to DB). */
+export function ensureSignedDocumentsInCategories(
+  categories: FileCategory[]
+): FileCategory[] {
+  if (hasSignedDocumentsCategory(categories)) {
+    return categories
+  }
+
+  const keys = new Set(categories.map((c) => c.key))
+  return [
+    ...categories,
+    {
+      key: slugifyFileCategoryKey(SIGNED_DOCUMENTS_CATEGORY_LABEL, keys),
+      label: SIGNED_DOCUMENTS_CATEGORY_LABEL,
+    },
+  ].slice(0, MAX_FILE_CATEGORIES)
 }
 
 export function serializeProjectFileCategories(
@@ -143,13 +163,28 @@ export function normalizeFileCategoryLabel(
     if (inWorkflow) return inWorkflow.label
   }
 
+  if (trimmed.toLowerCase() === SIGNED_DOCUMENTS_CATEGORY_LABEL.toLowerCase()) {
+    const signed = categories.find(
+      (c) => c.label.toLowerCase() === SIGNED_DOCUMENTS_CATEGORY_LABEL.toLowerCase()
+    )
+    return signed?.label ?? SIGNED_DOCUMENTS_CATEGORY_LABEL
+  }
+
   const normalized = normalizeEvidenceType(trimmed)
+  if (normalized === SIGNED_DOCUMENTS_TYPE) {
+    const signed = categories.find(
+      (c) => c.label.toLowerCase() === SIGNED_DOCUMENTS_CATEGORY_LABEL.toLowerCase()
+    )
+    return signed?.label ?? SIGNED_DOCUMENTS_CATEGORY_LABEL
+  }
+
   const fromDefault = categories.find(
     (c) => c.label.toLowerCase() === normalized.toLowerCase()
   )
   if (fromDefault) return fromDefault.label
 
-  return categories[0]?.label ?? trimmed
+  const other = categories.find((c) => c.label.toLowerCase() === 'other')
+  return other?.label ?? categories[categories.length - 1]?.label ?? trimmed
 }
 
 export function categoryLabels(categories: FileCategory[]): string[] {
@@ -178,14 +213,7 @@ export async function ensureSignedDocumentsCategoryOnProject(
     return categories
   }
 
-  const keys = new Set(categories.map((c) => c.key))
-  const updated = [
-    ...categories,
-    {
-      key: slugifyFileCategoryKey(SIGNED_DOCUMENTS_CATEGORY_LABEL, keys),
-      label: SIGNED_DOCUMENTS_CATEGORY_LABEL,
-    },
-  ].slice(0, MAX_FILE_CATEGORIES)
+  const updated = ensureSignedDocumentsInCategories(categories)
 
   await supabase
     .from('projects')

@@ -47,6 +47,8 @@ export function EvidenceCard({
   onUpdated,
 }: EvidenceCardProps) {
   const [editing, setEditing] = useState(false)
+  const [renaming, setRenaming] = useState(false)
+  const [displayName, setDisplayName] = useState(doc.file_name)
   const [summary, setSummary] = useState(doc.summary)
   const [evidenceType, setEvidenceType] = useState(doc.evidence_type)
   const [saving, setSaving] = useState(false)
@@ -76,8 +78,10 @@ export function EvidenceCard({
   useEffect(() => {
     setSummary(doc.summary)
     setEvidenceType(doc.evidence_type)
+    setDisplayName(doc.file_name)
     setEditing(false)
-  }, [doc.file_path, doc.summary, doc.evidence_type])
+    setRenaming(false)
+  }, [doc.file_path, doc.summary, doc.evidence_type, doc.file_name])
 
   async function save() {
     setSaving(true)
@@ -136,6 +140,38 @@ export function EvidenceCard({
       setError(err instanceof Error ? err.message : 'Re-scan failed')
     }
     setRescanning(false)
+  }
+
+  async function saveRename() {
+    const nextName = displayName.trim()
+    if (!nextName || nextName === doc.file_name) {
+      setRenaming(false)
+      setDisplayName(doc.file_name)
+      return
+    }
+
+    setSaving(true)
+    setError(null)
+
+    const res = await fetch('/api/evidence', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        file_path: doc.file_path,
+        file_name: nextName,
+      }),
+    })
+    const payload = await res.json().catch(() => ({}))
+
+    if (!res.ok) {
+      setError(payload.error || 'Could not rename file')
+      setSaving(false)
+      return
+    }
+
+    setRenaming(false)
+    onUpdated()
+    setSaving(false)
   }
 
   async function downloadFile() {
@@ -219,27 +255,77 @@ export function EvidenceCard({
       )}
 
       {isDetail && (
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => onOpen(doc.file_path)}
-            className="text-sm font-medium text-brand-bright min-h-[40px]"
-          >
-            View file
-          </button>
-          {doc.uploaded_by_label && (
-            <span className="text-xs text-muted-dim">
-              Uploaded by {doc.uploaded_by_label}
-            </span>
-          )}
-          {canEdit && projectId && (
-            <button
-              type="button"
-              onClick={downloadFile}
-              className="text-sm font-medium text-foreground min-h-[40px]"
-            >
-              Download
-            </button>
+        <div className="space-y-2">
+          {renaming ? (
+            <div className="flex flex-wrap items-end gap-2">
+              <label className="flex-1 min-w-[200px]">
+                <span className="block text-xs font-medium text-muted-dim mb-1">
+                  File name
+                </span>
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  className="border border-border rounded-xl p-2 w-full text-sm bg-surface min-h-[44px]"
+                  maxLength={200}
+                  autoFocus
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => void saveRename()}
+                disabled={saving || !displayName.trim()}
+                className="text-sm font-medium btn-primary text-[#052e16] px-4 py-2 rounded-lg min-h-[40px] disabled:opacity-50"
+              >
+                {saving ? 'Saving…' : 'Save name'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setRenaming(false)
+                  setDisplayName(doc.file_name)
+                }}
+                className="text-sm font-medium border border-border px-4 py-2 rounded-lg min-h-[40px]"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onOpen(doc.file_path)}
+                className="text-sm font-medium text-brand-bright min-h-[40px]"
+              >
+                View file
+              </button>
+              {doc.uploaded_by_label && (
+                <span className="text-xs text-muted-dim">
+                  Uploaded by {doc.uploaded_by_label}
+                </span>
+              )}
+              {canEdit && projectId && (
+                <>
+                  <button
+                    type="button"
+                    onClick={downloadFile}
+                    className="text-sm font-medium text-foreground min-h-[40px]"
+                  >
+                    Download
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRenaming(true)
+                      setDisplayName(doc.file_name)
+                    }}
+                    className="text-sm font-medium text-foreground min-h-[40px]"
+                  >
+                    Rename
+                  </button>
+                </>
+              )}
+            </div>
           )}
         </div>
       )}

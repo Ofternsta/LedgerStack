@@ -5,8 +5,25 @@ import { EvidenceCard } from '@/components/evidence-card'
 import {
   defaultFileCategories,
   normalizeFileCategoryLabel,
+  SIGNED_DOCUMENTS_CATEGORY_LABEL,
   type FileCategory,
 } from '@/lib/project-file-categories'
+import { isSignedEvidenceFile } from '@/lib/signed-evidence-files'
+
+function resolveDocCategoryLabel(
+  doc: EvidenceDoc,
+  categories: FileCategory[]
+): string {
+  if (isSignedEvidenceFile(doc)) {
+    const signed = categories.find(
+      (c) =>
+        c.label.toLowerCase() === SIGNED_DOCUMENTS_CATEGORY_LABEL.toLowerCase()
+    )
+    return signed?.label ?? SIGNED_DOCUMENTS_CATEGORY_LABEL
+  }
+
+  return normalizeFileCategoryLabel(doc.evidence_type, categories)
+}
 
 function categoryDomId(label: string): string {
   return label
@@ -89,7 +106,7 @@ export function EvidenceFolders({
     ) as Record<string, EvidenceDoc[]>
 
     for (const doc of documents) {
-      const label = normalizeFileCategoryLabel(doc.evidence_type, categories)
+      const label = resolveDocCategoryLabel(doc, categories)
       const cat =
         categories.find((c) => c.label === label) ?? categories[0]
       map[cat.key].push(doc)

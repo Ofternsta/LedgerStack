@@ -69,6 +69,10 @@ export function guessEvidenceTypeFromFile(file: {
   const name = file.name.toLowerCase()
   const mime = file.type.toLowerCase()
 
+  if (name.startsWith('signed-')) {
+    return SIGNED_DOCUMENTS_TYPE
+  }
+
   if (name.includes('invoice') || name.includes('receipt') || name.includes('bill')) {
     return 'Invoice'
   }

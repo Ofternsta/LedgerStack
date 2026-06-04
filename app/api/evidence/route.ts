@@ -17,6 +17,7 @@ import {
   normalizeFileCategoryLabel,
   parseProjectFileCategories,
 } from '@/lib/project-file-categories'
+import { sanitizeEvidenceDisplayName } from '@/lib/evidence-display-name'
 import { updateEvidenceMeta } from '@/lib/update-evidence-meta'
 
 export async function GET(req: Request) {
@@ -157,9 +158,14 @@ export async function PATCH(req: Request) {
     const filePath = body.file_path as string
     const summary = body.summary as string | undefined
     const evidenceType = body.evidence_type as string | undefined
+    const fileName = body.file_name as string | undefined
 
     if (!filePath) {
       return NextResponse.json({ error: 'file_path required' }, { status: 400 })
+    }
+
+    if (fileName !== undefined && !sanitizeEvidenceDisplayName(fileName)) {
+      return NextResponse.json({ error: 'Invalid file name' }, { status: 400 })
     }
 
     const gate = await requireEvidenceOrgAdmin(supabase, user.id, filePath)
@@ -182,6 +188,10 @@ export async function PATCH(req: Request) {
     const evidence = await updateEvidenceMeta(supabase, filePath, {
       summary,
       evidence_type: normalizedType,
+      file_name:
+        fileName !== undefined
+          ? sanitizeEvidenceDisplayName(fileName)
+          : undefined,
     })
 
     return NextResponse.json({ evidence })

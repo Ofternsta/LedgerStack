@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { loadUserAccessServer } from '@/lib/load-access-server'
 import {
+  ensureSignedDocumentsCategoryOnProject,
   normalizeFileCategoriesDraft,
   normalizeFileCategoryLabel,
   parseProjectFileCategories,
@@ -8,6 +9,7 @@ import {
   validateFileCategories,
   type FileCategory,
 } from '@/lib/project-file-categories'
+import { repairSignedEvidenceOnProject } from '@/lib/repair-signed-evidence'
 import { createServiceClient } from '@/lib/supabase/service'
 import { requireAuth } from '@/lib/require-auth'
 import { touchProjectActivity } from '@/lib/touch-project-activity'
@@ -95,7 +97,13 @@ export async function GET(_req: Request, context: RouteContext) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
-    const categories = parseProjectFileCategories(project.file_categories)
+    const service = createServiceClient()
+    const categories = await ensureSignedDocumentsCategoryOnProject(
+      service,
+      projectId
+    )
+    await repairSignedEvidenceOnProject(service, projectId)
+
     return NextResponse.json({ categories })
   } catch (err: unknown) {
     const message =

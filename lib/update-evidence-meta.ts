@@ -10,7 +10,7 @@ function metaPath(filePath: string) {
 export async function updateEvidenceMeta(
   supabase: SupabaseClient,
   filePath: string,
-  updates: { summary?: string; evidence_type?: string }
+  updates: { summary?: string; evidence_type?: string; file_name?: string }
 ): Promise<EvidenceRecord> {
   const { data, error } = await supabase.storage
     .from(BUCKET)
@@ -25,6 +25,9 @@ export async function updateEvidenceMeta(
   if (updates.summary !== undefined) record.summary = updates.summary
   if (updates.evidence_type !== undefined) {
     record.evidence_type = updates.evidence_type
+  }
+  if (updates.file_name !== undefined) {
+    record.file_name = updates.file_name
   }
 
   const body = JSON.stringify(record, null, 2)
