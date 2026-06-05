@@ -229,11 +229,6 @@ export function ProjectAiChat({
                                 <span className="font-medium text-brand-bright block truncate">
                                   {cite.file_name}
                                 </span>
-                                {cite.excerpt && (
-                                  <span className="text-muted-dim line-clamp-2 mt-0.5">
-                                    {cite.excerpt}
-                                  </span>
-                                )}
                               </button>
                             </li>
                           ))}

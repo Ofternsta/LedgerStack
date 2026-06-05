@@ -277,7 +277,7 @@ export function ProjectMonthCalendar({
                 >
                   {cell.day}
                 </span>
-                <span className="flex-1 mt-1 space-y-0.5 overflow-hidden">
+                <span className="flex-1 mt-1 space-y-0.5 overflow-hidden min-h-0">
                   {dayEvents.slice(0, 2).map((ev) => (
                     <span
                       key={ev.id}
@@ -287,7 +287,7 @@ export function ProjectMonthCalendar({
                           : 'text-brand-bright'
                       }`}
                     >
-                      {formatEventTime(ev.starts_at)} {ev.title}
+                      {ev.title}
                     </span>
                   ))}
                   {dayEvents.length > 2 && (
@@ -296,6 +296,14 @@ export function ProjectMonthCalendar({
                     </span>
                   )}
                 </span>
+                {dayEvents.length > 0 && (
+                  <span className="text-[10px] leading-tight text-muted-dim truncate mt-auto pt-0.5">
+                    {dayEvents
+                      .slice(0, 2)
+                      .map((ev) => formatEventTime(ev.starts_at))
+                      .join(' · ')}
+                  </span>
+                )}
               </button>
             )
           })}
