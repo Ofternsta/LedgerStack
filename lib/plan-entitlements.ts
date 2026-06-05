@@ -157,7 +157,6 @@ export const PLAN_FEATURE_COPY: Record<
       'Advanced analytics & activity insights',
       'Unlimited AI summaries & Project AI chat',
       'Priority support & dedicated onboarding',
-      'Enterprise options: SSO, API & integrations (contact us)',
     ],
   },
 }
@@ -172,7 +171,7 @@ export const PLAN_STRIPE_DESCRIPTIONS: Record<
   professional:
     'LedgerStack Professional ($70/mo) — Coordinate crew and clients: up to 15 workers, up to 25 active projects, client portal, SignWell e-signatures, project-scoped AI assistant, scheduling, internal notes, team messages, job packet exports, project archives, analytics dashboard, 50 AI summaries/month, and automatic cloud backups (15 ZIPs retained per organization).',
   enterprise:
-    'LedgerStack Enterprise ($150/mo) — Company infrastructure: unlimited workers & projects, client portal, SignWell e-signatures, unlimited AI summaries and Project AI chat, advanced analytics, automatic cloud backups (30 ZIPs retained per organization), priority support, and onboarding. Ask about SSO, API access, audit logs, and custom integrations.',
+    'LedgerStack Enterprise ($150/mo) — Company infrastructure: unlimited workers & projects, client portal, SignWell e-signatures, unlimited AI summaries and Project AI chat, advanced analytics, automatic cloud backups (30 ZIPs retained per organization), priority support, and onboarding.',
 }
 
 export function getPlanStripeDescription(
