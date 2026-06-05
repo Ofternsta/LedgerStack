@@ -56,6 +56,14 @@ export function PrivacyContent() {
           not store project AI chat as a permanent message history in your
           account.
         </p>
+        <p>
+          <strong className="text-foreground">E-signatures:</strong> when an
+          admin requests a client signature on Professional or Enterprise plans,
+          we send the document (or a copy) to SignWell, record signature-request
+          status in our database, and store the completed signed PDF in your
+          project files. SignWell may process signer name, email, IP address,
+          timestamps, and audit-trail data according to its own privacy policy.
+        </p>
       </LegalSection>
 
       <LegalSection title="How we use information">
@@ -93,12 +101,36 @@ export function PrivacyContent() {
         <p>We share information only as needed to run the Service:</p>
         <LegalList
           items={[
-            'Service providers: Supabase (database, auth, storage), Stripe (payments), Groq (AI text and vision processing), Resend or similar (email), and cloud hosting.',
+            'Service providers: Supabase (database, auth, storage), Stripe (payments), Groq (AI text and vision processing), SignWell (electronic signatures on eligible plans), Resend or similar (email), and cloud hosting.',
             'Your organization: admins, assigned workers, and clients you grant access to — clients only see files you explicitly share.',
             'Legal requirements: when required by law or to protect rights, safety, and security.',
           ]}
         />
         <p>We do not sell your personal information.</p>
+      </LegalSection>
+
+      <LegalSection title="Electronic signatures">
+        <p>
+          Client e-signatures on Professional and Enterprise plans are provided
+          through SignWell, a third-party e-signature service. When you request a
+          signature, LedgerStack transmits the selected file and recipient details
+          to SignWell, displays SignWell&apos;s embedded signing experience to the
+          client, and saves the completed document in your project under Signed
+          documents.
+        </p>
+        <p>
+          Signature-request records (status, client email, source file, signed
+          file path, and related metadata) are stored in LedgerStack. SignWell
+          maintains its own audit trail for signed documents. We send transactional
+          emails and in-app notifications when signatures are requested or
+          completed.
+        </p>
+        <p>
+          You are responsible for choosing appropriate documents to sign, verifying
+          client identity (correct email and access), and determining whether
+          electronic signatures meet your legal or contractual requirements.
+          SignWell test-mode documents may be watermarked and not legally binding.
+        </p>
       </LegalSection>
 
       <LegalSection title="AI processing">

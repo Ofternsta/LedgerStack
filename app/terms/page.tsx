@@ -7,7 +7,7 @@ export const dynamic = 'force-static'
 
 export const metadata: Metadata = createPageMetadata({
   title: `Terms of Service`,
-  description: `Terms governing use of ${SITE_NAME} — subscriptions, plans, AI features, data retention, worker access, and contractor responsibilities.`,
+  description: `Terms governing use of ${SITE_NAME} — subscriptions, plans, AI features, client e-signatures, data retention, worker access, and contractor responsibilities.`,
   path: '/terms',
 })
 

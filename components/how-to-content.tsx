@@ -25,7 +25,9 @@ export function HowToContent() {
     <LegalDocumentLayout title="How to use LedgerStack">
       <p>
         A plain-language guide to every major area of the app — who it is for, how
-        projects and jobs work, and what each role can do on each plan.
+        projects and jobs work, client e-signatures on Professional+, file
+        categories (including Signed documents), and what each role can do on
+        each plan.
       </p>
 
       <nav

@@ -23,9 +23,14 @@ const FEATURES = [
       'Capture photos, PDFs, and video on site. AI helps categorize and summarize uploads so nothing lives in random camera rolls.',
   },
   {
+    title: 'Project AI assistant',
+    description:
+      'Ask questions about a single job — documents, status, timeline, notes, and schedule. Answers cite project files; each reply counts toward your monthly AI allowance.',
+  },
+  {
     title: 'Client alignment',
     description:
-      'Share selected files with clients, keep job status visible, and export professional packets when it is time to close the loop.',
+      'Share selected files with clients, keep job status visible, collect typed e-signatures on Professional+, and export professional packets when it is time to close the loop.',
   },
   {
     title: 'Crew coordination',
@@ -35,7 +40,7 @@ const FEATURES = [
   {
     title: 'Document signatures',
     description:
-      'Request typed e-signatures on PDFs from clients (Professional+). SignWell handles the legal signing flow; signed copies stay on the project.',
+      'Request typed e-signatures on PDFs, Office files, images, and more (Professional+). SignWell handles the signing flow; completed copies land in Signed documents on the project.',
   },
 ]
 
@@ -53,7 +58,7 @@ const STEPS = [
   {
     step: '3',
     title: 'Run it with your team',
-    body: 'Workers document and update status in the field; share files with clients; export when the job is ready.',
+    body: 'Workers document and update status in the field; share files with clients; collect signatures when needed; export when the job is ready.',
   },
 ]
 
@@ -118,8 +123,9 @@ export function MarketingHome() {
                 </h1>
                 <p className="marketing-hero-item marketing-hero-item--3 mt-6 text-lg sm:text-xl text-muted leading-relaxed max-w-2xl mx-auto lg:mx-0">
                   Organize projects, document damage assessments, track job and
-                  claim-style workflows from the field, and keep clients aligned on
-                  what you share — without scattered folders or endless text threads.
+                  claim-style workflows from the field, share files with clients,
+                  collect e-signatures on Professional+, and keep everyone aligned —
+                  without scattered folders or endless text threads.
                 </p>
                 <div className="marketing-hero-item marketing-hero-item--4 mt-10 flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
                   <Link
@@ -161,9 +167,10 @@ export function MarketingHome() {
               Everything on the job, organized
             </h2>
             <p className="mt-3 text-muted text-lg max-w-2xl">
-              One system for owners, crews on site, and clients — with AI-assisted
-              documentation, secure access controls, and mobile-friendly workflows for
-              restoration, insurance-adjacent, and general contracting work.
+              One system for owners, crews on site, and clients — with Project AI
+              chat, AI-assisted summaries, secure access controls, and
+              mobile-friendly workflows for restoration, insurance-adjacent, and
+              general contracting work.
             </p>
           </Reveal>
           <ul className="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">

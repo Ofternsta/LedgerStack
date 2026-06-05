@@ -113,11 +113,11 @@ export const PLAN_FEATURE_COPY: Record<
     includes: [
       '1 user · 2 active projects',
       'Job timeline, uploads & status workflow',
-      'Limited AI summaries (10/month)',
+      'Limited AI summaries & Project AI chat (10/month)',
       'Basic uploads — images & PDF only',
     ],
     excludes: [
-      'Client portal & worker accounts',
+      'Client portal, e-signatures & worker accounts',
       'Team chat, calendar & internal notes',
       'PDF export & project archives',
       'Analytics dashboard & automation',
@@ -127,7 +127,7 @@ export const PLAN_FEATURE_COPY: Record<
     includes: [
       '1 user · up to 10 active projects',
       'Automatic cloud backups — 5 retained per organization',
-      '25 AI summaries per month · full job workflow & timeline',
+      '25 AI summaries & Project AI chat per month · full job workflow & timeline',
       'Standard PDF export · mobile uploads',
       '25 MB uploads (photos, PDFs & video)',
     ],
@@ -135,15 +135,16 @@ export const PLAN_FEATURE_COPY: Record<
       'Worker & client logins',
       'Internal notes, calendar & team messages',
       'Analytics dashboard',
-      'Full job packets & client portal',
+      'Client portal, e-signatures & full job packets',
     ],
   },
   professional: {
     includes: [
       'Up to 15 team members · 25 projects',
-      '50 AI summaries per month',
+      '50 AI summaries & Project AI chat per month',
       'Automatic cloud backups — 15 retained per organization',
       'Worker accounts, client portal & permissions',
+      'Client e-signatures (SignWell) · Signed documents folder',
       'Calendar, internal notes & team messages',
       'Job packet exports, project archives & analytics',
     ],
@@ -152,8 +153,9 @@ export const PLAN_FEATURE_COPY: Record<
     includes: [
       'Unlimited workers & active projects',
       'Automatic cloud backups — 30 retained per organization',
+      'Client e-signatures (SignWell) · Signed documents folder',
       'Advanced analytics & activity insights',
-      'Unlimited AI summaries',
+      'Unlimited AI summaries & Project AI chat',
       'Priority support & dedicated onboarding',
       'Enterprise options: SSO, API & integrations (contact us)',
     ],
@@ -166,11 +168,11 @@ export const PLAN_STRIPE_DESCRIPTIONS: Record<
   string
 > = {
   starter:
-    'LedgerStack Starter ($20/mo) — For solo contractors: 1 user, up to 10 active projects, job timeline & workflow, 25 AI summaries/month, standard PDF export, mobile field uploads, and automatic cloud backups (5 ZIPs retained per organization).',
+    'LedgerStack Starter ($20/mo) — For solo contractors: 1 user, up to 10 active projects, job timeline & workflow, 25 AI summaries and Project AI chat per month, standard PDF export, mobile field uploads, and automatic cloud backups (5 ZIPs retained per organization).',
   professional:
-    'LedgerStack Professional ($70/mo) — Coordinate crew and clients: up to 15 workers, up to 25 active projects, client portal, scheduling, internal notes, team messages, job packet exports, project archives, analytics dashboard, 50 AI summaries/month, and automatic cloud backups (15 ZIPs retained per organization).',
+    'LedgerStack Professional ($70/mo) — Coordinate crew and clients: up to 15 workers, up to 25 active projects, client portal, SignWell e-signatures, project-scoped AI assistant, scheduling, internal notes, team messages, job packet exports, project archives, analytics dashboard, 50 AI summaries/month, and automatic cloud backups (15 ZIPs retained per organization).',
   enterprise:
-    'LedgerStack Enterprise ($150/mo) — Company infrastructure: unlimited workers & projects, advanced analytics, unlimited AI, automatic cloud backups (30 ZIPs retained per organization), priority support, and onboarding. Ask about SSO, API access, audit logs, and custom integrations.',
+    'LedgerStack Enterprise ($150/mo) — Company infrastructure: unlimited workers & projects, client portal, SignWell e-signatures, unlimited AI summaries and Project AI chat, advanced analytics, automatic cloud backups (30 ZIPs retained per organization), priority support, and onboarding. Ask about SSO, API access, audit logs, and custom integrations.',
 }
 
 export function getPlanStripeDescription(

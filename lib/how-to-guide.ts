@@ -19,7 +19,7 @@ export const GUIDE_PARTS: GuidePart[] = [
     id: 'overview',
     title: 'What is LedgerStack?',
     intro:
-      'LedgerStack helps contractors, restoration professionals, and insurance-adjacent field teams organize projects, run jobs through a clear status workflow, capture photos and documents from the site, coordinate workers, share selected files with clients, and track work from inspection through completion — including document signatures (coming soon) — all in one place instead of scattered folders and text threads.',
+      'LedgerStack helps contractors, restoration professionals, and insurance-adjacent field teams organize projects, run jobs through a clear status workflow, capture photos and documents from the site, coordinate workers, share selected files with clients, collect typed e-signatures on Professional+ plans, and track work from inspection through completion — all in one place instead of scattered folders and text threads.',
     sections: [
       {
         id: 'concepts',
@@ -28,7 +28,7 @@ export const GUIDE_PARTS: GuidePart[] = [
           'Organization — your company; billing and settings apply to the whole org.',
           'Project — a customer job site (name, address). Creating a project also creates one job with a required job description.',
           'Job — the unit of work inside a project (job description, current status, timeline, files). Admins can add more jobs to the same project. The UI says “jobs”; the database still uses a legacy “claims” table.',
-          'Documents — photos, PDFs, and videos stored in category folders (Site Photo, Estimate, etc.).',
+          'Documents — photos, PDFs, and videos stored in category folders (Site Photo, Estimate, Signed documents, etc.).',
           'Roles — Admin (owner), Worker (field crew), Client (view-only on what you share).',
         ],
       },
@@ -39,10 +39,10 @@ export const GUIDE_PARTS: GuidePart[] = [
           'Every company picks a plan after admin signup. Limits on projects, staff, AI usage, and features depend on the tier.',
         ],
         bullets: [
-          'Trial — 7 days, card required; 2 projects, 10 AI summaries/month, images/PDF only; no exports, workers, clients, calendar, or team chat.',
-          'Starter ($20/mo) — solo contractor; 10 projects, 25 AI summaries/month, standard PDF export, automatic backups (5 retained).',
-          'Professional ($70/mo) — up to 15 workers, 25 projects, 50 AI summaries/month, client portal, calendar, internal notes, project messages, DM/group chat, job packet exports, analytics, backups (15).',
-          'Enterprise ($150/mo) — unlimited staff and projects, unlimited AI, advanced analytics, backups (30).',
+          'Trial — 7 days, card required; 2 projects, 10 AI summaries + Project AI chat/month (shared), images/PDF only; no exports, workers, clients, calendar, or team chat.',
+          'Starter ($20/mo) — solo contractor; 10 projects, 25 AI summaries + Project AI chat/month (shared), standard PDF export, automatic backups (5 retained).',
+          'Professional ($70/mo) — up to 15 workers, 25 projects, 50 AI summaries + Project AI chat/month (shared), client portal, SignWell e-signatures, calendar, internal notes, project messages, DM/group chat, job packet exports, analytics, backups (15).',
+          'Enterprise ($150/mo) — unlimited staff and projects, unlimited AI summaries + Project AI chat, client portal, SignWell e-signatures, advanced analytics, backups (30).',
         ],
       },
     ],
@@ -82,7 +82,7 @@ export const GUIDE_PARTS: GuidePart[] = [
         title: 'Client sign-up',
         paragraphs: [
           'Clients choose Client and register with email. They do not use an invite code. An admin must grant access per project by client email in Organization settings. On login, the app links any matching grants automatically.',
-          'Clients see a “Shared with you” project list and read-only job status plus only files the admin marked as shared for that client.',
+          'Clients see a “Shared with you” project list, read-only job status, only files the admin marked as shared, and any signature requests sent to their email (banner on Projects, Signatures panel on the project).',
         ],
       },
       {
@@ -104,7 +104,7 @@ export const GUIDE_PARTS: GuidePart[] = [
         id: 'nav-items',
         title: 'Main menu (depends on role and plan)',
         bullets: [
-          'Projects — everyone; default home after login.',
+          'Projects — everyone; default home after login. Admins see alerts when clients complete signatures; clients see banners when signatures are pending.',
           'Team — admins on Professional+; invite code, approve workers, roster.',
           'Calendar — staff on Professional+; pick a project, then view or manage its monthly schedule.',
           'Analytics — admins on Professional+; counts, charts, recent activity (Enterprise adds advanced analytics).',
@@ -165,16 +165,32 @@ export const GUIDE_PARTS: GuidePart[] = [
         paragraphs: [
           'The job intelligence panel (staff only, not clients) can generate a categorized AI project summary (status, timeline, messages, notes, calendar, documents), refresh an AI-built timeline, and export a formatted PDF or HTML report. Exports start on Starter (PDF); full job packets and project archives are on Professional+.',
           'The job timeline panel shows the latest update only, with Refresh timeline to regenerate and View full timeline for the complete history on a dedicated page.',
-          'Monthly AI usage is capped by plan and shown on project pages. Uploads can be auto-categorized and summarized; admins can re-scan a file, edit its summary, or move it to another category from the expanded file detail view.',
+          'Monthly AI usage is capped by plan and shown on project pages. Uploads can be auto-categorized and summarized; admins can re-scan a file, edit its summary, rename its display name, or move it to another category from the expanded file detail view (Rename is next to Download).',
+        ],
+      },
+      {
+        id: 'signatures',
+        title: 'E-signatures (Professional+)',
+        paragraphs: [
+          'Admins request signatures from approved clients on signable project files (PDF, Word, Excel, PowerPoint, images, HTML, and more). Signing uses SignWell embedded in LedgerStack — clients type their name; they do not draw a signature.',
+        ],
+        bullets: [
+          'Request — Organization settings → expand project → Client access → approved client → Request signature → pick a shared signable file.',
+          'Track — On the project page, admins see Signature requests incomplete while waiting; it hides when done.',
+          'Client signs — Email + in-app notification → Sign now → secure SignWell window → redirect back to the project.',
+          'After signing — Completed signed PDF stored in Signed documents; admin gets email + Projects/Analytics alert; client sees confirmation.',
+          'One signed copy per request — duplicate completion is prevented automatically.',
         ],
       },
       {
         id: 'ai-chat',
         title: 'Project AI chat (staff)',
         paragraphs: [
-          'On project pages, eligible staff see a robot launcher (bottom right, same style as team messaging). It opens a project-scoped assistant that answers questions about this job only — documents, status, timeline, notes, messages, and schedule.',
-          'Replies may cite project files; tap a citation to jump to that document. Conversation stays in your browser session until you clear or close it; it is not saved as permanent chat history. Each reply counts toward your organization\'s monthly AI summary limit.',
-          'Admins always have access. Workers need the AI project chat permission (off by default) set org-wide or per project in Organization settings.',
+          'On project pages, eligible staff see a robot launcher (bottom right, same style as team messaging). It opens Project AI — a chatbot scoped to that job only. Ask about documents, job status, timeline, internal notes, project messages, or the schedule.',
+          'Replies may cite project files; tap a citation to jump to that document in the file list. Conversation stays in your browser session until you clear or close it; it is not saved as permanent chat history on the server.',
+          'Each reply counts toward your organization\'s monthly AI allowance (same pool as AI summaries and timeline generation). The panel shows usage (e.g. 12 / 50 this month).',
+          'The assistant refuses off-topic questions (general knowledge, other projects, legal advice, etc.).',
+          'Admins always have access. Workers need the AI project chat permission (off by default) set org-wide or per project in Organization settings. Clients never see Project AI.',
         ],
       },
       {
@@ -243,17 +259,18 @@ export const GUIDE_PARTS: GuidePart[] = [
         id: 'client-access',
         title: 'Granting client access',
         paragraphs: [
-          'In Organization settings, expand a project, add the client’s email under Client access, then expand that client and check which files (by category) they may view. Clients sign up with the Client account type; no separate portal URL.',
+          'In Organization settings, expand a project, add the client’s email under Client access, then expand that client and check which files (by category) they may view. Use Request signature on an approved client to send a signable shared file. Clients sign up with the Client account type; no separate portal URL.',
         ],
       },
       {
         id: 'client-experience',
         title: 'Client experience',
         bullets: [
-          'Projects list shows only shared projects.',
+          'Projects list shows only shared projects; banner when signatures are pending.',
           'Read-only job status on the project page.',
-          'Document list filtered to admin-selected shared files; empty state if nothing shared yet.',
-          'No upload, AI panel, AI chat, internal notes, messages, calendar management, or archive.',
+          'Signatures panel lists pending and completed signature requests; Sign now opens the signing flow.',
+          'Document list filtered to admin-selected shared files plus signed copies shared back to the client; empty state if nothing shared yet.',
+          'No upload, rename, AI panel, AI chat, internal notes, messages, calendar management, or archive.',
         ],
       },
     ],
@@ -276,8 +293,8 @@ export const GUIDE_PARTS: GuidePart[] = [
         bullets: [
           'Rename — customer name and job address.',
           'Job status stages — add, remove, or relabel workflow steps; Completed stays last.',
-          'File categories — custom folder names used in the UI and for AI sorting.',
-          'Client access — grant/revoke by email; pick shared files per client.',
+          'File categories — custom folder names used in the UI and for AI sorting. Signed documents is added automatically when you use e-signatures.',
+          'Client access — grant/revoke by email; pick shared files per client; Request signature on approved clients (Professional+).',
           'Project workers — assign workers and set per-project permission checkboxes (upload, delete, view, calendar completion, AI chat).',
         ],
       },
@@ -354,7 +371,10 @@ export const GUIDE_PARTS: GuidePart[] = [
           'Create/delete projects — Admin only',
           'Team, organization, billing, backups — Admin only',
           'Change job status — Admin only; Worker and Client view only',
-          'Upload/delete documents — Admin; Worker per permissions; Client never',
+          'Upload/delete/rename documents — Admin; Worker per permissions (rename admin only); Client never',
+          'Request client e-signatures — Admin on Professional+',
+          'Sign documents — Client when admin requested signature',
+          'View signature-request status — Admin on project (incomplete panel); Client on Projects and project Signatures panel',
           'AI summary, timeline, export — Admin (plan limits); Worker if staff-capable; Client never',
           'Project AI chat — Admin; Worker with AI chat permission; Client never',
           'Calendar add/delete events — Admin only (Calendar page)',

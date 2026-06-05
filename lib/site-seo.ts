@@ -13,14 +13,14 @@ export const SITE_SERP_TITLE =
 
 /** Meta description (~155 chars) for search snippets */
 export const SITE_DESCRIPTION =
-  'LedgerStack helps contractors and restoration teams organize jobs, field evidence, and claim workflows in one place. AI, crew tools, client portal, document signatures coming soon.'
+  'LedgerStack helps contractors and restoration teams organize jobs, field evidence, and claim workflows in one place. Project AI chat, summaries, crew tools, client portal, and SignWell e-signatures on Professional+ plans.'
 
 /**
  * Full product description for structured data, app listings, and marketing.
  * Based on the restoration/insurance project-management positioning template.
  */
 export const SITE_LONG_DESCRIPTION =
-  'LedgerStack is a comprehensive project and job management platform designed for contractors, restoration professionals, and insurance-adjacent field teams. It simplifies the organization, documentation, and tracking of damage assessments, job and claim statuses, and repair workflows within a centralized system accessible on mobile devices in the field. It includes automated evidence categorization using OCR and AI, seamless job lifecycle management from inspection through completion, team and client collaboration with secure role-based access, project calendars and messaging, AI-assisted summaries and project-scoped chat, customizable reporting and analytics, and document signatures (coming soon)—helping teams overcome disorganized documentation, inefficient communication, and tracking delays. LedgerStack is ideal for contractors, restoration crews, adjusters, and trade businesses seeking to streamline project workflows, improve crew coordination, enhance client transparency, and increase operational efficiency.'
+  'LedgerStack is a comprehensive project and job management platform designed for contractors, restoration professionals, and insurance-adjacent field teams. It simplifies the organization, documentation, and tracking of damage assessments, job and claim statuses, and repair workflows within a centralized system accessible on mobile devices in the field. It includes automated evidence categorization using OCR and AI, seamless job lifecycle management from inspection through completion, team and client collaboration with secure role-based access, project calendars and messaging, AI-assisted summaries and project-scoped chat, customizable reporting and analytics, and client e-signatures through SignWell on Professional and Enterprise plans—helping teams overcome disorganized documentation, inefficient communication, and tracking delays. LedgerStack is ideal for contractors, restoration crews, adjusters, and trade businesses seeking to streamline project workflows, improve crew coordination, enhance client transparency, and increase operational efficiency.'
 
 export const SITE_KEYWORDS = [
   'LedgerStack',
@@ -51,7 +51,7 @@ export const MARKETING_FAQ = [
   {
     question: 'What is LedgerStack?',
     answer:
-      'LedgerStack is a web-based project and job management platform for contractors, restoration professionals, and insurance-adjacent field teams. It centralizes damage assessments, job documentation, claim-style workflows, crew coordination, and client sharing—with AI categorization, calendars, analytics, and SignWell e-signatures on Professional+ plans—all usable from mobile devices on site.',
+      'LedgerStack is a web-based project and job management platform for contractors, restoration professionals, and insurance-adjacent field teams. It centralizes damage assessments, job documentation, claim-style workflows, crew coordination, and client sharing—with AI categorization, a project-scoped AI assistant (documents, status, timeline, and more), calendars, analytics, and SignWell e-signatures on Professional+ plans—all usable from mobile devices on site.',
   },
   {
     question: 'Who is LedgerStack for?',
@@ -71,12 +71,17 @@ export const MARKETING_FAQ = [
   {
     question: 'Can I share documents with clients?',
     answer:
-      'Yes. On Professional and Enterprise plans, you can grant clients view-only access to selected project files and keep them aligned on job status without giving them full account access.',
+      'Yes. On Professional and Enterprise plans, you can grant clients view-only access to selected project files, keep them aligned on job status, and request electronic signatures on shared documents without giving them full account access.',
+  },
+  {
+    question: 'What is Project AI chat?',
+    answer:
+      'On any project page, admins (and workers you allow) can open the Project AI assistant — a chatbot scoped to that job only. Ask about uploaded documents, job status, timeline, internal notes, messages, or the schedule. Replies may cite files you can jump to with one click. Conversation stays in your browser until you clear it; each reply uses one credit from your organization\'s monthly AI summary allowance (same pool as AI summaries and timelines).',
   },
   {
     question: 'Does LedgerStack support document signatures?',
     answer:
-      'Yes. On Professional and Enterprise plans, admins can request a client signature on a PDF. Clients sign with a typed name through SignWell (embedded in LedgerStack), receive email and in-app notifications, and the signed PDF is stored under Signed documents on the project.',
+      'Yes. On Professional and Enterprise plans, admins can request a client signature on supported project files (PDF, Word, Excel, PowerPoint, images, and more). Clients sign with a typed name in an embedded SignWell window, receive email and in-app notifications, and the completed signed PDF is stored in the Signed documents category on the project.',
   },
 ] as const
 

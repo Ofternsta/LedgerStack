@@ -6,6 +6,7 @@ export type LegalNoticeId =
   | 'no-guarantee'
   | 'data-retention'
   | 'client-access'
+  | 'e-signatures'
   | 'security'
   | 'export-backup'
   | 'worker-audit'
@@ -19,7 +20,7 @@ export const LEGAL_NOTICES: Record<LegalNoticeId, LegalNoticeContent> = {
   ai: {
     title: 'AI disclaimer',
     body:
-      'AI summaries, timelines, and categorization are automated aids only. They may be incomplete or inaccurate. Review all output before sharing with clients or third parties. LedgerStack does not provide legal, regulatory, or professional trade advice.',
+      'AI summaries, timelines, categorization, and Project AI chat replies are automated aids only. They may be incomplete or inaccurate. Project AI is limited to the current project and is not stored as permanent chat history. Each chat reply counts toward your monthly AI allowance. Review all output before sharing with clients or third parties. LedgerStack does not provide legal, regulatory, or professional trade advice.',
   },
   'file-responsibility': {
     title: 'File responsibility',
@@ -40,6 +41,11 @@ export const LEGAL_NOTICES: Record<LegalNoticeId, LegalNoticeContent> = {
     title: 'Client access warning',
     body:
       'Clients only see files you explicitly share. Grant access only to the correct email address. You are responsible for what clients can view and download once shared.',
+  },
+  'e-signatures': {
+    title: 'E-signatures',
+    body:
+      'Signatures are processed by SignWell. You are responsible for choosing the right document and client, and for whether an electronic signature is appropriate for your job. Test-mode signatures may not be legally binding. See Terms and Privacy for details.',
   },
   security: {
     title: 'Security (best effort)',

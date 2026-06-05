@@ -7,7 +7,7 @@ export const dynamic = 'force-static'
 
 export const metadata: Metadata = createPageMetadata({
   title: `Privacy Policy`,
-  description: `How ${SITE_NAME} collects, uses, stores, and protects your data — including projects, uploads, AI processing, billing, and account deletion.`,
+  description: `How ${SITE_NAME} collects, uses, stores, and protects your data — including projects, uploads, AI processing, SignWell e-signatures, billing, and account deletion.`,
   path: '/privacy',
 })
 

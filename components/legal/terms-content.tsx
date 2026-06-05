@@ -139,6 +139,25 @@ export function TermsContent() {
         </p>
       </LegalSection>
 
+      <LegalSection title="Electronic signatures">
+        <p>
+          On Professional and Enterprise plans, organization admins may request
+          that an approved client electronically sign a shared project file using
+          SignWell, integrated into the Service. Clients complete signatures with a
+          typed name in an embedded SignWell flow. Completed signed PDFs are stored
+          in the project&apos;s Signed documents category.
+        </p>
+        <LegalList
+          items={[
+            'E-signatures require an active eligible subscription and a configured SignWell integration on our servers.',
+            'You are solely responsible for selecting signable documents, obtaining client consent, and determining whether an electronic signature is appropriate for your transaction, jurisdiction, or insurer requirements.',
+            'SignWell provides the signing ceremony and audit trail; LedgerStack hosts project files and signature-request records. SignWell is a third party with its own terms and privacy policy.',
+            'Documents signed in SignWell test mode may be watermarked and not legally binding.',
+            'We do not guarantee enforceability of any signature, client identity beyond the email you grant access to, or compliance with ESIGN, UETA, or industry-specific rules.',
+          ]}
+        />
+      </LegalSection>
+
       <LegalSection title="Job workflow and data retention">
         <p>
           Admins may configure job status stages per project (up to{' '}

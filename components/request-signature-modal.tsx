@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { LegalNotice } from '@/components/legal-notice'
 import {
   isSignWellSignableFile,
   SIGNWELL_SIGNABLE_FORMATS_LABEL,
@@ -139,6 +140,8 @@ export function RequestSignatureModal({
             ))}
           </ul>
         )}
+
+        <LegalNotice id="e-signatures" className="text-xs" />
 
         {message && (
           <p

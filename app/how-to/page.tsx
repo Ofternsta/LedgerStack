@@ -7,7 +7,7 @@ export const dynamic = 'force-static'
 
 export const metadata: Metadata = createPageMetadata({
   title: `How to use ${SITE_NAME}`,
-  description: `Step-by-step guide to ${SITE_NAME}: create projects, manage jobs, upload field documents, invite workers and clients, use AI summaries and project chat, calendar, backups, and billing.`,
+  description: `Step-by-step guide to ${SITE_NAME}: create projects, manage jobs, upload and rename field documents, invite workers and clients, request e-signatures, use AI summaries and project chat, calendar, backups, and billing.`,
   path: '/how-to',
 })
 
