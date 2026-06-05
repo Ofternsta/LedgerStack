@@ -27,6 +27,7 @@ export default function CalendarPage() {
   const [selectedProjectId, setSelectedProjectId] = useState(projectFromUrl)
   const [loading, setLoading] = useState(true)
   const [signingOut, setSigningOut] = useState(false)
+  const [projectCanAddEvents, setProjectCanAddEvents] = useState(false)
 
   const isAdmin = access?.role === 'admin'
 
@@ -56,6 +57,34 @@ export default function CalendarPage() {
       setSelectedProjectId(projectFromUrl)
     }
   }, [projectFromUrl, selectedProjectId])
+
+  useEffect(() => {
+    if (!access || !selectedProjectId) {
+      setProjectCanAddEvents(false)
+      return
+    }
+    if (access.role === 'admin') {
+      setProjectCanAddEvents(true)
+      return
+    }
+    if (access.role !== 'worker' || !access.canManageSchedule) {
+      setProjectCanAddEvents(false)
+      return
+    }
+    let cancelled = false
+    fetch(`/api/projects/${selectedProjectId}/my-access`)
+      .then((r) => r.json())
+      .then((payload) => {
+        if (cancelled) return
+        setProjectCanAddEvents(Boolean(payload.permissions?.can_add_events))
+      })
+      .catch(() => {
+        if (!cancelled) setProjectCanAddEvents(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [access, selectedProjectId])
 
   function selectProject(id: string) {
     setSelectedProjectId(id)
@@ -164,7 +193,7 @@ export default function CalendarPage() {
             <section className="card-elevated p-4">
               <ProjectMonthCalendar
                 projectId={selectedProjectId}
-                canAddEvents={isAdmin}
+                canAddEvents={isAdmin || projectCanAddEvents}
                 canDeleteEvents={isAdmin}
                 canMarkComplete={isAdmin}
               />

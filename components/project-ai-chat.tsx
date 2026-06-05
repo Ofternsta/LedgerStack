@@ -137,7 +137,7 @@ export function ProjectAiChat({
       <div className="fixed z-[78] bottom-[max(env(safe-area-inset-bottom,0px),0.75rem)] right-3 pointer-events-none flex flex-col items-end gap-2">
         {open && (
           <div
-            className="pointer-events-auto w-[min(calc(100vw-1.5rem),24rem)] sm:w-96 h-[min(70vh,32rem)] flex flex-col border border-border rounded-2xl shadow-xl bg-surface-elevated overflow-hidden mb-1"
+            className="pointer-events-auto w-[min(calc(100vw-1.5rem),32rem)] sm:w-[36rem] h-[min(85vh,42rem)] flex flex-col border border-border rounded-2xl shadow-xl bg-surface-elevated overflow-hidden mb-1"
             role="dialog"
             aria-label="Project AI chat"
           >

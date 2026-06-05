@@ -24,6 +24,7 @@ type AssignmentRow = {
   can_delete: boolean
   can_add_events: boolean
   can_view_files: boolean
+  can_download_files: boolean
   can_use_ai_chat: boolean
 }
 
@@ -49,7 +50,7 @@ export async function getProjectWorkerPermissions(
 ): Promise<WorkerPermissions | null> {
   const { data } = await supabase
     .from('project_worker_assignments')
-    .select('can_upload, can_delete, can_add_events, can_view_files, can_use_ai_chat')
+    .select('can_upload, can_delete, can_add_events, can_view_files, can_download_files, can_use_ai_chat')
     .eq('project_id', projectId)
     .eq('user_id', userId)
     .maybeSingle()
@@ -94,7 +95,7 @@ export async function listProjectWorkersForAdmin(
   const { data: assignments, error: assignError } = await supabase
     .from('project_worker_assignments')
     .select(
-      'id, user_id, can_upload, can_delete, can_add_events, can_view_files, can_use_ai_chat'
+      'id, user_id, can_upload, can_delete, can_add_events, can_view_files, can_download_files, can_use_ai_chat'
     )
     .eq('project_id', projectId)
 
@@ -227,6 +228,7 @@ export async function updateProjectWorkerPermissions(
       can_delete: permissions.can_delete,
       can_add_events: permissions.can_add_events,
       can_view_files: permissions.can_view_files,
+      can_download_files: permissions.can_download_files,
       can_use_ai_chat: permissions.can_use_ai_chat,
     })
     .eq('id', assignment.id)

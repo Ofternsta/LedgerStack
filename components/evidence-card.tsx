@@ -25,6 +25,7 @@ type EvidenceCardProps = {
   categoryLabels?: string[]
   canEdit: boolean
   canDelete: boolean
+  canDownload?: boolean
   canRescan?: boolean
   variant?: 'full' | 'detail'
   onOpen: (filePath: string) => void
@@ -40,6 +41,7 @@ export function EvidenceCard({
   categoryLabels: categoryLabelsProp,
   canEdit,
   canDelete,
+  canDownload = true,
   canRescan = false,
   variant = 'full',
   onOpen,
@@ -175,24 +177,28 @@ export function EvidenceCard({
   }
 
   async function downloadFile() {
+    if (!projectId) return
     setError(null)
     try {
       const params = new URLSearchParams({
         file_path: doc.file_path,
-        project_id: projectId || '',
+        project_id: projectId,
+        file_name: doc.file_name,
       })
-      const res = await fetch(`/api/evidence/open?${params.toString()}`)
-      const payload = await res.json().catch(() => ({}))
-      if (!res.ok || !payload.signedUrl) {
+      const res = await fetch(`/api/evidence/download?${params.toString()}`)
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}))
         setError(payload.error || 'Could not download file')
         return
       }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
-      link.href = String(payload.signedUrl)
+      link.href = url
       link.download = doc.file_name
       link.rel = 'noopener'
-      link.target = '_blank'
       link.click()
+      URL.revokeObjectURL(url)
     } catch {
       setError('Could not download file')
     }
@@ -304,7 +310,7 @@ export function EvidenceCard({
                   Uploaded by {doc.uploaded_by_label}
                 </span>
               )}
-              {canEdit && projectId && (
+              {canDownload && projectId && (
                 <>
                   <button
                     type="button"
@@ -313,6 +319,10 @@ export function EvidenceCard({
                   >
                     Download
                   </button>
+                </>
+              )}
+              {canEdit && projectId && (
+                <>
                   <button
                     type="button"
                     onClick={() => {

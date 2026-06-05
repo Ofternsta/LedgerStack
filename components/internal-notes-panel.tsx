@@ -37,7 +37,7 @@ function renderBodyHtml(body: string) {
     .replace(/>/g, '&gt;')
   return escaped.replace(
     /@\[([^\]]+)\]\(([0-9a-f-]{36})\)/gi,
-    '<span class="font-semibold text-blue-800">@$1</span>'
+    '<span class="font-semibold text-white underline decoration-white/40">@$1</span>'
   )
 }
 
@@ -199,38 +199,37 @@ export function InternalNotesPanel({
       )}
 
       <div
-        className="border border-gray-100 rounded-xl bg-surface max-h-[360px] overflow-y-auto divide-y divide-gray-100"
+        className="border border-neutral-700 rounded-xl bg-neutral-900 max-h-[360px] overflow-y-auto divide-y divide-neutral-800"
         aria-live="polite"
       >
         {loading && (
-          <p className="text-sm text-muted-dim text-center py-6">Loading history…</p>
+          <p className="text-sm text-neutral-400 text-center py-6">Loading history…</p>
         )}
         {!loading && notes.length === 0 && (
-          <p className="text-sm text-muted-dim text-center py-6">
+          <p className="text-sm text-neutral-400 text-center py-6">
             No internal notes yet.
           </p>
         )}
         {notes.map((n) => {
-          const mine = n.author_id === currentUserId
           return (
             <article key={n.id} className="p-3 text-sm">
               <div className="flex flex-wrap items-center gap-2 mb-1">
-                <span className={`font-semibold ${mine ? 'text-black' : 'text-foreground'}`}>
+                <span className="font-semibold text-white">
                   {n.author_name}
                 </span>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-gray-200 text-muted">
+                <span className="text-xs px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300">
                   {kindLabel(n.note_kind)}
                 </span>
-                <span className="text-xs text-muted-dim ml-auto">
+                <span className="text-xs text-neutral-400 ml-auto">
                   {new Date(n.created_at).toLocaleString()}
                 </span>
               </div>
               <p
-                className="leading-relaxed whitespace-pre-wrap text-gray-800"
+                className="leading-relaxed whitespace-pre-wrap text-white"
                 dangerouslySetInnerHTML={{ __html: renderBodyHtml(n.body) }}
               />
               {n.mentioned_users.length > 0 && (
-                <p className="text-xs text-brand-bright mt-2">
+                <p className="text-xs text-neutral-300 mt-2">
                   Notified: {n.mentioned_users.map((u) => u.name).join(', ')}
                 </p>
               )}

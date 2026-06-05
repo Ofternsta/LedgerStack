@@ -65,7 +65,7 @@ export async function loadUserAccessServer(): Promise<{
     const { data: membership } = await supabase
       .from('organization_members')
       .select(
-        'status, organization_id, can_upload, can_delete, can_add_events, can_view_files, organizations(name, invite_code)'
+        'status, organization_id, can_upload, can_delete, can_add_events, can_view_files, can_download_files, organizations(name, invite_code)'
       )
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })

@@ -19,6 +19,9 @@ export function parseDefaultWorkerPermissions(
     can_view_files: Boolean(
       o.can_view_files ?? DEFAULT_WORKER_PERMISSIONS.can_view_files
     ),
+    can_download_files: Boolean(
+      o.can_download_files ?? DEFAULT_WORKER_PERMISSIONS.can_download_files
+    ),
     can_use_ai_chat: Boolean(
       o.can_use_ai_chat ?? DEFAULT_WORKER_PERMISSIONS.can_use_ai_chat
     ),

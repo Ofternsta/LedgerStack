@@ -3,6 +3,7 @@ import { isOrganizationAdmin } from '@/lib/org-admin'
 import { getOrgPlanContext } from '@/lib/org-plan'
 import { countApprovedWorkers } from '@/lib/plan-usage'
 import { clientCanAccessProject } from '@/lib/project-client-access'
+import { getProjectWorkerPermissions } from '@/lib/project-worker-assignments'
 import {
   type WorkerPermissionKey,
   parseWorkerPermissions,
@@ -16,7 +17,9 @@ export async function getApprovedMemberPermissions(
 ) {
   const { data: member } = await supabase
     .from('organization_members')
-    .select('can_upload, can_delete, can_add_events, can_view_files, can_use_ai_chat, status')
+    .select(
+      'can_upload, can_delete, can_add_events, can_view_files, can_download_files, can_use_ai_chat, status'
+    )
     .eq('organization_id', organizationId)
     .eq('user_id', userId)
     .eq('status', 'approved')
@@ -65,11 +68,27 @@ export async function assertProjectMemberPermission(
     }
   }
 
+  if (permission === 'can_download_files' && profile?.role === 'client') {
+    const allowed = await clientCanAccessProject(
+      supabase,
+      projectId,
+      userId,
+      options?.email
+    )
+    if (!allowed) {
+      return {
+        ok: false,
+        error:
+          'You do not have access to this project. Sign in with the same email your contractor invited, or ask them to grant access again.',
+        status: 403,
+      }
+    }
+    return { ok: true }
+  }
+
   const { data: member } = await supabase
     .from('organization_members')
-    .select(
-      'status, can_upload, can_delete, can_add_events, can_view_files, can_use_ai_chat'
-    )
+    .select('status')
     .eq('organization_id', organizationId)
     .eq('user_id', userId)
     .maybeSingle()
@@ -103,19 +122,39 @@ export async function assertProjectMemberPermission(
         status: 403,
       }
     }
-  }
 
-  const flags = parseWorkerPermissions(member)
-  if (!flags[permission]) {
-    const messages: Record<WorkerPermissionKey, string> = {
-      can_upload: 'You do not have permission to upload files.',
-      can_delete: 'You do not have permission to delete files.',
-      can_add_events: 'You do not have permission to add calendar events.',
-      can_view_files: 'You do not have permission to view project files.',
-      can_use_ai_chat: 'You do not have permission to use AI project chat.',
+    const projectPerms = await getProjectWorkerPermissions(
+      supabase,
+      projectId,
+      userId
+    )
+    if (!projectPerms) {
+      return {
+        ok: false,
+        error: 'You are not assigned to this project.',
+        status: 403,
+      }
     }
-    return { ok: false, error: messages[permission], status: 403 }
+
+    if (!projectPerms[permission]) {
+      const messages: Record<WorkerPermissionKey, string> = {
+        can_upload: 'You do not have permission to upload files.',
+        can_delete: 'You do not have permission to delete files.',
+        can_add_events: 'You do not have permission to add calendar events.',
+        can_view_files: 'You do not have permission to view project files.',
+        can_download_files:
+          'You do not have permission to download project files.',
+        can_use_ai_chat: 'You do not have permission to use AI project chat.',
+      }
+      return { ok: false, error: messages[permission], status: 403 }
+    }
+
+    return { ok: true }
   }
 
-  return { ok: true }
+  return {
+    ok: false,
+    error: 'You do not have access to this project.',
+    status: 403,
+  }
 }

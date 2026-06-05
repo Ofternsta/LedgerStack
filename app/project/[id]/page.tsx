@@ -22,7 +22,6 @@ import {
 import { EvidenceUpload } from '@/components/evidence-upload'
 import { LedgerStackLoader } from '@/components/ledgerstack-loader'
 import { InternalNotesPanel } from '@/components/internal-notes-panel'
-import { MessagePanel } from '@/components/message-panel'
 import { AddJobDialog, ProjectJobsList } from '@/components/project-jobs-list'
 import { ProjectAiChat } from '@/components/project-ai-chat'
 import { ProjectSchedulePanel } from '@/components/project-schedule-panel'
@@ -95,6 +94,7 @@ export default function ProjectPageClient() {
       ...base,
       canUploadEvidence: wp.can_upload,
       canViewFiles: wp.can_view_files,
+      canDownloadFiles: wp.can_download_files,
       canDeleteEvidence: wp.can_delete,
       canManageSchedule: base.canViewCalendar && wp.can_add_events,
       canUpdateClaimInfo:
@@ -708,21 +708,7 @@ export default function ProjectPageClient() {
                 canMarkComplete={
                   access.canManageSchedule && access.canUpdateClaimInfo
                 }
-              />
-            )}
-
-            {access.canUseTeamMessages && access.role !== 'client' && (
-              <MessagePanel
-                channel="project"
-                projectId={id}
-                currentUserId={userId}
-                title="Project messages"
-                subtitle="Chat scoped to this job — admins and approved workers only."
-                canSend={
-                  access.role === 'admin' ||
-                  (access.role === 'worker' &&
-                    access.workerStatus === 'approved')
-                }
+                canManageEvents={access.canManageSchedule}
               />
             )}
 
@@ -770,6 +756,7 @@ export default function ProjectPageClient() {
                   categories={fileCategories}
                   canEdit={access.canEditEvidenceSummary}
                   canDelete={access.canDeleteEvidence}
+                  canDownload={access.canDownloadFiles}
                   canRescan={access.canUploadEvidence}
                   emptyMessage={
                     isClientViewer

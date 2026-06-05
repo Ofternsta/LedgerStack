@@ -14,6 +14,7 @@ function parseWorkerPatch(body: Record<string, unknown>): WorkerPermissions | nu
     'can_delete',
     'can_add_events',
     'can_view_files',
+    'can_download_files',
     'can_use_ai_chat',
   ]
   if (!keys.every((k) => typeof body[k] === 'boolean')) return null
@@ -22,6 +23,7 @@ function parseWorkerPatch(body: Record<string, unknown>): WorkerPermissions | nu
     can_delete: Boolean(body.can_delete),
     can_add_events: Boolean(body.can_add_events),
     can_view_files: Boolean(body.can_view_files),
+    can_download_files: Boolean(body.can_download_files),
     can_use_ai_chat: Boolean(body.can_use_ai_chat),
   }
 }

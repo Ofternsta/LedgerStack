@@ -24,6 +24,7 @@ export type UserAccess = {
   canDeleteProject: boolean
   canUploadEvidence: boolean
   canViewFiles: boolean
+  canDownloadFiles: boolean
   canEditEvidenceSummary: boolean
   canDeleteEvidence: boolean
   canManageTeam: boolean
@@ -112,6 +113,12 @@ export function buildAccess(input: {
       hasPlan &&
       !workerBlockedByStaffLimit &&
       Boolean(isAdmin || wp?.can_view_files))
+  const canDownloadFiles =
+    isClient ||
+    (staffCapable &&
+      hasPlan &&
+      !workerBlockedByStaffLimit &&
+      Boolean(isAdmin || wp?.can_download_files))
   const canViewAnalytics =
     isAdmin &&
     Boolean(ent?.analyticsDashboard || ent?.advancedAnalytics)
@@ -161,6 +168,7 @@ export function buildAccess(input: {
       !downgradeReadOnly &&
       Boolean(isAdmin || wp?.can_upload),
     canViewFiles,
+    canDownloadFiles,
     canEditEvidenceSummary: isAdmin && !downgradeReadOnly,
     canDeleteEvidence:
       (isAdmin && !downgradeReadOnly) ||

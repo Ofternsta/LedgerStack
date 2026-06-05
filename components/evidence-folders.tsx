@@ -51,6 +51,7 @@ type EvidenceFoldersProps = {
   categories?: FileCategory[]
   canEdit: boolean
   canDelete: boolean
+  canDownload?: boolean
   canRescan: boolean
   emptyMessage?: string
   onOpen: (filePath: string) => void
@@ -86,6 +87,7 @@ export function EvidenceFolders({
   categories: categoriesProp,
   canEdit,
   canDelete,
+  canDownload = true,
   canRescan,
   emptyMessage = 'No documents uploaded yet. Upload files to add them to a category folder.',
   onOpen,
@@ -263,6 +265,7 @@ export function EvidenceFolders({
                             categoryLabels={categoryLabels}
                             canEdit={canEdit}
                             canDelete={canDelete}
+                            canDownload={canDownload}
                             canRescan={canRescan}
                             variant="detail"
                             onOpen={onOpen}

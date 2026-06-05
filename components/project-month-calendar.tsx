@@ -287,7 +287,7 @@ export function ProjectMonthCalendar({
                           : 'text-brand-bright'
                       }`}
                     >
-                      {ev.title}
+                      {formatEventTime(ev.starts_at)} {ev.title}
                     </span>
                   ))}
                   {dayEvents.length > 2 && (

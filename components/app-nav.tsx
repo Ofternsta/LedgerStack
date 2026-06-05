@@ -36,7 +36,9 @@ export function AppNav({ access }: AppNavProps) {
     <nav className="flex flex-wrap gap-2 text-sm">
       {pill('/projects', 'Projects')}
       {access.canManageTeam && pill('/team', 'Team')}
-      {access.canViewCalendar && pill('/calendar', 'Calendar')}
+      {access.canViewCalendar &&
+        (access.role === 'admin' || access.canManageSchedule) &&
+        pill('/calendar', 'Calendar')}
       {access.canViewAnalytics && pill('/dashboard', 'Analytics')}
       {pill('/settings/account', 'Settings')}
       {access.canManageSystemSettings &&
