@@ -4,7 +4,10 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { LegalNotice } from '@/components/legal-notice'
 import type { JobIntelligenceReport } from '@/lib/job-intelligence-types'
-import { saveAiSummaryReport } from '@/lib/ai-summary-storage'
+import {
+  loadAiSummaryReport,
+  saveAiSummaryReport,
+} from '@/lib/ai-summary-storage'
 import { isUnlimited } from '@/lib/plan-entitlements'
 
 type ProjectAiExportSectionProps = {
@@ -39,16 +42,21 @@ export function ProjectAiExportSection({
   const summaryViewHref = `/project/${projectId}/ai-summary?claim_id=${encodeURIComponent(claimId)}&job=${encodeURIComponent(jobLabel)}`
 
   useEffect(() => {
-    setReport(null)
-    setSummaryReady(false)
     setError(null)
+    const stored = loadAiSummaryReport(projectId, claimId)
+    if (stored) {
+      setReport(stored)
+      setSummaryReady(true)
+    } else {
+      setReport(null)
+      setSummaryReady(false)
+    }
   }, [claimId, projectId])
 
   async function generateSummary() {
     if (!canGenerate || aiAtLimit) return
     setLoadingSummary(true)
     setError(null)
-    setSummaryReady(false)
 
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
     const res = await fetch('/api/claim-summary', {
@@ -186,9 +194,16 @@ export function ProjectAiExportSection({
         </p>
       )}
 
-      {summaryReady && (
+      {summaryReady && report && (
         <p className="text-sm text-muted">
-          Summary ready for {jobLabel}.{' '}
+          Latest summary for {jobLabel}
+          {report.generatedAt
+            ? ` (generated ${new Date(report.generatedAt).toLocaleString(undefined, {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+              })})`
+            : ''}
+          . Generate again to replace it.{' '}
           <Link href={summaryViewHref} className="text-brand-bright font-medium">
             View AI summary →
           </Link>

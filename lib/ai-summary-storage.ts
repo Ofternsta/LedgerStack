@@ -4,28 +4,63 @@ export function aiSummaryStorageKey(projectId: string, claimId: string): string 
   return `ledgerstack-ai-summary:${projectId}:${claimId}`
 }
 
+function readStoredReport(key: string): JobIntelligenceReport | null {
+  if (typeof window === 'undefined') return null
+
+  const storages: Storage[] = []
+  try {
+    storages.push(localStorage)
+  } catch {
+    /* private browsing */
+  }
+  try {
+    storages.push(sessionStorage)
+  } catch {
+    /* unavailable */
+  }
+
+  for (const storage of storages) {
+    const raw = storage.getItem(key)
+    if (!raw) continue
+    try {
+      const report = JSON.parse(raw) as JobIntelligenceReport
+      if (storage !== localStorage) {
+        try {
+          localStorage.setItem(key, raw)
+          storage.removeItem(key)
+        } catch {
+          /* keep session copy only */
+        }
+      }
+      return report
+    } catch {
+      storage.removeItem(key)
+    }
+  }
+
+  return null
+}
+
+/** Persist until replaced by a new generation for the same job. */
 export function saveAiSummaryReport(
   projectId: string,
   claimId: string,
   report: JobIntelligenceReport
 ): void {
-  if (typeof sessionStorage === 'undefined') return
-  sessionStorage.setItem(
-    aiSummaryStorageKey(projectId, claimId),
-    JSON.stringify(report)
-  )
+  if (typeof localStorage === 'undefined') return
+  try {
+    localStorage.setItem(
+      aiSummaryStorageKey(projectId, claimId),
+      JSON.stringify(report)
+    )
+  } catch {
+    /* quota or private mode */
+  }
 }
 
 export function loadAiSummaryReport(
   projectId: string,
   claimId: string
 ): JobIntelligenceReport | null {
-  if (typeof sessionStorage === 'undefined') return null
-  const raw = sessionStorage.getItem(aiSummaryStorageKey(projectId, claimId))
-  if (!raw) return null
-  try {
-    return JSON.parse(raw) as JobIntelligenceReport
-  } catch {
-    return null
-  }
+  return readStoredReport(aiSummaryStorageKey(projectId, claimId))
 }
