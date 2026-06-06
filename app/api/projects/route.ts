@@ -3,11 +3,7 @@ import { createProjectForUser } from '@/lib/create-project-server'
 import { linkClientAccessByEmailServer } from '@/lib/link-client-access-server'
 import { listClientProjectsServer } from '@/lib/list-client-projects-server'
 import { loadUserAccessServer } from '@/lib/load-access-server'
-import { enrichProjectForList } from '@/lib/project-list-status'
 import { requireAuth } from '@/lib/require-auth'
-
-const PROJECT_LIST_SELECT =
-  'id, customer_name, project_address, notes, created_at, status_workflow, claims(id, status, claim_number)'
 
 /** List projects visible to the signed-in user. */
 export async function GET() {
@@ -31,9 +27,7 @@ export async function GET() {
         userSupabase: supabase,
       })
       const projects = await listClientProjectsServer(user.id, user.email)
-      return NextResponse.json({
-        projects: projects.map((p) => enrichProjectForList(p)),
-      })
+      return NextResponse.json({ projects })
     }
 
     if (access.workerBlockedByStaffLimit && access.role === 'worker') {
@@ -48,16 +42,14 @@ export async function GET() {
 
     const { data, error } = await supabase
       .from('projects')
-      .select(PROJECT_LIST_SELECT)
+      .select('id, customer_name, project_address, notes, created_at')
       .order('created_at', { ascending: false })
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({
-      projects: (data || []).map((p) => enrichProjectForList(p)),
-    })
+    return NextResponse.json({ projects: data || [] })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to load projects'
     return NextResponse.json({ error: message }, { status: 500 })

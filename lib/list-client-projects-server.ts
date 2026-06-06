@@ -2,8 +2,7 @@ import 'server-only'
 
 import { createServiceClient } from '@/lib/supabase/service'
 
-const PROJECT_COLUMNS =
-  'id, customer_name, project_address, notes, created_at, status_workflow, claims(id, status, claim_number)'
+const PROJECT_COLUMNS = 'id, customer_name, project_address, notes, created_at'
 
 /** Projects shared with a client (approved invite by user id or email). */
 export async function listClientProjectsServer(
