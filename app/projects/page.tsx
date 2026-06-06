@@ -11,6 +11,7 @@ import { LegalNotice } from '@/components/legal-notice'
 import { PlanUpgradeBanner } from '@/components/plan-upgrade-banner'
 import { ClientSignatureBanner } from '@/components/client-signature-banner'
 import { AdminSignatureNotificationsBanner } from '@/components/admin-signature-notifications-banner'
+import { ProjectListCardHeader } from '@/components/project-list-card-header'
 import { isUnlimited } from '@/lib/plan-entitlements'
 import { linkClientAccessByEmail } from '@/lib/auth-signup'
 import { loadUserAccess } from '@/lib/load-access'
@@ -22,6 +23,8 @@ type Project = {
   customer_name: string
   project_address: string
   notes?: string
+  statusLabel: string
+  isCompleted: boolean
 }
 
 export default function ProjectsPage() {
@@ -371,17 +374,27 @@ export default function ProjectsPage() {
                 className="border border-border rounded-xl bg-surface-elevated shadow-sm overflow-hidden"
               >
                 {access.workerBlockedByStaffLimit ? (
-                  <div className="block p-4 min-h-[64px] opacity-80">
-                    <p className="font-bold text-lg">{p.customer_name}</p>
-                    <p className="text-sm text-muted mt-1">{p.project_address}</p>
+                  <div className="block min-h-[64px] opacity-80">
+                    <ProjectListCardHeader
+                      title={p.customer_name}
+                      statusLabel={p.statusLabel}
+                      isCompleted={p.isCompleted}
+                    />
+                    <p className="px-4 py-3 text-sm text-muted">
+                      {p.project_address}
+                    </p>
                   </div>
                 ) : (
                   <Link
                     href={`/project/${p.id}`}
-                    className="block p-4 active:bg-surface min-h-[64px]"
+                    className="block active:bg-surface min-h-[64px]"
                   >
-                    <p className="font-bold text-lg">{p.customer_name}</p>
-                    <p className="text-sm text-muted mt-1">
+                    <ProjectListCardHeader
+                      title={p.customer_name}
+                      statusLabel={p.statusLabel}
+                      isCompleted={p.isCompleted}
+                    />
+                    <p className="px-4 py-3 text-sm text-muted">
                       {p.project_address}
                     </p>
                   </Link>

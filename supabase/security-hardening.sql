@@ -53,9 +53,17 @@ DROP POLICY IF EXISTS "anyone read org by invite code" ON public.organizations;
 DROP POLICY IF EXISTS "anon select projects" ON public.projects;
 DROP POLICY IF EXISTS "anon insert projects" ON public.projects;
 DROP POLICY IF EXISTS "anon delete projects" ON public.projects;
+DROP POLICY IF EXISTS "allow_select_all" ON public.projects;
+DROP POLICY IF EXISTS "allow_insert_all" ON public.projects;
+DROP POLICY IF EXISTS "allow_delete_all" ON public.projects;
+DROP POLICY IF EXISTS "allow_update_all" ON public.projects;
 DROP POLICY IF EXISTS "anon select claims" ON public.claims;
 DROP POLICY IF EXISTS "anon insert claims" ON public.claims;
 DROP POLICY IF EXISTS "anon delete claims" ON public.claims;
+DROP POLICY IF EXISTS "allow_select_all" ON public.claims;
+DROP POLICY IF EXISTS "allow_insert_all" ON public.claims;
+DROP POLICY IF EXISTS "allow_delete_all" ON public.claims;
+DROP POLICY IF EXISTS "allow_update_all" ON public.claims;
 
 REVOKE ALL ON TABLE public.projects FROM anon;
 REVOKE ALL ON TABLE public.claims FROM anon;
