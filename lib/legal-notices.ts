@@ -35,7 +35,7 @@ export const LEGAL_NOTICES: Record<LegalNoticeId, LegalNoticeContent> = {
   'data-retention': {
     title: 'Data retention & deletion',
     body:
-      'Completed projects are deleted 7 days after all jobs reach the final completed stage. Inactive projects are deleted after 12 months with no activity. Plan limits apply to projects, staff, AI summaries per month, and retained backups (see Privacy Policy). Full account deletion: email support@ledgerstack.org.',
+      'When every job on a project reaches the final Completed stage, the entire project — all jobs, files, and notes — is automatically deleted 7 days after the last job was marked Completed. If any job is still open, the project is not deleted on that schedule; you can keep working until every job is done. Projects that still have open jobs and no activity for 12 months may be deleted as inactive. Plan limits apply to projects, staff, AI summaries per month, and retained backups (see Privacy Policy). Full account deletion: email support@ledgerstack.org.',
   },
   'client-access': {
     title: 'Client access warning',
