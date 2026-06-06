@@ -3,7 +3,6 @@ export const JOB_INTELLIGENCE_SECTION_IDS = [
   'job_status',
   'timeline',
   'internal_notes',
-  'messages',
   'schedule',
   'documents',
 ] as const
@@ -19,7 +18,6 @@ export const JOB_INTELLIGENCE_SECTION_TITLES: Record<
   job_status: 'Job status & workflow',
   timeline: 'Timeline & activity history',
   internal_notes: 'Internal notes',
-  messages: 'Project messages',
   schedule: 'Schedule & calendar',
   documents: 'Documents & evidence',
 }

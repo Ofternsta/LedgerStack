@@ -781,6 +781,7 @@ export default function ProjectPageClient() {
               <ProjectAiExportSection
                 claimId={activeClaim.id}
                 projectId={id}
+                jobLabel={activeClaim.client_name}
                 canGenerate={access.canUpdateClaimInfo}
                 canExportPdf={access.canExportPdf}
                 canExportHtml={access.canExportHtml}

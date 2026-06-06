@@ -2,6 +2,7 @@ import 'server-only'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { gatherJobIntelligenceContext } from '@/lib/gather-job-intelligence'
+import { formatReportWhen } from '@/lib/format-report-datetime'
 import {
   buildFallbackOverview,
   generateOverviewWithGroq,
@@ -18,24 +19,17 @@ import {
   normalizeReportBodies,
 } from '@/lib/report-body-format'
 
-function formatWhen(iso: string | null | undefined) {
-  if (!iso) return '—'
-  const t = Date.parse(iso)
-  if (Number.isNaN(t)) return iso
-  return new Date(t).toLocaleString(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  })
-}
-
-export function buildFallbackReport(ctx: JobIntelligenceContext): JobIntelligenceReport {
+export function buildFallbackReport(
+  ctx: JobIntelligenceContext,
+  timeZone?: string
+): JobIntelligenceReport {
   const focusClaimId = String(ctx.claim.id || '')
   const focusEvidence = ctx.evidence.filter((e) => e.claim_id === focusClaimId)
 
   const projectBody = [
     `Customer: ${ctx.project.customer_name}`,
     `Address: ${ctx.project.project_address}`,
-    `Project started: ${formatWhen(String(ctx.project.created_at || ''))}`,
+    `Project started: ${formatReportWhen(String(ctx.project.created_at || ''), timeZone)}`,
     ctx.project.notes
       ? `Legacy project description: ${ctx.project.notes}`
       : null,
@@ -63,7 +57,7 @@ export function buildFallbackReport(ctx: JobIntelligenceContext): JobIntelligenc
       ? 'No timeline entries yet.'
       : joinSectionEntries(
           ctx.timelineEvents.map((e) => {
-            const when = formatWhen(e.created_at || e.event_date)
+            const when = formatReportWhen(e.created_at || e.event_date, timeZone)
             const title = sanitizeReportText(String(e.title || ''))
             const description = sanitizeReportText(String(e.description || ''))
             const detail = description ? `${title}: ${description}` : title
@@ -77,16 +71,7 @@ export function buildFallbackReport(ctx: JobIntelligenceContext): JobIntelligenc
       : joinSectionEntries(
           ctx.internalNotes.map(
             (n) =>
-              `${formatWhen(n.created_at)} — ${n.author_name} (${n.note_kind}): ${n.body}`
-          )
-        )
-
-  const messagesBody =
-    ctx.projectMessages.length === 0
-      ? 'No project messages.'
-      : joinSectionEntries(
-          ctx.projectMessages.map(
-            (m) => `${formatWhen(m.created_at)} — ${m.sender_label}: ${m.body}`
+              `${formatReportWhen(n.created_at, timeZone)} — ${n.author_name} (${n.note_kind}): ${n.body}`
           )
         )
 
@@ -96,7 +81,7 @@ export function buildFallbackReport(ctx: JobIntelligenceContext): JobIntelligenc
       : joinSectionEntries(
           ctx.scheduleEvents.map((ev) => {
             const done = ev.completed_at ? ' (done)' : ''
-            return `${formatWhen(String(ev.starts_at || ''))} — ${ev.title || 'Event'}: ${ev.description || ''}${done}`
+            return `${formatReportWhen(String(ev.starts_at || ''), timeZone)} — ${ev.title || 'Event'}: ${ev.description || ''}${done}`
           })
         )
 
@@ -108,7 +93,7 @@ export function buildFallbackReport(ctx: JobIntelligenceContext): JobIntelligenc
           `On this job: ${focusEvidence.length}`,
           ...ctx.evidence.map(
             (e) =>
-              `${formatWhen(e.created_at)} — ${e.client_name} [${e.evidence_type}] ${e.file_name}: ${e.summary}`
+              `${formatReportWhen(e.created_at, timeZone)} — ${e.client_name} [${e.evidence_type}] ${e.file_name}: ${e.summary}`
           ),
         ])
 
@@ -117,14 +102,13 @@ export function buildFallbackReport(ctx: JobIntelligenceContext): JobIntelligenc
     { id: 'job_status', title: JOB_INTELLIGENCE_SECTION_TITLES.job_status, body: statusBody },
     { id: 'timeline', title: JOB_INTELLIGENCE_SECTION_TITLES.timeline, body: timelineBody },
     { id: 'internal_notes', title: JOB_INTELLIGENCE_SECTION_TITLES.internal_notes, body: notesBody },
-    { id: 'messages', title: JOB_INTELLIGENCE_SECTION_TITLES.messages, body: messagesBody },
     { id: 'schedule', title: JOB_INTELLIGENCE_SECTION_TITLES.schedule, body: scheduleBody },
     { id: 'documents', title: JOB_INTELLIGENCE_SECTION_TITLES.documents, body: documentsBody },
   ]
 
   return {
     generatedAt: new Date().toISOString(),
-    overview: buildFallbackOverview(ctx),
+    overview: buildFallbackOverview(ctx, timeZone),
     sections,
     claimId: focusClaimId,
     projectId: String(ctx.project.id),
@@ -136,14 +120,17 @@ export function buildFallbackReport(ctx: JobIntelligenceContext): JobIntelligenc
 export async function generateJobIntelligenceReport(
   supabase: SupabaseClient,
   projectId: string,
-  claimId: string
+  claimId: string,
+  options?: { timeZone?: string }
 ): Promise<JobIntelligenceReport | null> {
   const ctx = await gatherJobIntelligenceContext(supabase, projectId, claimId)
   if (!ctx) return null
 
-  const factual = normalizeReportBodies(buildFallbackReport(ctx))
+  const timeZone = options?.timeZone
+  const factual = normalizeReportBodies(buildFallbackReport(ctx, timeZone))
   const overview =
-    (await generateOverviewWithGroq(ctx)) ?? buildFallbackOverview(ctx)
+    (await generateOverviewWithGroq(ctx, timeZone)) ??
+    buildFallbackOverview(ctx, timeZone)
 
   return {
     ...factual,

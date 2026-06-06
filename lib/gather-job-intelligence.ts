@@ -5,17 +5,8 @@ import type { JobIntelligenceContext } from '@/lib/job-intelligence-types'
 import { listEvidence } from '@/lib/evidence-storage'
 import { formatParticipantsBlock } from '@/lib/job-intelligence-participants'
 import { enrichMessageSenders } from '@/lib/message-sender-labels'
+import { formatReportWhen } from '@/lib/format-report-datetime'
 import { SCHEDULE_EVENT_LABELS, isScheduleEventType } from '@/lib/schedule-types'
-
-function formatWhen(iso: string | null | undefined) {
-  if (!iso) return '—'
-  const t = Date.parse(iso)
-  if (Number.isNaN(t)) return iso
-  return new Date(t).toLocaleString(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  })
-}
 
 async function enrichNoteAuthors(
   supabase: SupabaseClient,
@@ -163,9 +154,13 @@ export async function gatherJobIntelligenceContext(
 }
 
 /** Plain-text bundle for the LLM (truncated where needed). */
-export function formatJobIntelligencePrompt(ctx: JobIntelligenceContext): string {
-  const projectStarted = formatWhen(
-    String(ctx.project.created_at || '')
+export function formatJobIntelligencePrompt(
+  ctx: JobIntelligenceContext,
+  timeZone?: string
+): string {
+  const projectStarted = formatReportWhen(
+    String(ctx.project.created_at || ''),
+    timeZone
   )
   const lines: string[] = [
     '=== ROLES (read carefully) ===',
@@ -187,14 +182,14 @@ export function formatJobIntelligencePrompt(ctx: JobIntelligenceContext): string
     `Job #: ${ctx.claim.claim_number}`,
     `Status: ${ctx.claim.status}`,
     `Job description: ${ctx.claim.notes || '(none)'}`,
-    `Job created: ${formatWhen(String(ctx.claim.created_at || ''))}`,
+    `Job created: ${formatReportWhen(String(ctx.claim.created_at || ''), timeZone)}`,
     '',
     '=== ALL JOBS ON PROJECT ===',
   ]
 
   for (const c of ctx.allClaims) {
     lines.push(
-      `- ${c.client_name} | status: ${c.status} | #${c.claim_number} | ${formatWhen(String(c.created_at || ''))}`
+      `- ${c.client_name} | status: ${c.status} | #${c.claim_number} | ${formatReportWhen(String(c.created_at || ''), timeZone)}`
     )
   }
 
@@ -204,7 +199,7 @@ export function formatJobIntelligencePrompt(ctx: JobIntelligenceContext): string
   } else {
     for (const e of ctx.timelineEvents.slice(-80)) {
       lines.push(
-        `[${formatWhen(e.created_at || e.event_date)}] (${e.client_name}) ${e.title}: ${e.description}`
+        `[${formatReportWhen(e.created_at || e.event_date, timeZone)}] (${e.client_name}) ${e.title}: ${e.description}`
       )
     }
   }
@@ -216,18 +211,7 @@ export function formatJobIntelligencePrompt(ctx: JobIntelligenceContext): string
     for (const n of ctx.internalNotes.slice(-60)) {
       const scope = n.claim_id ? `job-linked` : 'project'
       lines.push(
-        `[${formatWhen(n.created_at)}] ${n.author_name} (${n.note_kind}, ${scope}): ${n.body}`
-      )
-    }
-  }
-
-  lines.push('', '=== PROJECT MESSAGES ===')
-  if (!ctx.projectMessages.length) {
-    lines.push('(none)')
-  } else {
-    for (const m of ctx.projectMessages.slice(-80)) {
-      lines.push(
-        `[${formatWhen(m.created_at)}] ${m.sender_label}: ${m.body}`
+        `[${formatReportWhen(n.created_at, timeZone)}] ${n.author_name} (${n.note_kind}, ${scope}): ${n.body}`
       )
     }
   }
@@ -242,7 +226,7 @@ export function formatJobIntelligencePrompt(ctx: JobIntelligenceContext): string
         ? SCHEDULE_EVENT_LABELS[type]
         : type
       lines.push(
-        `[${formatWhen(String(ev.starts_at || ''))}] ${label} — ${ev.title || ''}: ${ev.description || ''}${ev.completed_at ? ' (completed)' : ''}`
+        `[${formatReportWhen(String(ev.starts_at || ''), timeZone)}] ${label} — ${ev.title || ''}: ${ev.description || ''}${ev.completed_at ? ' (completed)' : ''}`
       )
     }
   }
@@ -253,7 +237,7 @@ export function formatJobIntelligencePrompt(ctx: JobIntelligenceContext): string
   } else {
     for (const e of ctx.evidence.slice(-60)) {
       lines.push(
-        `[${formatWhen(e.created_at)}] (${e.client_name}) [${e.evidence_type}] ${e.file_name} — ${e.summary}${e.uploaded_by_label ? ` · ${e.uploaded_by_label}` : ''}`
+        `[${formatReportWhen(e.created_at, timeZone)}] (${e.client_name}) [${e.evidence_type}] ${e.file_name} — ${e.summary}${e.uploaded_by_label ? ` · ${e.uploaded_by_label}` : ''}`
       )
     }
   }

@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { formatReportWhen } from '@/lib/format-report-datetime'
 import { formatJobIntelligencePrompt } from '@/lib/gather-job-intelligence'
 import {
   formatParticipantsBlock,
@@ -8,23 +9,20 @@ import {
 import type { JobIntelligenceContext } from '@/lib/job-intelligence-types'
 import { normalizePdfCharacters } from '@/lib/pdf-text'
 
-function formatWhen(iso: string | null | undefined) {
-  if (!iso) return '—'
-  const t = Date.parse(iso)
-  if (Number.isNaN(t)) return iso
-  return new Date(t).toLocaleString(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  })
+function formatWhen(iso: string | null | undefined, timeZone?: string) {
+  return formatReportWhen(iso, timeZone)
 }
 
-export function buildFallbackOverview(ctx: JobIntelligenceContext): string {
+export function buildFallbackOverview(
+  ctx: JobIntelligenceContext,
+  timeZone?: string
+): string {
   const customer = String(ctx.project.customer_name || 'the customer')
   const address = String(ctx.project.project_address || 'the property')
   const jobRef = String(ctx.claim.claim_number || '')
   const loss = String(ctx.claim.loss_type || 'work')
   const status = String(ctx.claim.status || 'in progress')
-  const started = formatWhen(String(ctx.project.created_at || ''))
+  const started = formatWhen(String(ctx.project.created_at || ''), timeZone)
   const staff = listStaffParticipants(ctx)
 
   const completedEvent = [...ctx.timelineEvents]
@@ -36,7 +34,7 @@ export function buildFallbackOverview(ctx: JobIntelligenceContext): string {
     : ''
 
   const completedPhrase = completedEvent
-    ? ` The job reached a completed state by ${formatWhen(completedEvent.created_at || completedEvent.event_date)}.`
+    ? ` The job reached a completed state by ${formatWhen(completedEvent.created_at || completedEvent.event_date, timeZone)}.`
     : ''
 
   const docCount = ctx.evidence.length
@@ -62,7 +60,8 @@ RULES:
 - Return JSON only: { "overview": "..." }`
 
 export async function generateOverviewWithGroq(
-  ctx: JobIntelligenceContext
+  ctx: JobIntelligenceContext,
+  timeZone?: string
 ): Promise<string | null> {
   const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) return null
@@ -73,7 +72,7 @@ export async function generateOverviewWithGroq(
     const dataBlock = [
       formatParticipantsBlock(ctx),
       '',
-      formatJobIntelligencePrompt(ctx),
+      formatJobIntelligencePrompt(ctx, timeZone),
     ].join('\n')
 
     const completion = await groq.chat.completions.create({

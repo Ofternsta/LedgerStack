@@ -16,7 +16,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { claim_id, project_id } = await req.json()
+    const body = await req.json()
+    const claim_id = body.claim_id
+    const project_id = body.project_id
+    const timeZone =
+      typeof body.timezone === 'string' && body.timezone.trim()
+        ? body.timezone.trim()
+        : undefined
 
     if (!claim_id || !project_id) {
       return NextResponse.json(
@@ -57,7 +63,8 @@ export async function POST(req: Request) {
     const report = await generateJobIntelligenceReport(
       supabase,
       project_id,
-      claim_id
+      claim_id,
+      { timeZone }
     )
 
     if (!report) {

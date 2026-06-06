@@ -1,14 +1,16 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { JobIntelligenceSummary } from '@/components/job-intelligence-summary'
 import { LegalNotice } from '@/components/legal-notice'
 import type { JobIntelligenceReport } from '@/lib/job-intelligence-types'
+import { saveAiSummaryReport } from '@/lib/ai-summary-storage'
 import { isUnlimited } from '@/lib/plan-entitlements'
 
 type ProjectAiExportSectionProps = {
   claimId: string
   projectId: string
+  jobLabel?: string
   canGenerate: boolean
   canExportPdf: boolean
   canExportHtml: boolean
@@ -19,6 +21,7 @@ type ProjectAiExportSectionProps = {
 export function ProjectAiExportSection({
   claimId,
   projectId,
+  jobLabel = 'Job',
   canGenerate,
   canExportPdf,
   canExportHtml,
@@ -26,14 +29,18 @@ export function ProjectAiExportSection({
   aiSummariesUsed,
 }: ProjectAiExportSectionProps) {
   const [report, setReport] = useState<JobIntelligenceReport | null>(null)
+  const [summaryReady, setSummaryReady] = useState(false)
   const [loadingSummary, setLoadingSummary] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const aiAtLimit =
     !isUnlimited(aiSummariesLimit) && aiSummariesUsed >= aiSummariesLimit
 
+  const summaryViewHref = `/project/${projectId}/ai-summary?claim_id=${encodeURIComponent(claimId)}&job=${encodeURIComponent(jobLabel)}`
+
   useEffect(() => {
     setReport(null)
+    setSummaryReady(false)
     setError(null)
   }, [claimId, projectId])
 
@@ -41,16 +48,26 @@ export function ProjectAiExportSection({
     if (!canGenerate || aiAtLimit) return
     setLoadingSummary(true)
     setError(null)
+    setSummaryReady(false)
+
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
     const res = await fetch('/api/claim-summary', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ claim_id: claimId, project_id: projectId }),
+      body: JSON.stringify({
+        claim_id: claimId,
+        project_id: projectId,
+        timezone: timeZone,
+      }),
     })
     const payload = await res.json().catch(() => ({}))
     if (!res.ok) {
       setError(payload.error || 'Could not generate summary')
     } else if (payload.report) {
-      setReport(payload.report as JobIntelligenceReport)
+      const nextReport = payload.report as JobIntelligenceReport
+      setReport(nextReport)
+      saveAiSummaryReport(projectId, claimId, nextReport)
+      setSummaryReady(true)
     }
     setLoadingSummary(false)
   }
@@ -95,7 +112,7 @@ export function ProjectAiExportSection({
   }
 
   const showSection =
-    canGenerate || canExportPdf || canExportHtml || report !== null
+    canGenerate || canExportPdf || canExportHtml || summaryReady
 
   if (!showSection) return null
 
@@ -107,8 +124,8 @@ export function ProjectAiExportSection({
             AI summary &amp; export
           </h2>
           <p className="text-xs text-muted mt-1">
-            Full project report for the selected job — status, timeline,
-            messages, notes, calendar, and documents.
+            Full project report for the selected job — status, timeline, notes,
+            calendar, and documents.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -122,7 +139,15 @@ export function ProjectAiExportSection({
               {loadingSummary ? 'Generating…' : 'Generate AI summary'}
             </button>
           )}
-          {canExportPdf && (
+          {summaryReady && (
+            <Link
+              href={summaryViewHref}
+              className="text-sm btn-primary text-[#052e16] px-3 py-2 rounded-lg min-h-[40px] inline-flex items-center"
+            >
+              View AI summary
+            </Link>
+          )}
+          {canExportPdf && report && (
             <button
               type="button"
               onClick={() => exportReport('pdf')}
@@ -131,7 +156,7 @@ export function ProjectAiExportSection({
               Export PDF
             </button>
           )}
-          {canExportHtml && !canExportPdf && (
+          {canExportHtml && !canExportPdf && report && (
             <button
               type="button"
               onClick={() => exportReport('html')}
@@ -154,14 +179,21 @@ export function ProjectAiExportSection({
         <p className="text-sm alert-error rounded-lg p-2">{error}</p>
       )}
 
-      {!report && canGenerate && !loadingSummary && (
+      {!summaryReady && canGenerate && !loadingSummary && (
         <p className="text-sm text-muted-dim">
-          Generate a categorized summary first. Export uses that same report so
-          the PDF matches what you see here.
+          Generate a categorized summary, then open it on the dedicated AI
+          summary page. Export uses that same report.
         </p>
       )}
 
-      {report && <JobIntelligenceSummary report={report} />}
+      {summaryReady && (
+        <p className="text-sm text-muted">
+          Summary ready for {jobLabel}.{' '}
+          <Link href={summaryViewHref} className="text-brand-bright font-medium">
+            View AI summary →
+          </Link>
+        </p>
+      )}
 
       {(canExportPdf || canExportHtml) && <LegalNotice id="export-backup" />}
       {canGenerate && <LegalNotice id="ai" />}

@@ -74,7 +74,9 @@ export function JobIntelligenceSummary({ report }: JobIntelligenceSummaryProps) 
       </p>
 
       <div className="space-y-5">
-        {report.sections.map((section) => (
+        {report.sections
+          .filter((section) => (section.id as string) !== 'messages')
+          .map((section) => (
           <article
             key={section.id}
             className="border border-border rounded-xl p-4 bg-surface space-y-3"
