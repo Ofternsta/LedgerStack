@@ -1,14 +1,12 @@
 import { NextResponse } from 'next/server'
 import { extractTextFromFile } from '@/lib/extract-text'
-import { requireAuth } from '@/lib/require-auth'
+import { requireStaffWithActivePlan } from '@/lib/require-staff-with-plan'
 import { validateUploadSize } from '@/lib/upload-limits'
 
 export async function POST(req: Request) {
   try {
-    const { user } = await requireAuth()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const auth = await requireStaffWithActivePlan()
+    if (!auth.ok) return auth.response
 
     const formData = await req.formData()
     const file = formData.get('file') as File | null

@@ -1,18 +1,18 @@
 import { NextResponse } from 'next/server'
 import { generateClaimTimeline } from '@/lib/claim-ai'
 import { listEvidence } from '@/lib/evidence-storage'
-import { consumeAiSummary } from '@/lib/plan-enforcement'
+import { consumeAiSummary, refundAiSummary } from '@/lib/plan-enforcement'
 import { getOrgPlanContext } from '@/lib/org-plan'
-import { requireAuth } from '@/lib/require-auth'
+import { assertStaffProjectAiAccess } from '@/lib/project-staff-ai-access'
+import { requireAuthUser } from '@/lib/require-auth-user'
 
 export const maxDuration = 60
 
 export async function GET(req: Request) {
   try {
-    const { supabase, user } = await requireAuth()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const auth = await requireAuthUser()
+    if ('error' in auth) return auth.error
+    const { supabase, user } = auth
 
     const params = new URL(req.url).searchParams
     const claimId = params.get('claim_id')
@@ -21,6 +21,15 @@ export async function GET(req: Request) {
 
     if (!projectId) {
       return NextResponse.json({ error: 'project_id required' }, { status: 400 })
+    }
+
+    const access = await assertStaffProjectAiAccess(
+      supabase,
+      user.id,
+      projectId
+    )
+    if (!access.ok) {
+      return NextResponse.json({ error: access.error }, { status: access.status })
     }
 
     if (kind === 'status_updates') {
@@ -66,24 +75,7 @@ export async function GET(req: Request) {
       .eq('claim_id', claimId)
       .order('created_at', { ascending: true })
 
-    if (stored?.length) {
-      return NextResponse.json({ events: stored })
-    }
-
-    const { data: claim } = await supabase
-      .from('claims')
-      .select('*')
-      .eq('id', claimId)
-      .maybeSingle()
-
-    if (!claim) {
-      return NextResponse.json({ error: 'Job not found' }, { status: 404 })
-    }
-
-    const evidence = await listEvidence(supabase, projectId, claimId)
-    const events = await generateClaimTimeline(claim, evidence)
-
-    return NextResponse.json({ events })
+    return NextResponse.json({ events: stored || [] })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Timeline failed'
     return NextResponse.json({ error: message }, { status: 500 })
@@ -92,10 +84,9 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const { supabase, user } = await requireAuth()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const auth = await requireAuthUser()
+    if ('error' in auth) return auth.error
+    const { supabase, user } = auth
 
     const { claim_id, project_id, persist } = await req.json()
 
@@ -104,6 +95,15 @@ export async function POST(req: Request) {
         { error: 'claim_id and project_id required' },
         { status: 400 }
       )
+    }
+
+    const access = await assertStaffProjectAiAccess(
+      supabase,
+      user.id,
+      project_id
+    )
+    if (!access.ok) {
+      return NextResponse.json({ error: access.error }, { status: access.status })
     }
 
     const { data: claim } = await supabase
@@ -135,6 +135,9 @@ export async function POST(req: Request) {
       )
     }
 
+    const evidence = await listEvidence(supabase, project_id, claim_id)
+    const events = await generateClaimTimeline(claim, evidence)
+
     const aiCheck = await consumeAiSummary(
       project.organization_id,
       planCtx.entitlements
@@ -146,25 +149,34 @@ export async function POST(req: Request) {
       )
     }
 
-    const evidence = await listEvidence(supabase, project_id, claim_id)
-    const events = await generateClaimTimeline(claim, evidence)
-
     if (persist && events.length) {
-      await supabase
+      const { error: deleteError } = await supabase
         .from('claim_timeline_events')
         .delete()
         .eq('claim_id', claim_id)
         .in('source', ['ai', 'evidence'])
 
-      await supabase.from('claim_timeline_events').insert(
-        events.map((e) => ({
-          claim_id,
-          event_date: e.event_date,
-          title: e.title,
-          description: e.description,
-          source: e.source,
-        }))
-      )
+      if (deleteError) {
+        await refundAiSummary(project.organization_id)
+        return NextResponse.json({ error: deleteError.message }, { status: 500 })
+      }
+
+      const { error: insertError } = await supabase
+        .from('claim_timeline_events')
+        .insert(
+          events.map((e) => ({
+            claim_id,
+            event_date: e.event_date,
+            title: e.title,
+            description: e.description,
+            source: e.source,
+          }))
+        )
+
+      if (insertError) {
+        await refundAiSummary(project.organization_id)
+        return NextResponse.json({ error: insertError.message }, { status: 500 })
+      }
     }
 
     return NextResponse.json({ events })

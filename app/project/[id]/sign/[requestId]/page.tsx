@@ -26,7 +26,7 @@ export default function SignDocumentPage() {
   const syncCompletion = useCallback(async () => {
     if (completingRef.current) return
     completingRef.current = true
-    setDone(true)
+    setError(null)
 
     const res = await fetch(`/api/signature-requests/${requestId}`, {
       method: 'POST',
@@ -40,6 +40,7 @@ export default function SignDocumentPage() {
       completingRef.current = false
       return
     }
+    setDone(true)
     router.replace(`/project/${projectId}?signed=1`)
   }, [requestId, projectId, router])
 

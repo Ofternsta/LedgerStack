@@ -38,18 +38,23 @@ export async function listEvidence(
 
     if (error || !data) continue
 
-    for (const item of data) {
-      if (
-        !item.name ||
-        item.name.endsWith('.meta.json') ||
-        item.name.endsWith('.json')
-      )
-        continue
-      if (!item.id) continue
+    const candidates = data.filter(
+      (item) =>
+        item.name &&
+        !item.name.endsWith('.meta.json') &&
+        !item.name.endsWith('.json') &&
+        item.id
+    )
 
-      const filePath = `${prefix}/${item.name}`
-      const meta = await readEvidenceMeta(supabase, filePath)
+    const metas = await Promise.all(
+      candidates.map(async (item) => {
+        const filePath = `${prefix}/${item.name}`
+        const meta = await readEvidenceMeta(supabase, filePath)
+        return { filePath, item, meta }
+      })
+    )
 
+    for (const { filePath, item, meta } of metas) {
       if (meta) {
         if (meta.claim_id === claimId) records.push(meta)
         continue
@@ -59,7 +64,7 @@ export async function listEvidence(
         records.push({
           id: filePath,
           claim_id: claimId,
-          file_name: item.name,
+          file_name: item.name!,
           file_path: filePath,
           file_type: '',
           evidence_type: 'Unknown',

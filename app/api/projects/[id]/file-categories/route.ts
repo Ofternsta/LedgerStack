@@ -13,6 +13,8 @@ import { repairSignedEvidenceOnProject } from '@/lib/repair-signed-evidence'
 import { createServiceClient } from '@/lib/supabase/service'
 import { requireAuth } from '@/lib/require-auth'
 import { touchProjectActivity } from '@/lib/touch-project-activity'
+import { listAllProjectEvidence } from '@/lib/evidence-storage'
+import { updateEvidenceMeta } from '@/lib/update-evidence-meta'
 
 type RouteContext = { params: Promise<{ id: string }> }
 
@@ -39,23 +41,10 @@ async function remapEvidenceCategories(
   const fallbackLabel = next[0]?.label
   if (!fallbackLabel) return
 
-  const prevByKey = new Map(previous.map((c) => [c.key, c.label]))
   const nextKeys = new Set(next.map((c) => c.key))
+  const files = await listAllProjectEvidence(service, projectId)
 
-  const { data: claims } = await service
-    .from('claims')
-    .select('id')
-    .eq('project_id', projectId)
-
-  const claimIds = (claims || []).map((c) => c.id)
-  if (!claimIds.length) return
-
-  const { data: evidence } = await service
-    .from('claim_evidence')
-    .select('id, evidence_type')
-    .in('claim_id', claimIds)
-
-  for (const row of evidence || []) {
+  for (const row of files) {
     const raw = row.evidence_type as string
     let newLabel: string | null = null
 
@@ -79,18 +68,24 @@ async function remapEvidenceCategories(
     }
 
     if (newLabel && newLabel !== raw) {
-      await service
-        .from('claim_evidence')
-        .update({ evidence_type: newLabel })
-        .eq('id', row.id)
+      try {
+        await updateEvidenceMeta(service, row.file_path, {
+          evidence_type: newLabel,
+        })
+      } catch (err) {
+        console.warn('Failed to remap evidence category:', row.file_path, err)
+      }
     }
   }
 }
 
-export async function GET(_req: Request, context: RouteContext) {
+export async function GET(req: Request, context: RouteContext) {
   try {
     const { id: projectId } = await context.params
-    const { supabase } = await requireAuth()
+    const { supabase, user } = await requireAuth()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
     const project = await loadProject(supabase, projectId)
     if (!project) {
@@ -102,7 +97,15 @@ export async function GET(_req: Request, context: RouteContext) {
       service,
       projectId
     )
-    await repairSignedEvidenceOnProject(service, projectId)
+
+    const url = new URL(req.url)
+    const repair = url.searchParams.get('repair') === '1'
+    if (repair) {
+      const { access } = await loadUserAccessServer()
+      if (access?.canManageSystemSettings) {
+        await repairSignedEvidenceOnProject(service, projectId)
+      }
+    }
 
     return NextResponse.json({ categories })
   } catch (err: unknown) {

@@ -9,6 +9,8 @@ LedgerStack uses [SignWell](https://www.signwell.com/api/) for legally binding t
 
 ```env
 SIGNWELL_API_KEY=your_api_key
+# Webhook HMAC secret — copy the hook "id" from POST /api/v1/hooks response
+SIGNWELL_WEBHOOK_ID=your_webhook_id
 # Use true while testing (watermarked, non-binding). Set false in production.
 SIGNWELL_TEST_MODE=true
 ```
@@ -36,6 +38,8 @@ curl "https://www.signwell.com/api/v1/hooks" \
 ```
 
 SignWell posts **all** document lifecycle events to that URL (there is no per-event checkbox in the API). LedgerStack handles `document_viewed`, `document_completed`, `document_declined`, and `document_expired`.
+
+**Webhook verification:** LedgerStack rejects unsigned callbacks. Each POST must include an `X-SignWell-Signature` header: HMAC-SHA256 of `{event_type}@{event_time}` using `SIGNWELL_WEBHOOK_ID` as the secret. Set `SIGNWELL_WEBHOOK_ID` in Vercel to the hook id returned when you register the webhook.
 
 Your LedgerStack endpoint health check (browser GET):
 

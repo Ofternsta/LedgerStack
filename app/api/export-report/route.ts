@@ -1,13 +1,16 @@
 import { NextResponse } from 'next/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import {
   buildHtmlJobReport,
   buildPdfJobReport,
 } from '@/lib/export-report-builders'
 import { generateJobIntelligenceReport } from '@/lib/job-intelligence-summary'
 import type { JobIntelligenceReport } from '@/lib/job-intelligence-types'
-import { consumeAiSummary } from '@/lib/plan-enforcement'
+import { loadJobAiSummary } from '@/lib/job-ai-summary-storage-server'
+import { consumeAiSummary, refundAiSummary } from '@/lib/plan-enforcement'
 import { getOrgPlanContext } from '@/lib/org-plan'
-import { requireAuth } from '@/lib/require-auth'
+import { assertStaffProjectAiAccess } from '@/lib/project-staff-ai-access'
+import { requireAuthUser } from '@/lib/require-auth-user'
 
 export const maxDuration = 90
 
@@ -52,11 +55,16 @@ function exportFileResponse(
 }
 
 async function authorizeExport(
-  supabase: Awaited<ReturnType<typeof requireAuth>>['supabase'],
+  supabase: SupabaseClient,
+  userId: string,
   projectId: string,
-  claimId: string,
-  options?: { skipAiQuota?: boolean }
+  claimId: string
 ) {
+  const access = await assertStaffProjectAiAccess(supabase, userId, projectId)
+  if (!access.ok) {
+    return { error: NextResponse.json({ error: access.error }, { status: access.status }) }
+  }
+
   const { data: project } = await supabase
     .from('projects')
     .select('organization_id')
@@ -93,46 +101,19 @@ async function authorizeExport(
     }
   }
 
-  if (!options?.skipAiQuota) {
-    const aiCheck = await consumeAiSummary(
-      project.organization_id,
-      planCtx.entitlements
-    )
-    if (!aiCheck.ok) {
-      return {
-        error: NextResponse.json(
-          { error: aiCheck.error, used: aiCheck.used, limit: aiCheck.limit },
-          { status: 403 }
-        ),
-      }
-    }
+  return {
+    organizationId: project.organization_id,
+    entitlements: planCtx.entitlements,
+    claimId,
+    projectId,
   }
-
-  return { organizationId: project.organization_id }
-}
-
-function isValidReport(
-  report: unknown,
-  claimId: string,
-  projectId: string
-): report is JobIntelligenceReport {
-  if (!report || typeof report !== 'object') return false
-  const r = report as JobIntelligenceReport
-  return (
-    r.claimId === claimId &&
-    r.projectId === projectId &&
-    typeof r.overview === 'string' &&
-    Array.isArray(r.sections) &&
-    r.sections.length > 0
-  )
 }
 
 export async function GET(req: Request) {
   try {
-    const { supabase, user } = await requireAuth()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const auth = await requireAuthUser()
+    if ('error' in auth) return auth.error
+    const { supabase, user } = auth
 
     const params = new URL(req.url).searchParams
     const claimId = params.get('claim_id')
@@ -146,17 +127,27 @@ export async function GET(req: Request) {
       )
     }
 
-    const auth = await authorizeExport(supabase, projectId, claimId)
-    if ('error' in auth && auth.error) return auth.error
+    const authz = await authorizeExport(supabase, user.id, projectId, claimId)
+    if ('error' in authz && authz.error) return authz.error
 
-    const report = await generateJobIntelligenceReport(
-      supabase,
-      projectId,
-      claimId
-    )
+    let report = await loadJobAiSummary(supabase, projectId, claimId)
 
     if (!report) {
-      return NextResponse.json({ error: 'Job not found' }, { status: 404 })
+      report = await generateJobIntelligenceReport(supabase, projectId, claimId)
+      if (!report) {
+        return NextResponse.json({ error: 'Job not found' }, { status: 404 })
+      }
+
+      const aiCheck = await consumeAiSummary(
+        authz.organizationId,
+        authz.entitlements
+      )
+      if (!aiCheck.ok) {
+        return NextResponse.json(
+          { error: aiCheck.error, used: aiCheck.used, limit: aiCheck.limit },
+          { status: 403 }
+        )
+      }
     }
 
     return exportFileResponse(report, format)
@@ -166,19 +157,17 @@ export async function GET(req: Request) {
   }
 }
 
-/** Export the on-screen report so PDF matches Generate AI summary. */
+/** Export a saved or freshly generated report. */
 export async function POST(req: Request) {
   try {
-    const { supabase, user } = await requireAuth()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const auth = await requireAuthUser()
+    if ('error' in auth) return auth.error
+    const { supabase, user } = auth
 
     const body = await req.json().catch(() => ({}))
     const claimId = body.claim_id as string | undefined
     const projectId = body.project_id as string | undefined
     const format = (body.format as string | undefined) || 'pdf'
-    const report = body.report as unknown
 
     if (!claimId || !projectId) {
       return NextResponse.json(
@@ -187,32 +176,43 @@ export async function POST(req: Request) {
       )
     }
 
-    const auth = await authorizeExport(supabase, projectId, claimId, {
-      skipAiQuota: isValidReport(report, claimId, projectId),
-    })
-    if ('error' in auth && auth.error) return auth.error
+    const authz = await authorizeExport(supabase, user.id, projectId, claimId)
+    if ('error' in authz && authz.error) return authz.error
 
-    let exportReport: JobIntelligenceReport | null = isValidReport(
-      report,
-      claimId,
-      projectId
-    )
-      ? report
-      : null
+    let report = await loadJobAiSummary(supabase, projectId, claimId)
 
-    if (!exportReport) {
-      exportReport = await generateJobIntelligenceReport(
-        supabase,
-        projectId,
-        claimId
+    if (!report) {
+      report = await generateJobIntelligenceReport(supabase, projectId, claimId)
+      if (!report) {
+        return NextResponse.json({ error: 'Job not found' }, { status: 404 })
+      }
+
+      const aiCheck = await consumeAiSummary(
+        authz.organizationId,
+        authz.entitlements
       )
+      if (!aiCheck.ok) {
+        return NextResponse.json(
+          { error: aiCheck.error, used: aiCheck.used, limit: aiCheck.limit },
+          { status: 403 }
+        )
+      }
+
+      const { saveJobAiSummary } = await import('@/lib/job-ai-summary-storage-server')
+      const saved = await saveJobAiSummary(supabase, {
+        organizationId: authz.organizationId,
+        projectId,
+        claimId,
+        generatedBy: user.id,
+        report,
+      })
+      if (saved.error) {
+        await refundAiSummary(authz.organizationId)
+        return NextResponse.json({ error: saved.error }, { status: 500 })
+      }
     }
 
-    if (!exportReport) {
-      return NextResponse.json({ error: 'Job not found' }, { status: 404 })
-    }
-
-    return exportFileResponse(exportReport, format)
+    return exportFileResponse(report, format)
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Export failed'
     return NextResponse.json({ error: message }, { status: 500 })

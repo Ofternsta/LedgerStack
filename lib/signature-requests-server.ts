@@ -155,6 +155,36 @@ export async function createSignatureRequest(input: {
   const requestId = crypto.randomUUID()
   const signUrl = signatureSignPageUrl(input.projectId, requestId)
   const redirectUrl = `${signUrl}?completed=1`
+  const now = new Date().toISOString()
+
+  const pendingRow = {
+    id: requestId,
+    organization_id: project.organization_id,
+    project_id: input.projectId,
+    project_client_access_id: input.projectClientAccessId,
+    client_email: clientEmail,
+    source_file_path: input.sourceFilePath,
+    source_file_name: file.file_name,
+    claim_id: file.claim_id || null,
+    signwell_document_id: null,
+    embedded_signing_url: null,
+    status: 'pending' as const,
+    signed_file_path: null,
+    typed_signer_name: null,
+    requested_by_user_id: input.adminUserId,
+    requested_at: now,
+    completed_at: null,
+    created_at: now,
+    updated_at: now,
+  }
+
+  const { error: insertError } = await service
+    .from('signature_requests')
+    .insert(pendingRow)
+
+  if (insertError) {
+    return { ok: false, error: insertError.message, status: 500 }
+  }
 
   const signwell = await createSignWellDocument({
     name: file.file_name,
@@ -175,6 +205,7 @@ export async function createSignatureRequest(input: {
   })
 
   if (!signwell.ok) {
+    await service.from('signature_requests').delete().eq('id', requestId)
     console.error('[signwell create document]', signwell.error)
     return {
       ok: false,
@@ -183,36 +214,24 @@ export async function createSignatureRequest(input: {
     }
   }
 
-  const now = new Date().toISOString()
-  const row = {
-    id: requestId,
-    organization_id: project.organization_id,
-    project_id: input.projectId,
-    project_client_access_id: input.projectClientAccessId,
-    client_email: clientEmail,
-    source_file_path: input.sourceFilePath,
-    source_file_name: file.file_name,
-    claim_id: file.claim_id || null,
-    signwell_document_id: signwell.document.id,
-    embedded_signing_url: signwell.embeddedSigningUrl,
-    status: 'pending' as const,
-    signed_file_path: null,
-    typed_signer_name: null,
-    requested_by_user_id: input.adminUserId,
-    requested_at: now,
-    completed_at: null,
-    created_at: now,
-    updated_at: now,
-  }
-
-  const { data: inserted, error: insertError } = await service
+  const { data: inserted, error: updateError } = await service
     .from('signature_requests')
-    .insert(row)
+    .update({
+      signwell_document_id: signwell.document.id,
+      embedded_signing_url: signwell.embeddedSigningUrl,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', requestId)
     .select('*')
     .single()
 
-  if (insertError || !inserted) {
-    return { ok: false, error: insertError?.message || 'Could not save request', status: 500 }
+  if (updateError || !inserted) {
+    await service.from('signature_requests').delete().eq('id', requestId)
+    return {
+      ok: false,
+      error: updateError?.message || 'Could not save request',
+      status: 500,
+    }
   }
 
   const sharedPaths = await getSharedFilePaths(input.projectClientAccessId)
@@ -296,7 +315,13 @@ export async function completeSignatureRequest(
   }
 
   if (request.status === 'signed' && request.signed_file_path) {
-    return { ok: true }
+    const existingMeta = await readEvidenceMeta(
+      service,
+      request.signed_file_path
+    )
+    if (existingMeta) {
+      return { ok: true }
+    }
   }
 
   if (!request.signwell_document_id) {
@@ -396,9 +421,28 @@ export async function completeSignatureRequest(
   const signerLabel =
     options?.typedSignerName?.trim() || request.client_email
 
+  const resolvedClaimId =
+    claimId || sourceMeta?.claim_id || null
+  if (!resolvedClaimId) {
+    await service
+      .from('signature_requests')
+      .update({
+        status: 'pending',
+        signed_file_path: null,
+        completed_at: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', requestId)
+
+    return {
+      ok: false,
+      error: 'Could not determine which job this signed document belongs to.',
+    }
+  }
+
   const record = {
     id: newEvidenceId(),
-    claim_id: claimId || sourceMeta?.claim_id || request.project_id,
+    claim_id: resolvedClaimId,
     file_name: signedName,
     file_path: signedFilePath,
     file_type: 'application/pdf',
@@ -538,6 +582,7 @@ export async function handleSignWellWebhookEvent(eventType: string, data: unknow
       .from('signature_requests')
       .update({ status: 'declined', updated_at: new Date().toISOString() })
       .eq('id', requestId)
+      .in('status', ['pending', 'viewed'])
     return
   }
 
@@ -546,6 +591,7 @@ export async function handleSignWellWebhookEvent(eventType: string, data: unknow
       .from('signature_requests')
       .update({ status: 'expired', updated_at: new Date().toISOString() })
       .eq('id', requestId)
+      .in('status', ['pending', 'viewed'])
     return
   }
 

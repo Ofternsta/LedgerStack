@@ -1,3 +1,6 @@
+-- ⚠️ DEPRECATED — DO NOT RUN ON PRODUCTION
+-- This script grants the anon role full read/write on projects and claims.
+-- Use authenticated RLS policies instead (see security-hardening.sql and security-audit-fixes.sql).
 -- Run once in Supabase Dashboard → SQL Editor
 -- Fixes: "permission denied for table claims" on create, and Delete not working
 

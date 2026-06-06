@@ -4,7 +4,7 @@ function normalizeName(value: string) {
   return value.trim().toLowerCase()
 }
 
-/** Contractor staff who posted messages or notes (excludes the project customer). */
+/** Contractor staff who posted internal notes (excludes the project customer). */
 export function listStaffParticipants(ctx: JobIntelligenceContext): string[] {
   const customer = normalizeName(String(ctx.project.customer_name || ''))
   const seen = new Set<string>()
@@ -20,9 +20,6 @@ export function listStaffParticipants(ctx: JobIntelligenceContext): string[] {
     out.push(trimmed)
   }
 
-  for (const m of ctx.projectMessages) {
-    add(m.sender_label)
-  }
   for (const n of ctx.internalNotes) {
     add(n.author_name)
   }
@@ -37,7 +34,7 @@ export function formatParticipantsBlock(ctx: JobIntelligenceContext): string {
     `Project customer (property owner — NOT contractor staff): ${customer}`,
     staff.length
       ? `Contractor staff involved: ${staff.join('; ')}`
-      : 'Contractor staff involved: (none named in messages or notes)',
+      : 'Contractor staff involved: (none named in internal notes)',
   ]
   return lines.join('\n')
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { handleSignWellWebhookEvent } from '@/lib/signature-requests-server'
+import { verifySignWellWebhookEvent } from '@/lib/signwell-webhook'
 
 type SignWellWebhookBody = {
   event?: {
@@ -29,11 +30,21 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const body = (await req.json().catch(() => ({}))) as SignWellWebhookBody
-  const eventType = body.event?.type
+  const rawBody = await req.text()
+  let body: SignWellWebhookBody
+  try {
+    body = JSON.parse(rawBody) as SignWellWebhookBody
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
 
+  const eventType = body.event?.type
   if (!eventType) {
     return NextResponse.json({ error: 'Missing event type' }, { status: 400 })
+  }
+
+  if (!verifySignWellWebhookEvent(body.event || {})) {
+    return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 })
   }
 
   const data = {

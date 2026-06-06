@@ -1,3 +1,6 @@
+-- ⚠️ DEPRECATED — DO NOT RUN ON PRODUCTION
+-- These policies allow the anon role to read/write/delete all files in project-files.
+-- Production should use authenticated storage policies (see security-audit-fixes.sql).
 -- Run in Supabase SQL Editor if uploads fail with "row-level security" or permission errors
 -- Bucket name must be: project-files
 

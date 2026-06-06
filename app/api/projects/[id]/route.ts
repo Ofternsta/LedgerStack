@@ -1,9 +1,51 @@
 import { NextResponse } from 'next/server'
+import { deleteProjectServer } from '@/lib/delete-project-server'
 import { loadUserAccessServer } from '@/lib/load-access-server'
 import { requireAuth } from '@/lib/require-auth'
+import { createServiceClient } from '@/lib/supabase/service'
 import { touchProjectActivity } from '@/lib/touch-project-activity'
 
 type RouteContext = { params: Promise<{ id: string }> }
+
+export async function DELETE(_req: Request, context: RouteContext) {
+  try {
+    const { id: projectId } = await context.params
+    const { supabase, user } = await requireAuth()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { access } = await loadUserAccessServer()
+    if (!access?.canDeleteProject) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const { data: project } = await supabase
+      .from('projects')
+      .select('id, organization_id')
+      .eq('id', projectId)
+      .maybeSingle()
+
+    if (!project?.organization_id) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
+
+    if (project.organization_id !== access.organizationId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const service = createServiceClient()
+    const { error } = await deleteProjectServer(service, projectId)
+    if (error) {
+      return NextResponse.json({ error }, { status: 500 })
+    }
+
+    return NextResponse.json({ ok: true })
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Delete failed'
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
+}
 
 export async function PATCH(req: Request, context: RouteContext) {
   try {

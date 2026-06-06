@@ -44,12 +44,20 @@ export async function canAccessProjectMessages(
   if (!role || role === 'client') return false
 
   if (role === 'admin') {
-    const { data: project, error } = await supabase
+    const { data: project } = await supabase
       .from('projects')
-      .select('id')
+      .select('id, organization_id')
       .eq('id', projectId)
       .maybeSingle()
-    return !error && Boolean(project)
+    if (!project?.organization_id) return false
+
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('id')
+      .eq('id', project.organization_id)
+      .eq('admin_user_id', userId)
+      .maybeSingle()
+    return Boolean(org)
   }
 
   if (role === 'worker') {

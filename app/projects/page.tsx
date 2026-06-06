@@ -13,7 +13,6 @@ import { ClientSignatureBanner } from '@/components/client-signature-banner'
 import { AdminSignatureNotificationsBanner } from '@/components/admin-signature-notifications-banner'
 import { isUnlimited } from '@/lib/plan-entitlements'
 import { linkClientAccessByEmail } from '@/lib/auth-signup'
-import { deleteProject } from '@/lib/delete-project'
 import { loadUserAccess } from '@/lib/load-access'
 import type { UserAccess } from '@/lib/roles'
 import { supabase } from '@/lib/supabase'
@@ -151,11 +150,12 @@ export default function ProjectsPage() {
     if (!ok) return
 
     setDeletingId(project.id)
-    const err = await deleteProject(project.id)
-    if (err) {
-      alert(err)
-    } else {
-      if (access) await fetchProjects(access.role)
+    const res = await fetch(`/api/projects/${project.id}`, { method: 'DELETE' })
+    const payload = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      alert(payload.error || 'Could not delete project.')
+    } else if (access) {
+      await fetchProjects(access.role)
     }
     setDeletingId(null)
   }

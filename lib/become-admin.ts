@@ -21,6 +21,20 @@ export async function convertWorkerToAdmin(
     return { error: 'Profile not found. Sign out and sign in again.' }
   }
 
+  if (profile.role === 'client') {
+    return {
+      error: 'Client accounts cannot create an admin organization this way.',
+    }
+  }
+
+  if (profile.role === 'admin') {
+    return { error: 'You already have an admin account.' }
+  }
+
+  if (profile.role !== 'worker') {
+    return { error: 'Only worker accounts can convert to admin.' }
+  }
+
   const { data: existingOrg } = await supabase
     .from('organizations')
     .select('id')

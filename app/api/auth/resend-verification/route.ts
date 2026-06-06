@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { enforceRateLimit } from '@/lib/api-rate-limit'
 import { parseBillingPlan } from '@/lib/admin-billing-setup'
 import { signupEmailVerifiedNextPath } from '@/lib/auth-redirect'
 import { sendSignupConfirmationEmail } from '@/lib/auth-email'
@@ -7,6 +8,9 @@ import { normalizeSignupEmail } from '@/lib/trial-eligibility'
 
 export async function POST(req: Request) {
   try {
+    const limited = await enforceRateLimit(req, 'auth:resend-verification', 5)
+    if (limited) return limited
+
     const body = await req.json().catch(() => ({}))
     const email = normalizeSignupEmail(String(body.email || ''))
 
@@ -32,10 +36,7 @@ export async function POST(req: Request) {
       nextPath: signupEmailVerifiedNextPath(plan, email),
     })
     if (!result.ok) {
-      return NextResponse.json(
-        { error: result.error || 'Could not send verification email' },
-        { status: 500 }
-      )
+      console.warn('resend verification failed:', result.error)
     }
 
     return NextResponse.json({ ok: true })

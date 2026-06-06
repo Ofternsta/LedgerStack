@@ -74,6 +74,29 @@ export async function POST(req: Request) {
         )
       }
 
+      const { data: project } = await supabase
+        .from('projects')
+        .select('organization_id')
+        .eq('id', projectId)
+        .maybeSingle()
+
+      if (!project?.organization_id) {
+        return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+      }
+
+      const uploadGate = await assertProjectMemberPermission(
+        supabase,
+        user.id,
+        projectId,
+        'can_upload'
+      )
+      if (!uploadGate.ok) {
+        return NextResponse.json(
+          { error: uploadGate.error },
+          { status: uploadGate.status }
+        )
+      }
+
       file = await fileFromStorage(supabase, existingPath, fileName, fileType)
     } else {
       const formData = await req.formData()

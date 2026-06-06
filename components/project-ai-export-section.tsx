@@ -4,10 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { LegalNotice } from '@/components/legal-notice'
 import type { JobIntelligenceReport } from '@/lib/job-intelligence-types'
-import {
-  loadAiSummaryReport,
-  saveAiSummaryReport,
-} from '@/lib/ai-summary-storage'
+import { fetchSavedAiSummary } from '@/lib/ai-summary-storage'
 import { isUnlimited } from '@/lib/plan-entitlements'
 
 type ProjectAiExportSectionProps = {
@@ -34,6 +31,7 @@ export function ProjectAiExportSection({
   const [report, setReport] = useState<JobIntelligenceReport | null>(null)
   const [summaryReady, setSummaryReady] = useState(false)
   const [loadingSummary, setLoadingSummary] = useState(false)
+  const [loadingSaved, setLoadingSaved] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const aiAtLimit =
@@ -43,14 +41,18 @@ export function ProjectAiExportSection({
 
   useEffect(() => {
     setError(null)
-    const stored = loadAiSummaryReport(projectId, claimId)
-    if (stored) {
-      setReport(stored)
-      setSummaryReady(true)
-    } else {
-      setReport(null)
-      setSummaryReady(false)
-    }
+    setLoadingSaved(true)
+    fetchSavedAiSummary(projectId, claimId)
+      .then((stored) => {
+        if (stored) {
+          setReport(stored)
+          setSummaryReady(true)
+        } else {
+          setReport(null)
+          setSummaryReady(false)
+        }
+      })
+      .finally(() => setLoadingSaved(false))
   }, [claimId, projectId])
 
   async function generateSummary() {
@@ -74,49 +76,42 @@ export function ProjectAiExportSection({
     } else if (payload.report) {
       const nextReport = payload.report as JobIntelligenceReport
       setReport(nextReport)
-      saveAiSummaryReport(projectId, claimId, nextReport)
       setSummaryReady(true)
     }
     setLoadingSummary(false)
   }
 
   async function exportReport(format: 'pdf' | 'html') {
-    if (report) {
-      const res = await fetch('/api/export-report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          claim_id: claimId,
-          project_id: projectId,
-          format,
-          report,
-        }),
-      })
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}))
-        setError(payload.error || 'Export failed')
-        return
-      }
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download =
-        format === 'pdf'
-          ? `project-report-${report.jobLabel.replace(/[^a-zA-Z0-9.-]/g, '_')}.pdf`
-          : `project-report-${report.jobLabel.replace(/[^a-zA-Z0-9.-]/g, '_')}.html`
-      if (format === 'html') {
-        window.open(url, '_blank')
-        window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
-      } else {
-        a.click()
-        URL.revokeObjectURL(url)
-      }
+    if (!report) return
+    const res = await fetch('/api/export-report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        claim_id: claimId,
+        project_id: projectId,
+        format,
+      }),
+    })
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}))
+      setError(payload.error || 'Export failed')
       return
     }
-
-    const url = `/api/export-report?claim_id=${claimId}&project_id=${projectId}&format=${format}`
-    window.open(url, '_blank')
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download =
+      format === 'pdf'
+        ? `project-report-${report.jobLabel.replace(/[^a-zA-Z0-9.-]/g, '_')}.pdf`
+        : `project-report-${report.jobLabel.replace(/[^a-zA-Z0-9.-]/g, '_')}.html`
+    if (format === 'html') {
+      window.open(url, '_blank')
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
+    } else {
+      a.click()
+      URL.revokeObjectURL(url)
+    }
   }
 
   const showSection =
@@ -141,7 +136,7 @@ export function ProjectAiExportSection({
             <button
               type="button"
               onClick={generateSummary}
-              disabled={loadingSummary || aiAtLimit}
+              disabled={loadingSummary || aiAtLimit || loadingSaved}
               className="text-sm btn-primary text-[#052e16] px-3 py-2 rounded-lg min-h-[40px] disabled:opacity-50"
             >
               {loadingSummary ? 'Generating…' : 'Generate AI summary'}
@@ -187,10 +182,10 @@ export function ProjectAiExportSection({
         <p className="text-sm alert-error rounded-lg p-2">{error}</p>
       )}
 
-      {!summaryReady && canGenerate && !loadingSummary && (
+      {!summaryReady && canGenerate && !loadingSummary && !loadingSaved && (
         <p className="text-sm text-muted-dim">
           Generate a categorized summary, then open it on the dedicated AI
-          summary page. Export uses that same report.
+          summary page. Export uses that same saved report.
         </p>
       )}
 

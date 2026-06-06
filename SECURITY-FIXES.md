@@ -10,9 +10,9 @@ This guide walks you through closing the main vulnerabilities. Do the steps **in
 |-----|----------------|
 | **Removed `/api/clear-demo`** | No one on the internet can trigger a service-role data wipe |
 | **`complete-signup` blocks `admin`** | You cannot create a free company admin via `signUp` metadata |
-| **`/api/extract` and `/api/summarize` require login** | Random visitors cannot burn your Groq API budget |
-| **Evidence edit/delete** | Only the real **organization admin** (not `profiles.role` hack) |
-| **`security-hardening.sql`** | Stops billing bypass + invite-code leak + role self-escalation |
+| **`/api/extract` and `/api/summarize` require staff + active plan** | Random visitors and clients cannot burn your Groq API budget |
+| **`supabase/security-audit-fixes.sql`** | Atomic AI quota, server-stored summaries, rate limits, RLS/storage hardening |
+| **SignWell webhook HMAC** | Forged completion callbacks are rejected without `SIGNWELL_WEBHOOK_ID` |
 
 You still must **run the SQL** and **redeploy** for production to be protected.
 
@@ -27,6 +27,8 @@ This is the most important step for **billing bypass** and **invite codes**.
 3. Open this file in your project: `supabase/security-hardening.sql`
 4. Copy the **entire file** and paste it into the SQL Editor.
 5. Click **Run**.
+6. Repeat for **`supabase/security-audit-fixes.sql`** (AI summaries table, atomic quota, rate limits, storage/RLS fixes).
+7. If you use worker download permissions, run **`supabase/worker-download-permission.sql`**.
 
 You should see **Success**. If you get an error about a missing function `is_org_admin`, run `supabase/roles-and-orgs.sql` first (it defines that helper), then run `security-hardening.sql` again.
 

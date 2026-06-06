@@ -25,10 +25,21 @@ export async function GET(req: Request) {
       return NextResponse.json({ requests: [], pending_count: 0 })
     }
 
+    const { data: accessRows } = await service
+      .from('project_client_access')
+      .select('id')
+      .eq('status', 'approved')
+      .or(`user_id.eq.${user.id},client_email.eq.${email}`)
+
+    const accessIds = (accessRows || []).map((row) => row.id)
+    if (!accessIds.length) {
+      return NextResponse.json({ requests: [], pending_count: 0 })
+    }
+
     let query = service
       .from('signature_requests')
       .select('*')
-      .eq('client_email', email)
+      .in('project_client_access_id', accessIds)
       .order('requested_at', { ascending: false })
 
     if (projectId) {

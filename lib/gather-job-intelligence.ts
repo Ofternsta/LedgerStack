@@ -4,7 +4,6 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { JobIntelligenceContext } from '@/lib/job-intelligence-types'
 import { listEvidence } from '@/lib/evidence-storage'
 import { formatParticipantsBlock } from '@/lib/job-intelligence-participants'
-import { enrichMessageSenders } from '@/lib/message-sender-labels'
 import { formatReportWhen } from '@/lib/format-report-datetime'
 import { SCHEDULE_EVENT_LABELS, isScheduleEventType } from '@/lib/schedule-types'
 
@@ -100,19 +99,6 @@ export async function gatherJobIntelligenceContext(
 
   const internalNotes = await enrichNoteAuthors(supabase, noteRows || [])
 
-  const { data: messageRows } = await supabase
-    .from('messages')
-    .select('id, sender_id, body, created_at')
-    .eq('project_id', projectId)
-    .eq('channel', 'project')
-    .order('created_at', { ascending: true })
-    .limit(200)
-
-  const orgId = String(project.organization_id || '')
-  const enrichedMessages = orgId
-    ? await enrichMessageSenders(orgId, messageRows || [])
-    : []
-
   const { data: scheduleRows } = await supabase
     .from('schedule_events')
     .select('*')
@@ -142,12 +128,7 @@ export async function gatherJobIntelligenceContext(
     allClaims: claimList as Array<Record<string, unknown>>,
     timelineEvents,
     internalNotes,
-    projectMessages: enrichedMessages.map((m) => ({
-      id: m.id,
-      body: m.body,
-      created_at: m.created_at,
-      sender_label: m.sender_label,
-    })),
+    projectMessages: [],
     scheduleEvents: (scheduleRows || []) as Array<Record<string, unknown>>,
     evidence,
   }

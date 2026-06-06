@@ -1,7 +1,7 @@
 'use client'
 
 import { LegalNotice } from '@/components/legal-notice'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 
 type Note = {
   id: string
@@ -30,15 +30,33 @@ function kindLabel(kind: string) {
   return 'Note'
 }
 
-function renderBodyHtml(body: string) {
-  const escaped = body
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-  return escaped.replace(
-    /@\[([^\]]+)\]\(([0-9a-f-]{36})\)/gi,
-    '<span class="font-semibold text-white underline decoration-white/40">@$1</span>'
-  )
+function NoteBody({ body }: { body: string }) {
+  const mentionPattern = /@\[([^\]]+)\]\(([0-9a-f-]{36})\)/gi
+  const parts: ReactNode[] = []
+  let lastIndex = 0
+  let match: RegExpExecArray | null
+  let key = 0
+
+  while ((match = mentionPattern.exec(body)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(body.slice(lastIndex, match.index))
+    }
+    parts.push(
+      <span
+        key={`mention-${key++}`}
+        className="font-semibold text-white underline decoration-white/40"
+      >
+        @{match[1]}
+      </span>
+    )
+    lastIndex = match.index + match[0].length
+  }
+
+  if (lastIndex < body.length) {
+    parts.push(body.slice(lastIndex))
+  }
+
+  return <p className="leading-relaxed whitespace-pre-wrap text-white">{parts}</p>
 }
 
 export function InternalNotesPanel({
@@ -224,10 +242,7 @@ export function InternalNotesPanel({
                   {new Date(n.created_at).toLocaleString()}
                 </span>
               </div>
-              <p
-                className="leading-relaxed whitespace-pre-wrap text-white"
-                dangerouslySetInnerHTML={{ __html: renderBodyHtml(n.body) }}
-              />
+              <NoteBody body={n.body} />
               {n.mentioned_users.length > 0 && (
                 <p className="text-xs text-neutral-300 mt-2">
                   Notified: {n.mentioned_users.map((u) => u.name).join(', ')}

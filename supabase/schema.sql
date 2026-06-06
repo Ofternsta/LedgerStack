@@ -1,3 +1,5 @@
+-- ⚠️ DEPRECATED — DO NOT RUN ON PRODUCTION
+-- Grants anon full access to claim_evidence. Evidence lives in storage + meta JSON now.
 -- Optional: run in Supabase SQL Editor if you prefer client-side anon access
 -- Server API routes use SUPABASE_SERVICE_ROLE_KEY and do not require this.
 

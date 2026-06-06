@@ -53,32 +53,48 @@ export async function consumeAiSummary(
 
   const service = createServiceClient()
   const monthKey = currentUsageMonthKey()
-  const used = await getAiUsageThisMonth(service, organizationId)
+  const cap = entitlements.aiSummariesPerMonth
 
-  if (used >= entitlements.aiSummariesPerMonth) {
+  const { data: newCount, error } = await service.rpc('try_increment_ai_usage', {
+    org_id: organizationId,
+    month: monthKey,
+    cap,
+  })
+
+  if (error) {
+    console.error('AI usage increment failed:', error.message)
+    const used = await getAiUsageThisMonth(service, organizationId)
+    return {
+      ok: false,
+      error: 'Could not record AI usage. Try again.',
+      used,
+      limit: cap,
+    }
+  }
+
+  if (newCount === null || newCount === undefined) {
+    const used = await getAiUsageThisMonth(service, organizationId)
     return {
       ok: false,
       error: planUpgradeMessage('More AI summaries this month', null),
       used,
-      limit: entitlements.aiSummariesPerMonth,
+      limit: cap,
     }
   }
 
-  const { error } = await service.from('organization_ai_usage').upsert(
-    {
-      organization_id: organizationId,
-      month_key: monthKey,
-      summaries_used: used + 1,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'organization_id,month_key' }
-  )
-
-  if (error) {
-    console.error('AI usage upsert failed:', error.message)
-  }
-
   return { ok: true }
+}
+
+export async function refundAiSummary(organizationId: string): Promise<void> {
+  const service = createServiceClient()
+  const monthKey = currentUsageMonthKey()
+  const { error } = await service.rpc('decrement_ai_usage', {
+    org_id: organizationId,
+    month: monthKey,
+  })
+  if (error) {
+    console.error('AI usage refund failed:', error.message)
+  }
 }
 
 export async function assertCanCreateProject(
