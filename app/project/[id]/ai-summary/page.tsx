@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { JobIntelligenceSummary } from '@/components/job-intelligence-summary'
-import { LegalNotice } from '@/components/legal-notice'
 import { LedgerStackLoader } from '@/components/ledgerstack-loader'
 import { ProjectPageHeader } from '@/components/project-page-header'
 import { fetchSavedAiSummary } from '@/lib/ai-summary-storage'
@@ -84,10 +83,7 @@ export default function ProjectAiSummaryPage() {
             </Link>
           </div>
         ) : (
-          <>
-            <JobIntelligenceSummary report={report} />
-            <LegalNotice id="ai" />
-          </>
+          <JobIntelligenceSummary report={report} />
         )}
       </main>
     </div>

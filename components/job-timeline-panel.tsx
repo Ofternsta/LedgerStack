@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { LegalNotice } from '@/components/legal-notice'
 import {
   formatEventWhen,
   formatTimelineSource,
@@ -163,8 +162,6 @@ export function JobTimelinePanel({
           </div>
         )}
       </div>
-
-      <LegalNotice id="ai" />
     </section>
   )
 }
