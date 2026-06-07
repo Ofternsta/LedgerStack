@@ -125,7 +125,12 @@ export function signWellUploadFileName(rawName: string): string {
 export async function createSignWellDocument(
   input: CreateDocumentInput
 ): Promise<
-  | { ok: true; document: SignWellDocument; embeddedSigningUrl: string }
+  | {
+      ok: true
+      document: SignWellDocument
+      embeddedSigningUrl: string
+      browserSigningUrl: string
+    }
   | { ok: false; error: string; status: number }
 > {
   if (!input.fileUrl && !input.fileBase64) {
@@ -178,6 +183,8 @@ export async function createSignWellDocument(
   const recipient = document.recipients?.[0]
   const embeddedSigningUrl =
     recipient?.embedded_signing_url || recipient?.signing_url || ''
+  const browserSigningUrl =
+    recipient?.signing_url || recipient?.embedded_signing_url || ''
 
   if (!document.id || !embeddedSigningUrl) {
     return {
@@ -188,7 +195,12 @@ export async function createSignWellDocument(
     }
   }
 
-  return { ok: true, document, embeddedSigningUrl }
+  return {
+    ok: true,
+    document,
+    embeddedSigningUrl,
+    browserSigningUrl,
+  }
 }
 
 export async function getSignWellDocument(

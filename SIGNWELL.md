@@ -81,11 +81,16 @@ SignWell offers **25 API documents/month free**, then pay-as-you-go. Use `SIGNWE
 
 ### “Sorry, this document link has expired”
 
-SignWell signing links are **single-use per session** and documents **expire after 30 days by default** (account setting). LedgerStack now:
+Common causes:
 
-1. Fetches a **fresh** `embedded_signing_url` from SignWell every time the client opens **Sign now** (not the old stored link).
-2. Sets **`expires_in: 90`** on new signature requests (90 days before SignWell expires the document).
-3. If SignWell reports the document as **Expired**, calls SignWell’s **remind** API to reactivate it before opening the iframe.
-4. If the client closes the signing window without finishing, the page **requests a new link** automatically.
+1. **Embedded iframe links** are single-use and often fail on mobile Safari — LedgerStack now uses a **full-page “Continue to sign”** button instead of the popup iframe.
+2. **SignWell document age** — default 30-day account limit (we send `expires_in: 90` on new requests).
+3. **Stale SignWell document** — old requests may need a **new SignWell document** (tap **Link not working? Get a fresh link**).
 
-If it still fails: in SignWell → **Settings → Document Link Preferences**, increase link lifetime; for old requests, cancel and send a **new signature request** from the project.
+What the app does now:
+
+- Calls SignWell **remind** + **GET document** before every sign attempt.
+- Prefers SignWell’s **`signing_url`** (browser link) over the embedded URL.
+- **Reissues** a brand-new SignWell document when status is Expired or on **Get a fresh link** (`?reissue=1`).
+
+If it still fails: admin sends a **new signature request**; in SignWell → **Document Link Preferences**, increase link lifetime.

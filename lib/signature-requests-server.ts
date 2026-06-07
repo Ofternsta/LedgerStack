@@ -219,7 +219,8 @@ export async function createSignatureRequest(input: {
     .from('signature_requests')
     .update({
       signwell_document_id: signwell.document.id,
-      embedded_signing_url: signwell.embeddedSigningUrl,
+      embedded_signing_url:
+        signwell.browserSigningUrl || signwell.embeddedSigningUrl,
       updated_at: new Date().toISOString(),
     })
     .eq('id', requestId)
@@ -265,8 +266,111 @@ export async function createSignatureRequest(input: {
   return { ok: true, request: inserted as SignatureRequestRow }
 }
 
-export async function refreshEmbeddedSigningUrl(
+function pickClientSigningUrl(recipient: {
+  signing_url?: string
+  embedded_signing_url?: string
+} | undefined): string | null {
+  if (!recipient) return null
+  return recipient.signing_url || recipient.embedded_signing_url || null
+}
+
+/** Create a new SignWell document for an existing request (same file/client). */
+export async function reissueSignWellDocumentForRequest(
   request: SignatureRequestRow
+): Promise<{ url: string | null; error?: string }> {
+  const service = createServiceClient()
+
+  const { data: project } = await service
+    .from('projects')
+    .select('id, organization_id, customer_name')
+    .eq('id', request.project_id)
+    .maybeSingle()
+
+  if (!project) {
+    return { url: null, error: 'Project not found.' }
+  }
+
+  const { data: org } = await service
+    .from('organizations')
+    .select('name, admin_user_id')
+    .eq('id', request.organization_id)
+    .maybeSingle()
+
+  const { data: adminProfile } = org?.admin_user_id
+    ? await service
+        .from('profiles')
+        .select('email, full_name')
+        .eq('id', org.admin_user_id)
+        .maybeSingle()
+    : { data: null }
+
+  const requesterEmail =
+    adminProfile?.email?.trim() || `support@ledgerstack.org`
+  const requesterName =
+    adminProfile?.full_name?.trim() || org?.name || 'LedgerStack'
+
+  const { data: fileBlob, error: downloadError } = await service.storage
+    .from(BUCKET)
+    .download(request.source_file_path)
+
+  if (downloadError || !fileBlob) {
+    return {
+      url: null,
+      error: downloadError?.message || 'Could not read the document file.',
+    }
+  }
+
+  const fileBase64 = Buffer.from(await fileBlob.arrayBuffer()).toString('base64')
+  const signUrl = signatureSignPageUrl(request.project_id, request.id)
+  const redirectUrl = `${signUrl}?completed=1`
+
+  const signwell = await createSignWellDocument({
+    name: request.source_file_name,
+    fileName: request.source_file_name,
+    fileBase64,
+    recipientEmail: request.client_email,
+    recipientName: displayNameFromEmail(request.client_email),
+    requesterName,
+    requesterEmail,
+    redirectUrl,
+    subject: `Please sign: ${request.source_file_name}`,
+    message: `${org?.name || 'Your contractor'} requested your signature on ${request.source_file_name} for ${project.customer_name}.`,
+    metadata: {
+      signature_request_id: request.id,
+      project_id: request.project_id,
+      organization_id: String(request.organization_id),
+    },
+  })
+
+  if (!signwell.ok) {
+    console.error('[signwell reissue document]', signwell.error)
+    return {
+      url: null,
+      error:
+        signwell.error ||
+        'Could not create a new signing session. Ask your contractor to send a new request.',
+    }
+  }
+
+  const url =
+    signwell.browserSigningUrl || signwell.embeddedSigningUrl || null
+
+  await service
+    .from('signature_requests')
+    .update({
+      signwell_document_id: signwell.document.id,
+      embedded_signing_url: url,
+      status: 'pending',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', request.id)
+
+  return { url }
+}
+
+export async function refreshEmbeddedSigningUrl(
+  request: SignatureRequestRow,
+  options?: { forceReissue?: boolean }
 ): Promise<{ url: string | null; error?: string }> {
   if (!request.signwell_document_id) {
     return {
@@ -275,10 +379,14 @@ export async function refreshEmbeddedSigningUrl(
     }
   }
 
+  if (options?.forceReissue) {
+    return reissueSignWellDocumentForRequest(request)
+  }
+
   const service = createServiceClient()
 
   async function pullSigningUrl(): Promise<
-    | { ok: true; url: string | null; status: string }
+    | { ok: true; url: string | null; status: string; recipientStatus: string }
     | { ok: false; error: string }
   > {
     const doc = await getSignWellDocument(request.signwell_document_id!)
@@ -289,14 +397,23 @@ export async function refreshEmbeddedSigningUrl(
     const recipient = doc.document.recipients?.find(
       (r) => r.email.toLowerCase() === request.client_email.toLowerCase()
     )
-    const url =
-      recipient?.embedded_signing_url || recipient?.signing_url || null
+    const url = pickClientSigningUrl(recipient)
 
     return {
       ok: true,
       url,
       status: doc.document.status || '',
+      recipientStatus: recipient?.status || '',
     }
+  }
+
+  const remind = await sendSignWellReminder(request.signwell_document_id)
+  if (!remind.ok) {
+    console.warn(
+      '[signwell refresh] remind skipped:',
+      request.id,
+      remind.error
+    )
   }
 
   let pulled = await pullSigningUrl()
@@ -305,37 +422,35 @@ export async function refreshEmbeddedSigningUrl(
   }
 
   const statusLower = pulled.status.toLowerCase()
-  if (statusLower === 'expired' || request.status === 'expired') {
-    const remind = await sendSignWellReminder(request.signwell_document_id)
-    if (!remind.ok) {
-      return {
-        url: null,
-        error:
-          'This signing link has expired. Ask your contractor to send a new signature request.',
-      }
-    }
+  const recipientLower = pulled.recipientStatus.toLowerCase()
 
-    pulled = await pullSigningUrl()
-    if (!pulled.ok) {
-      return { url: null, error: pulled.error }
-    }
+  if (
+    statusLower === 'expired' ||
+    statusLower === 'canceled' ||
+    statusLower === 'declined' ||
+    request.status === 'expired'
+  ) {
+    return reissueSignWellDocumentForRequest(request)
+  }
 
-    await service
-      .from('signature_requests')
-      .update({
-        status: 'pending',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', request.id)
-      .eq('status', 'expired')
+  if (statusLower === 'completed' || recipientLower === 'completed') {
+    return {
+      url: null,
+      error: 'This document is already signed. Refresh the project page.',
+    }
   }
 
   if (!pulled.url) {
-    return {
-      url: null,
-      error: 'SignWell did not return a signing link. Try again in a moment.',
-    }
+    return reissueSignWellDocumentForRequest(request)
   }
+
+  console.info('[signwell refresh]', {
+    requestId: request.id,
+    documentId: request.signwell_document_id,
+    status: pulled.status,
+    recipientStatus: pulled.recipientStatus,
+    reminded: remind.ok,
+  })
 
   if (pulled.url !== request.embedded_signing_url) {
     await service

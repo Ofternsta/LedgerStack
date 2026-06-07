@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { SignWellEmbeddedSign } from '@/components/signwell-embedded-sign'
 import { LedgerStackLoader } from '@/components/ledgerstack-loader'
 import { ProjectPageHeader } from '@/components/project-page-header'
 import type { SignatureRequestRow } from '@/lib/signature-request-types'
@@ -19,10 +18,10 @@ export default function SignDocumentPage() {
   const [loading, setLoading] = useState(true)
   const [request, setRequest] = useState<SignatureRequestRow | null>(null)
   const [signingUrl, setSigningUrl] = useState<string | null>(null)
-  const [signingUrlKey, setSigningUrlKey] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(searchParams.get('completed') === '1')
   const completingRef = useRef(false)
+  const retryCountRef = useRef(0)
 
   const syncCompletion = useCallback(async () => {
     if (completingRef.current) return
@@ -45,74 +44,77 @@ export default function SignDocumentPage() {
     router.replace(`/project/${projectId}?signed=1`)
   }, [requestId, projectId, router])
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    setError(null)
+  const load = useCallback(
+    async (options?: { reissue?: boolean }) => {
+      setLoading(true)
+      setError(null)
 
-    const { access } = await loadUserAccess()
-    if (!access || access.role !== 'client') {
-      router.replace('/login')
-      return
-    }
+      const { access } = await loadUserAccess()
+      if (!access || access.role !== 'client') {
+        router.replace('/login')
+        return
+      }
 
-    const res = await fetch(`/api/signature-requests/${requestId}`)
-    const payload = await res.json().catch(() => ({}))
+      const params = new URLSearchParams()
+      if (options?.reissue) params.set('reissue', '1')
 
-    if (!res.ok) {
-      setError(payload.error || 'Could not load signature request')
-      setLoading(false)
-      return
-    }
-
-    const row = payload.request as SignatureRequestRow
-    if (row.project_id !== projectId) {
-      setError('This signature request does not belong to this project.')
-      setLoading(false)
-      return
-    }
-
-    setRequest(row)
-
-    if (row.status === 'signed') {
-      setDone(true)
-      setLoading(false)
-      return
-    }
-
-    if (!['pending', 'viewed', 'expired'].includes(row.status)) {
-      setError(`This request is ${row.status} and can no longer be signed.`)
-      setLoading(false)
-      return
-    }
-
-    const freshUrl = payload.signing_url as string | null | undefined
-    const signingError = payload.signing_error as string | null | undefined
-
-    if (!freshUrl) {
-      setSigningUrl(null)
-      setError(
-        signingError ||
-          'Could not open a fresh signing link. Try again or ask your contractor for a new request.'
+      const res = await fetch(
+        `/api/signature-requests/${requestId}${
+          params.size ? `?${params.toString()}` : ''
+        }`
       )
+      const payload = await res.json().catch(() => ({}))
+
+      if (!res.ok) {
+        setError(payload.error || 'Could not load signature request')
+        setLoading(false)
+        return
+      }
+
+      const row = payload.request as SignatureRequestRow
+      if (row.project_id !== projectId) {
+        setError('This signature request does not belong to this project.')
+        setLoading(false)
+        return
+      }
+
+      setRequest(row)
+
+      if (row.status === 'signed') {
+        setDone(true)
+        setLoading(false)
+        return
+      }
+
+      if (!['pending', 'viewed', 'expired'].includes(row.status)) {
+        setError(`This request is ${row.status} and can no longer be signed.`)
+        setLoading(false)
+        return
+      }
+
+      const freshUrl = payload.signing_url as string | null | undefined
+      const signingError = payload.signing_error as string | null | undefined
+
+      if (!freshUrl) {
+        setSigningUrl(null)
+        setError(
+          signingError ||
+            'Could not open a fresh signing link. Try again or ask your contractor for a new request.'
+        )
+        setLoading(false)
+        return
+      }
+
+      setSigningUrl(freshUrl)
       setLoading(false)
-      return
-    }
+    },
+    [requestId, projectId, router]
+  )
 
-    setSigningUrl(freshUrl)
-    setSigningUrlKey((k) => k + 1)
-    setLoading(false)
-  }, [requestId, projectId, router])
-
-  async function refreshSigningLink() {
-    setLoading(true)
-    setError(null)
+  async function refreshSigningLink(reissue = false) {
+    if (reissue) retryCountRef.current += 1
     setSigningUrl(null)
-    await load()
-  }
-
-  async function handleSigningClosed() {
-    setSigningUrl(null)
-    await refreshSigningLink()
+    await load({ reissue })
   }
 
   useEffect(() => {
@@ -124,10 +126,6 @@ export default function SignDocumentPage() {
     if (!request || request.status === 'signed') return
     void syncCompletion()
   }, [request, searchParams, syncCompletion])
-
-  async function handleCompleted() {
-    await syncCompletion()
-  }
 
   if (loading) {
     return (
@@ -165,18 +163,26 @@ export default function SignDocumentPage() {
             </Link>
           </div>
         ) : signingUrl ? (
-          <>
-            <p className="text-sm text-muted">
-              Use the secure SignWell window to type your name and complete the
-              signature. You do not need to draw a signature.
+          <div className="card-elevated p-6 space-y-4">
+            <p className="text-sm text-muted leading-relaxed">
+              Tap below to open SignWell in your browser. Type your name to sign
+              — no drawing required. When you finish, you&apos;ll return here
+              automatically.
             </p>
-            <SignWellEmbeddedSign
-              key={signingUrlKey}
-              signingUrl={signingUrl}
-              onCompleted={() => void handleCompleted()}
-              onClosed={() => void handleSigningClosed()}
-            />
-          </>
+            <a
+              href={signingUrl}
+              className="flex w-full items-center justify-center btn-primary text-[#052e16] py-4 rounded-xl font-medium min-h-[52px]"
+            >
+              Continue to sign
+            </a>
+            <button
+              type="button"
+              onClick={() => void refreshSigningLink(true)}
+              className="w-full border border-border px-4 py-3 rounded-xl text-sm font-medium min-h-[48px]"
+            >
+              Link not working? Get a fresh link
+            </button>
+          </div>
         ) : (
           <div className="space-y-3">
             <p className="text-sm text-muted">
@@ -184,7 +190,9 @@ export default function SignDocumentPage() {
             </p>
             <button
               type="button"
-              onClick={() => void refreshSigningLink()}
+              onClick={() =>
+                void refreshSigningLink(retryCountRef.current >= 1)
+              }
               className="w-full border border-border px-4 py-3 rounded-xl text-sm font-medium min-h-[48px]"
             >
               Try again
