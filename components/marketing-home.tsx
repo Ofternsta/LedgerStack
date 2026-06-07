@@ -177,11 +177,13 @@ export function MarketingHome() {
             {FEATURES.map((f, i) => (
               <Reveal key={f.title} as="li" delay={i * 80} className="h-full">
                 <div className="marketing-card-lift card-elevated p-6 h-full hover:border-brand-dim/50">
-                  <div className="w-10 h-10 rounded-lg bg-[var(--info-surface)] border border-brand-dim/30 flex items-center justify-center">
-                    <span className="w-2 h-2 rounded-full bg-brand shadow-[0_0_8px_var(--brand)]" />
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 shrink-0 rounded-lg bg-[var(--info-surface)] border border-brand-dim/30 flex items-center justify-center">
+                      <span className="w-2 h-2 rounded-full bg-brand shadow-[0_0_8px_var(--brand)]" />
+                    </div>
+                    <h3 className="font-bold text-lg text-white">{f.title}</h3>
                   </div>
-                  <h3 className="mt-4 font-bold text-lg text-white">{f.title}</h3>
-                  <p className="mt-2 text-muted leading-relaxed">{f.description}</p>
+                  <p className="mt-3 text-muted leading-relaxed">{f.description}</p>
                 </div>
               </Reveal>
             ))}
@@ -199,11 +201,13 @@ export function MarketingHome() {
             <ol className="mt-10 grid md:grid-cols-3 gap-8">
               {STEPS.map((s, i) => (
                 <Reveal key={s.step} as="li" delay={i * 100}>
-                  <span className="inline-flex w-10 h-10 items-center justify-center rounded-full btn-primary font-bold text-sm">
-                    {s.step}
-                  </span>
-                  <h3 className="mt-4 font-bold text-lg">{s.title}</h3>
-                  <p className="mt-2 text-muted leading-relaxed">{s.body}</p>
+                  <div className="flex items-center gap-3">
+                    <span className="inline-flex w-10 h-10 shrink-0 items-center justify-center rounded-full btn-primary font-bold text-sm">
+                      {s.step}
+                    </span>
+                    <h3 className="font-bold text-lg">{s.title}</h3>
+                  </div>
+                  <p className="mt-3 text-muted leading-relaxed">{s.body}</p>
                 </Reveal>
               ))}
             </ol>
