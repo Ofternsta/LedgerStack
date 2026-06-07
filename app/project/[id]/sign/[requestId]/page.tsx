@@ -19,6 +19,7 @@ export default function SignDocumentPage() {
   const [loading, setLoading] = useState(true)
   const [request, setRequest] = useState<SignatureRequestRow | null>(null)
   const [signingUrl, setSigningUrl] = useState<string | null>(null)
+  const [signingUrlKey, setSigningUrlKey] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(searchParams.get('completed') === '1')
   const completingRef = useRef(false)
@@ -78,15 +79,41 @@ export default function SignDocumentPage() {
       return
     }
 
-    if (!['pending', 'viewed'].includes(row.status)) {
+    if (!['pending', 'viewed', 'expired'].includes(row.status)) {
       setError(`This request is ${row.status} and can no longer be signed.`)
       setLoading(false)
       return
     }
 
-    setSigningUrl(payload.signing_url || row.embedded_signing_url)
+    const freshUrl = payload.signing_url as string | null | undefined
+    const signingError = payload.signing_error as string | null | undefined
+
+    if (!freshUrl) {
+      setSigningUrl(null)
+      setError(
+        signingError ||
+          'Could not open a fresh signing link. Try again or ask your contractor for a new request.'
+      )
+      setLoading(false)
+      return
+    }
+
+    setSigningUrl(freshUrl)
+    setSigningUrlKey((k) => k + 1)
     setLoading(false)
   }, [requestId, projectId, router])
+
+  async function refreshSigningLink() {
+    setLoading(true)
+    setError(null)
+    setSigningUrl(null)
+    await load()
+  }
+
+  async function handleSigningClosed() {
+    setSigningUrl(null)
+    await refreshSigningLink()
+  }
 
   useEffect(() => {
     void load()
@@ -144,12 +171,25 @@ export default function SignDocumentPage() {
               signature. You do not need to draw a signature.
             </p>
             <SignWellEmbeddedSign
+              key={signingUrlKey}
               signingUrl={signingUrl}
               onCompleted={() => void handleCompleted()}
+              onClosed={() => void handleSigningClosed()}
             />
           </>
         ) : (
-          <p className="text-sm text-muted">No signing URL available.</p>
+          <div className="space-y-3">
+            <p className="text-sm text-muted">
+              {error || 'No signing URL available.'}
+            </p>
+            <button
+              type="button"
+              onClick={() => void refreshSigningLink()}
+              className="w-full border border-border px-4 py-3 rounded-xl text-sm font-medium min-h-[48px]"
+            >
+              Try again
+            </button>
+          </div>
         )}
       </main>
     </div>

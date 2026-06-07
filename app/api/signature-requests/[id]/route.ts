@@ -47,14 +47,15 @@ export async function GET(_req: Request, context: RouteContext) {
     }
   }
 
-  const signingUrl =
-    isClient && ['pending', 'viewed'].includes(row.status)
+  const signing =
+    isClient && ['pending', 'viewed', 'expired'].includes(row.status)
       ? await refreshEmbeddedSigningUrl(row)
-      : null
+      : { url: null as string | null }
 
   return NextResponse.json({
     request: row,
-    signing_url: signingUrl,
+    signing_url: signing.url,
+    signing_error: signing.error || null,
   })
 }
 

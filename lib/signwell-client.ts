@@ -151,6 +151,7 @@ export async function createSignWellDocument(
       embedded_signing: true,
       allow_decline: true,
       reminders: false,
+      expires_in: 90,
       custom_requester_name: input.requesterName.slice(0, 80),
       custom_requester_email: input.requesterEmail,
       redirect_url: input.redirectUrl,
@@ -232,6 +233,20 @@ export async function getSignWellCompletedPdfUrl(
   }
 
   return { ok: true, fileUrl }
+}
+
+/** Resets expiration on an expired document so embedded signing can continue. */
+export async function sendSignWellReminder(
+  documentId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const result = await signwellFetch<unknown>(`/documents/${documentId}/remind`, {
+    method: 'POST',
+    body: JSON.stringify({}),
+  })
+  if (!result.ok) {
+    return { ok: false, error: result.error }
+  }
+  return { ok: true }
 }
 
 export async function downloadUrlAsBuffer(url: string): Promise<Buffer> {

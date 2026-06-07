@@ -28,13 +28,15 @@ export function SignWellEmbeddedSign({
   onClosed,
 }: Props) {
   const [scriptReady, setScriptReady] = useState(false)
-  const openedRef = useRef(false)
+  const openedForUrl = useRef<string | null>(null)
 
   useEffect(() => {
-    if (!scriptReady || !signingUrl || openedRef.current) return
+    if (!scriptReady || !signingUrl || openedForUrl.current === signingUrl) {
+      return
+    }
     if (!window.SignWellEmbed) return
 
-    openedRef.current = true
+    openedForUrl.current = signingUrl
     const embed = new window.SignWellEmbed({
       url: signingUrl,
       events: {

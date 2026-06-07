@@ -6,6 +6,7 @@ import {
   createSignWellDocument,
   getSignWellCompletedPdfUrl,
   getSignWellDocument,
+  sendSignWellReminder,
 } from '@/lib/signwell-client'
 import {
   newEvidenceId,
@@ -266,27 +267,87 @@ export async function createSignatureRequest(input: {
 
 export async function refreshEmbeddedSigningUrl(
   request: SignatureRequestRow
-): Promise<string | null> {
-  if (!request.signwell_document_id) return request.embedded_signing_url
+): Promise<{ url: string | null; error?: string }> {
+  if (!request.signwell_document_id) {
+    return {
+      url: request.embedded_signing_url,
+      error: request.embedded_signing_url ? undefined : 'No SignWell document linked.',
+    }
+  }
 
-  const doc = await getSignWellDocument(request.signwell_document_id)
-  if (!doc.ok) return request.embedded_signing_url
+  const service = createServiceClient()
 
-  const recipient = doc.document.recipients?.find(
-    (r) => r.email.toLowerCase() === request.client_email.toLowerCase()
-  )
-  const url =
-    recipient?.embedded_signing_url || recipient?.signing_url || null
+  async function pullSigningUrl(): Promise<
+    | { ok: true; url: string | null; status: string }
+    | { ok: false; error: string }
+  > {
+    const doc = await getSignWellDocument(request.signwell_document_id!)
+    if (!doc.ok) {
+      return { ok: false, error: doc.error }
+    }
 
-  if (url && url !== request.embedded_signing_url) {
-    const service = createServiceClient()
+    const recipient = doc.document.recipients?.find(
+      (r) => r.email.toLowerCase() === request.client_email.toLowerCase()
+    )
+    const url =
+      recipient?.embedded_signing_url || recipient?.signing_url || null
+
+    return {
+      ok: true,
+      url,
+      status: doc.document.status || '',
+    }
+  }
+
+  let pulled = await pullSigningUrl()
+  if (!pulled.ok) {
+    return { url: null, error: pulled.error }
+  }
+
+  const statusLower = pulled.status.toLowerCase()
+  if (statusLower === 'expired' || request.status === 'expired') {
+    const remind = await sendSignWellReminder(request.signwell_document_id)
+    if (!remind.ok) {
+      return {
+        url: null,
+        error:
+          'This signing link has expired. Ask your contractor to send a new signature request.',
+      }
+    }
+
+    pulled = await pullSigningUrl()
+    if (!pulled.ok) {
+      return { url: null, error: pulled.error }
+    }
+
     await service
       .from('signature_requests')
-      .update({ embedded_signing_url: url, updated_at: new Date().toISOString() })
+      .update({
+        status: 'pending',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', request.id)
+      .eq('status', 'expired')
+  }
+
+  if (!pulled.url) {
+    return {
+      url: null,
+      error: 'SignWell did not return a signing link. Try again in a moment.',
+    }
+  }
+
+  if (pulled.url !== request.embedded_signing_url) {
+    await service
+      .from('signature_requests')
+      .update({
+        embedded_signing_url: pulled.url,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', request.id)
   }
 
-  return url || request.embedded_signing_url
+  return { url: pulled.url }
 }
 
 export async function markSignatureRequestViewed(requestId: string) {

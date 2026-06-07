@@ -78,3 +78,14 @@ LedgerStack uploads files to SignWell as **base64** (not a Supabase URL), so Sig
 Check Vercel **Functions** logs for `[signwell api]` or `[signwell create document]` with the full SignWell message.
 
 SignWell offers **25 API documents/month free**, then pay-as-you-go. Use `SIGNWELL_TEST_MODE=true` for unlimited non-binding test documents during development.
+
+### “Sorry, this document link has expired”
+
+SignWell signing links are **single-use per session** and documents **expire after 30 days by default** (account setting). LedgerStack now:
+
+1. Fetches a **fresh** `embedded_signing_url` from SignWell every time the client opens **Sign now** (not the old stored link).
+2. Sets **`expires_in: 90`** on new signature requests (90 days before SignWell expires the document).
+3. If SignWell reports the document as **Expired**, calls SignWell’s **remind** API to reactivate it before opening the iframe.
+4. If the client closes the signing window without finishing, the page **requests a new link** automatically.
+
+If it still fails: in SignWell → **Settings → Document Link Preferences**, increase link lifetime; for old requests, cancel and send a **new signature request** from the project.
