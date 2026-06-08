@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { AppHeader } from '@/components/app-header'
@@ -33,6 +33,8 @@ export default function ProjectsPage() {
   const [jobDescription, setJobDescription] = useState('')
   const [projects, setProjects] = useState<Project[]>([])
   const [creating, setCreating] = useState(false)
+  const [showCreateForm, setShowCreateForm] = useState(false)
+  const [projectSearch, setProjectSearch] = useState('')
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [signingOut, setSigningOut] = useState(false)
 
@@ -136,10 +138,20 @@ export default function ProjectsPage() {
       return
     }
 
+    const created = payload.project as Project | undefined
+    if (created?.id) {
+      setProjects((prev) => [
+        created,
+        ...prev.filter((p) => p.id !== created.id),
+      ])
+    } else {
+      await fetchProjects(access.role)
+    }
+
     setCustomerName('')
     setProjectAddress('')
     setJobDescription('')
-    await fetchProjects(access.role)
+    setShowCreateForm(false)
     setCreating(false)
   }
 
@@ -172,6 +184,16 @@ export default function ProjectsPage() {
       }
     })
   }, [])
+
+  const searchQuery = projectSearch.trim().toLowerCase()
+  const filteredProjects = useMemo(() => {
+    if (!searchQuery) return projects
+    return projects.filter((p) => {
+      const name = p.customer_name.toLowerCase()
+      const address = p.project_address.toLowerCase()
+      return name.includes(searchQuery) || address.includes(searchQuery)
+    })
+  }, [projects, searchQuery])
 
   if (accessLoading) {
     return (
@@ -243,8 +265,20 @@ export default function ProjectsPage() {
         signingOut={signingOut}
       />
 
-      <main className="flex-1 safe-x px-4 py-4 max-w-lg mx-auto w-full pb-8 safe-bottom space-y-6">
+      <main className="flex-1 safe-x px-4 sm:px-6 lg:px-8 py-4 w-full max-w-[1600px] mx-auto pb-28 safe-bottom space-y-5">
         <AppNav access={access} />
+
+        <label className="block">
+          <span className="sr-only">Search projects</span>
+          <input
+            type="search"
+            value={projectSearch}
+            onChange={(e) => setProjectSearch(e.target.value)}
+            placeholder="Search by client name or address…"
+            className="w-full border border-border rounded-xl p-3 bg-surface text-foreground placeholder:text-muted-dim"
+            autoComplete="off"
+          />
+        </label>
 
         {access.planName && (
           <p className="text-xs text-muted">
@@ -287,53 +321,6 @@ export default function ProjectsPage() {
           </p>
         )}
 
-        {access.canCreateProject && (
-          <section className="border border-border rounded-xl p-4 bg-surface space-y-3">
-            <h2 className="font-bold text-lg">New project</h2>
-
-            <input
-              className="border border-border rounded-xl p-3 w-full"
-              placeholder="Customer name"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-            />
-
-            <input
-              className="border border-border rounded-xl p-3 w-full"
-              placeholder="Project address"
-              value={projectAddress}
-              onChange={(e) => setProjectAddress(e.target.value)}
-            />
-
-            <label className="block space-y-1">
-              <span className="text-sm font-medium text-foreground">
-                Job description
-              </span>
-              <textarea
-                className="border border-border rounded-xl p-3 w-full min-h-[88px]"
-                placeholder="Describe the work for this job"
-                value={jobDescription}
-                onChange={(e) => setJobDescription(e.target.value)}
-                required
-              />
-            </label>
-
-            <button
-              type="button"
-              onClick={createProject}
-              disabled={
-                creating ||
-                !customerName.trim() ||
-                !projectAddress.trim() ||
-                !jobDescription.trim()
-              }
-              className="w-full btn-primary text-[#052e16] py-4 rounded-xl font-medium disabled:opacity-50 min-h-[52px]"
-            >
-              {creating ? 'Creating…' : 'Create Project'}
-            </button>
-          </section>
-        )}
-
         {access.role === 'admin' && <AdminSignatureNotificationsBanner />}
 
         {access.role === 'client' && (
@@ -349,39 +336,61 @@ export default function ProjectsPage() {
           <LegalNotice id="data-retention" className="mb-4" />
         )}
 
-        <section>
-          <h2 className="font-bold text-lg mb-3">
-            {access.role === 'client' ? 'Shared with you' : 'Your projects'}
-          </h2>
+        <section className="flex-1 min-h-0">
+          <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4">
+            <h2 className="font-bold text-lg">
+              {access.role === 'client' ? 'Shared with you' : 'Your projects'}
+            </h2>
+            {projects.length > 0 && (
+              <p className="text-sm text-muted">
+                {filteredProjects.length === projects.length
+                  ? `${projects.length} project${projects.length === 1 ? '' : 's'}`
+                  : `${filteredProjects.length} of ${projects.length}`}
+              </p>
+            )}
+          </div>
 
           {projects.length === 0 && (
-            <p className="text-muted-dim text-center py-6">
+            <p className="text-muted-dim text-center py-12">
               {access.role === 'client'
                 ? 'No projects shared with you yet. Ask your contractor admin to grant access using your signup email.'
                 : access.role === 'worker'
                   ? 'No projects assigned to you yet. Your organization admin must assign you to a project before you can open it.'
-                  : 'No projects yet. Create one above.'}
+                  : 'No projects yet. Use Create project in the bottom left to add your first one.'}
             </p>
           )}
 
-          <ul className="space-y-3">
-            {projects.map((p) => (
+          {projects.length > 0 && filteredProjects.length === 0 && (
+            <p className="text-muted-dim text-center py-12">
+              No projects match &ldquo;{projectSearch.trim()}&rdquo;. Try a
+              different client name or address.
+            </p>
+          )}
+
+          <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filteredProjects.map((p) => (
               <li
                 key={p.id}
-                className="border border-border rounded-xl bg-surface-elevated shadow-sm overflow-hidden"
+                className="border border-border rounded-xl bg-surface-elevated shadow-sm overflow-hidden flex flex-col min-h-[120px]"
               >
                 {access.workerBlockedByStaffLimit ? (
-                  <div className="block p-4 min-h-[64px] opacity-80">
-                    <p className="font-bold text-lg">{p.customer_name}</p>
-                    <p className="text-sm text-muted mt-1">{p.project_address}</p>
+                  <div className="block p-4 flex-1 opacity-80">
+                    <p className="font-bold text-base leading-snug line-clamp-2">
+                      {p.customer_name}
+                    </p>
+                    <p className="text-sm text-muted mt-2 line-clamp-3">
+                      {p.project_address}
+                    </p>
                   </div>
                 ) : (
                   <Link
                     href={`/project/${p.id}`}
-                    className="block p-4 active:bg-surface min-h-[64px]"
+                    className="block p-4 flex-1 active:bg-surface hover:bg-surface transition-colors"
                   >
-                    <p className="font-bold text-lg">{p.customer_name}</p>
-                    <p className="text-sm text-muted mt-1">
+                    <p className="font-bold text-base leading-snug line-clamp-2">
+                      {p.customer_name}
+                    </p>
+                    <p className="text-sm text-muted mt-2 line-clamp-3">
                       {p.project_address}
                     </p>
                   </Link>
@@ -391,7 +400,7 @@ export default function ProjectsPage() {
                     type="button"
                     onClick={() => removeProject(p)}
                     disabled={deletingId === p.id}
-                    className="w-full border-t border-red-900/40 py-3 text-red-400 text-sm font-semibold disabled:opacity-50 min-h-[48px] active:bg-red-50"
+                    className="w-full border-t border-red-900/40 py-2.5 text-red-400 text-sm font-semibold disabled:opacity-50 min-h-[44px] active:bg-red-50 mt-auto"
                   >
                     {deletingId === p.id ? 'Deleting…' : 'Delete project'}
                   </button>
@@ -403,6 +412,78 @@ export default function ProjectsPage() {
 
         <AppFooter />
       </main>
+
+      {access.canCreateProject && (
+        <>
+          {showCreateForm && (
+            <section
+              className="fixed z-40 bottom-[4.75rem] left-4 right-4 sm:right-auto sm:w-full sm:max-w-md border border-border rounded-xl p-4 bg-surface-elevated shadow-2xl space-y-3 safe-left safe-right"
+              aria-label="New project"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="font-bold text-lg">New project</h2>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateForm(false)}
+                  className="text-sm text-muted hover:text-foreground min-h-[40px] px-2"
+                  aria-label="Close new project form"
+                >
+                  Close
+                </button>
+              </div>
+
+              <input
+                className="border border-border rounded-xl p-3 w-full bg-surface"
+                placeholder="Customer name"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+              />
+
+              <input
+                className="border border-border rounded-xl p-3 w-full bg-surface"
+                placeholder="Project address"
+                value={projectAddress}
+                onChange={(e) => setProjectAddress(e.target.value)}
+              />
+
+              <label className="block space-y-1">
+                <span className="text-sm font-medium text-foreground">
+                  Job description
+                </span>
+                <textarea
+                  className="border border-border rounded-xl p-3 w-full min-h-[88px] bg-surface"
+                  placeholder="Describe the work for this job"
+                  value={jobDescription}
+                  onChange={(e) => setJobDescription(e.target.value)}
+                  required
+                />
+              </label>
+
+              <button
+                type="button"
+                onClick={createProject}
+                disabled={
+                  creating ||
+                  !customerName.trim() ||
+                  !projectAddress.trim() ||
+                  !jobDescription.trim()
+                }
+                className="w-full btn-primary text-[#052e16] py-4 rounded-xl font-medium disabled:opacity-50 min-h-[52px]"
+              >
+                {creating ? 'Creating…' : 'Create Project'}
+              </button>
+            </section>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setShowCreateForm((open) => !open)}
+            className="fixed z-50 bottom-4 left-4 safe-left btn-primary text-[#052e16] px-5 py-3 rounded-xl font-semibold shadow-lg min-h-[48px]"
+          >
+            {showCreateForm ? 'Hide form' : 'Create project'}
+          </button>
+        </>
+      )}
     </div>
   )
 }
