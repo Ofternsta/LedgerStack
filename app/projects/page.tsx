@@ -13,6 +13,7 @@ import { PlanUpgradeBanner } from '@/components/plan-upgrade-banner'
 import { ClientSignatureBanner } from '@/components/client-signature-banner'
 import { AdminSignatureNotificationsBanner } from '@/components/admin-signature-notifications-banner'
 import { ProjectsEditPanel } from '@/components/projects-edit-panel'
+import { ProjectActiveDurationBadge } from '@/components/project-active-duration-badge'
 import { isUnlimited } from '@/lib/plan-entitlements'
 import { linkClientAccessByEmail } from '@/lib/auth-signup'
 import { loadUserAccess } from '@/lib/load-access'
@@ -24,6 +25,7 @@ type Project = {
   customer_name: string
   project_address: string
   notes?: string
+  created_at?: string
 }
 
 export default function ProjectsPage() {
@@ -389,7 +391,8 @@ export default function ProjectsPage() {
                 }`}
               >
                 {access.workerBlockedByStaffLimit ? (
-                  <div className="block p-4 flex-1 opacity-80 text-center">
+                  <div className="relative block p-4 flex-1 opacity-80 text-center">
+                    <ProjectActiveDurationBadge createdAt={p.created_at} />
                     <p className="font-bold text-2xl text-brand-bright leading-snug line-clamp-2">
                       {p.customer_name}
                     </p>
@@ -401,9 +404,10 @@ export default function ProjectsPage() {
                   <button
                     type="button"
                     onClick={() => setEditingProject(p)}
-                    className="flex flex-col flex-1 active:bg-surface hover:bg-surface transition-colors min-h-[140px]"
+                    className="relative flex flex-col flex-1 active:bg-surface hover:bg-surface transition-colors min-h-[140px]"
                   >
-                    <div className="p-4 flex-1 text-center">
+                    <div className="relative p-4 flex-1 text-center">
+                      <ProjectActiveDurationBadge createdAt={p.created_at} />
                       <p className="font-bold text-2xl text-brand-bright leading-snug line-clamp-2">
                         {p.customer_name}
                       </p>
@@ -418,8 +422,9 @@ export default function ProjectsPage() {
                 ) : (
                   <Link
                     href={`/project/${p.id}`}
-                    className="block p-4 flex-1 active:bg-surface hover:bg-surface transition-colors text-center"
+                    className="relative block p-4 flex-1 active:bg-surface hover:bg-surface transition-colors text-center"
                   >
+                    <ProjectActiveDurationBadge createdAt={p.created_at} />
                     <p className="font-bold text-2xl text-brand-bright leading-snug line-clamp-2">
                       {p.customer_name}
                     </p>

@@ -76,7 +76,7 @@ export async function createProjectForUser(
       status_workflow: serializeProjectStatusWorkflow(workflow),
       file_categories: serializeProjectFileCategories(fileCategories),
     })
-    .select('id, customer_name, project_address, notes')
+    .select('id, customer_name, project_address, notes, created_at')
     .single()
 
   if (projectError || !project) {
