@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { assertCanAddWorker } from '@/lib/plan-enforcement'
+import { removeOrgWorkerServer } from '@/lib/remove-org-worker-server'
 import { requireAuth } from '@/lib/require-auth'
+import { createServiceClient } from '@/lib/supabase/service'
 import { normalizeJobTitle } from '@/lib/worker-job-titles'
 import { parseDefaultWorkerPermissions } from '@/lib/org-status-labels'
 
@@ -96,7 +98,7 @@ export async function GET() {
   })
 }
 
-/** POST approve or reject a worker { member_id, action: 'approve' | 'reject' } */
+/** POST approve, reject, or remove a worker { member_id, action } */
 export async function POST(req: Request) {
   const { supabase, user } = await requireAuth()
   if (!user) {
@@ -106,6 +108,19 @@ export async function POST(req: Request) {
   const body = await req.json()
   const memberId = body.member_id as string
   const action = body.action as string
+
+  if (action === 'remove') {
+    if (!memberId) {
+      return NextResponse.json({ error: 'member_id required' }, { status: 400 })
+    }
+
+    const service = createServiceClient()
+    const result = await removeOrgWorkerServer(service, user.id, memberId)
+    if (result.error) {
+      return NextResponse.json({ error: result.error }, { status: 400 })
+    }
+    return NextResponse.json({ ok: true })
+  }
 
   if (!memberId || !['approve', 'reject'].includes(action)) {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 })

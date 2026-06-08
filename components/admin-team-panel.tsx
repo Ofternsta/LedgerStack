@@ -71,13 +71,45 @@ export function AdminTeamPanel() {
 
   async function act(memberId: string, action: 'approve' | 'reject') {
     setActingId(memberId)
-    await fetch('/api/team', {
+    setPermMessage(null)
+    const res = await fetch('/api/team', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ member_id: memberId, action }),
     })
+    const payload = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      setPermMessage(payload.error || 'Could not update worker request.')
+    }
     await load()
     setActingId(null)
+  }
+
+  async function removeWorker(member: MemberRow) {
+    const label = member.full_name?.trim() || 'this worker'
+    const ok = window.confirm(
+      `Remove ${label} from your organization? They will lose access to all projects and must request to join again with your invite code.`
+    )
+    if (!ok) return
+
+    setActingId(member.id)
+    setPermMessage(null)
+    const res = await fetch('/api/team', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ member_id: member.id, action: 'remove' }),
+    })
+    const payload = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      setPermMessage(payload.error || 'Could not remove worker.')
+    } else {
+      setPermMessage(`${label} was removed from the organization.`)
+      if (expandedMemberId === member.id) {
+        setExpandedMemberId(null)
+      }
+    }
+    setActingId(null)
+    await load()
   }
 
   async function saveMember(memberId: string) {
@@ -315,14 +347,24 @@ export function AdminTeamPanel() {
                         </p>
                       </label>
 
-                      <button
-                        type="button"
-                        disabled={actingId === m.id}
-                        onClick={() => saveMember(m.id)}
-                        className="text-sm btn-primary text-[#052e16] px-3 py-2 rounded-lg min-h-[40px] disabled:opacity-50"
-                      >
-                        {actingId === m.id ? 'Saving…' : 'Save title'}
-                      </button>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          disabled={actingId === m.id}
+                          onClick={() => saveMember(m.id)}
+                          className="text-sm btn-primary text-[#052e16] px-3 py-2 rounded-lg min-h-[40px] disabled:opacity-50"
+                        >
+                          {actingId === m.id ? 'Saving…' : 'Save title'}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={actingId === m.id}
+                          onClick={() => removeWorker(m)}
+                          className="text-sm border border-red-900/40 text-red-400 px-3 py-2 rounded-lg font-medium min-h-[40px] disabled:opacity-50"
+                        >
+                          {actingId === m.id ? 'Removing…' : 'Remove from organization'}
+                        </button>
+                      </div>
                     </div>
                   )}
                 </li>
