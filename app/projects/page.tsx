@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { AppHeader } from '@/components/app-header'
@@ -39,6 +40,11 @@ export default function ProjectsPage() {
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [projectSearch, setProjectSearch] = useState('')
   const [signingOut, setSigningOut] = useState(false)
+  const [fabMounted, setFabMounted] = useState(false)
+
+  useEffect(() => {
+    setFabMounted(true)
+  }, [])
 
   async function refreshAccess() {
     const linkRes = await fetch('/api/auth/link-client-access', {
@@ -446,77 +452,80 @@ export default function ProjectsPage() {
         />
       )}
 
-      {access.canCreateProject && (
-        <>
-          {showCreateForm && (
-            <section
-              className="fixed z-40 bottom-[4.75rem] right-4 left-4 sm:left-auto sm:w-full sm:max-w-md border border-border rounded-xl p-4 bg-surface-elevated shadow-2xl space-y-3 safe-left safe-right"
-              aria-label="New project"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="font-bold text-lg">New project</h2>
+      {access.canCreateProject &&
+        fabMounted &&
+        createPortal(
+          <>
+            {showCreateForm && (
+              <section
+                className="fixed z-40 bottom-[calc(max(env(safe-area-inset-bottom,0px),1rem)+3.75rem)] right-[max(env(safe-area-inset-right,0px),1rem)] left-4 sm:left-auto sm:w-full sm:max-w-md border border-border rounded-xl p-4 bg-surface-elevated shadow-2xl space-y-3"
+                aria-label="New project"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="font-bold text-lg">New project</h2>
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateForm(false)}
+                    className="text-sm text-muted hover:text-foreground min-h-[40px] px-2"
+                    aria-label="Close new project form"
+                  >
+                    Close
+                  </button>
+                </div>
+
+                <input
+                  className="border border-border rounded-xl p-3 w-full bg-surface"
+                  placeholder="Customer name"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                />
+
+                <input
+                  className="border border-border rounded-xl p-3 w-full bg-surface"
+                  placeholder="Project address"
+                  value={projectAddress}
+                  onChange={(e) => setProjectAddress(e.target.value)}
+                />
+
+                <label className="block space-y-1">
+                  <span className="text-sm font-medium text-foreground">
+                    Job description
+                  </span>
+                  <textarea
+                    className="border border-border rounded-xl p-3 w-full min-h-[88px] bg-surface"
+                    placeholder="Describe the work for this job"
+                    value={jobDescription}
+                    onChange={(e) => setJobDescription(e.target.value)}
+                    required
+                  />
+                </label>
+
                 <button
                   type="button"
-                  onClick={() => setShowCreateForm(false)}
-                  className="text-sm text-muted hover:text-foreground min-h-[40px] px-2"
-                  aria-label="Close new project form"
+                  onClick={createProject}
+                  disabled={
+                    creating ||
+                    !customerName.trim() ||
+                    !projectAddress.trim() ||
+                    !jobDescription.trim()
+                  }
+                  className="w-full btn-primary text-[#052e16] py-4 rounded-xl font-medium disabled:opacity-50 min-h-[52px]"
                 >
-                  Close
+                  {creating ? 'Creating…' : 'Create Project'}
                 </button>
-              </div>
+              </section>
+            )}
 
-              <input
-                className="border border-border rounded-xl p-3 w-full bg-surface"
-                placeholder="Customer name"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-              />
-
-              <input
-                className="border border-border rounded-xl p-3 w-full bg-surface"
-                placeholder="Project address"
-                value={projectAddress}
-                onChange={(e) => setProjectAddress(e.target.value)}
-              />
-
-              <label className="block space-y-1">
-                <span className="text-sm font-medium text-foreground">
-                  Job description
-                </span>
-                <textarea
-                  className="border border-border rounded-xl p-3 w-full min-h-[88px] bg-surface"
-                  placeholder="Describe the work for this job"
-                  value={jobDescription}
-                  onChange={(e) => setJobDescription(e.target.value)}
-                  required
-                />
-              </label>
-
-              <button
-                type="button"
-                onClick={createProject}
-                disabled={
-                  creating ||
-                  !customerName.trim() ||
-                  !projectAddress.trim() ||
-                  !jobDescription.trim()
-                }
-                className="w-full btn-primary text-[#052e16] py-4 rounded-xl font-medium disabled:opacity-50 min-h-[52px]"
-              >
-                {creating ? 'Creating…' : 'Create Project'}
-              </button>
-            </section>
-          )}
-
-          <button
-            type="button"
-            onClick={() => setShowCreateForm((open) => !open)}
-            className="fixed z-50 bottom-4 right-4 safe-right btn-primary text-[#052e16] px-5 py-3 rounded-xl font-semibold shadow-lg min-h-[48px]"
-          >
-            {showCreateForm ? 'Hide form' : 'Create project'}
-          </button>
-        </>
-      )}
+            <button
+              type="button"
+              onClick={() => setShowCreateForm((open) => !open)}
+              className="fixed z-50 bottom-[max(env(safe-area-inset-bottom,0px),1rem)] right-[max(env(safe-area-inset-right,0px),1rem)] btn-primary text-[#052e16] px-5 py-3 rounded-xl font-semibold shadow-lg min-h-[48px]"
+            >
+              {showCreateForm ? 'Hide form' : 'Create project'}
+            </button>
+          </>,
+          document.body
+        )}
     </div>
   )
 }
