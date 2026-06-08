@@ -134,7 +134,11 @@ export function ProjectAiChat({
 
   return createPortal(
     <>
-      <div className="fixed z-[78] bottom-[max(env(safe-area-inset-bottom,0px),0.75rem)] right-3 pointer-events-none flex flex-col items-end gap-2">
+      <div
+        className={`fixed bottom-[max(env(safe-area-inset-bottom,0px),0.75rem)] right-3 pointer-events-none flex flex-col items-end gap-2 ${
+          open ? 'z-[89]' : 'z-[78]'
+        }`}
+      >
         {open && (
           <div
             className="pointer-events-auto w-[min(calc(100vw-1.5rem),32rem)] sm:w-[36rem] h-[min(85vh,42rem)] flex flex-col border border-border rounded-2xl shadow-xl bg-surface-elevated overflow-hidden mb-1"
@@ -295,7 +299,7 @@ export function ProjectAiChat({
       {open && (
         <button
           type="button"
-          className="fixed inset-0 z-[77] bg-black/40 sm:bg-transparent sm:pointer-events-none"
+          className="fixed inset-0 z-[88] bg-black/40 sm:bg-transparent sm:pointer-events-none"
           aria-label="Close project AI chat"
           onClick={closePanel}
         />
