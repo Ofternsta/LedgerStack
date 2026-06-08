@@ -235,7 +235,7 @@ export const GUIDE_PARTS: GuidePart[] = [
         id: 'team-page',
         title: 'Team page (/team)',
         paragraphs: [
-          'Professional+ admins get an 8-character invite code to share with workers (copy or regenerate). Pending signups appear for approve/deny. The roster lists approved workers with job titles; you can promote a worker to organization admin.',
+          'Professional+ admins get an 8-character invite code to share with workers (copy or regenerate). Pending signups appear for approve/deny. The roster lists approved workers with job titles.',
         ],
       },
       {

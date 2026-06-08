@@ -40,11 +40,14 @@ export function ProjectsEditPanel({
 
   if (!open || !project) return null
 
+  const projectId = project.id
+  const projectLabel = project.customer_name
+
   async function saveProject() {
     if (!customerName.trim() || !projectAddress.trim()) return
 
     setSaving(true)
-    const res = await fetch(`/api/projects/${project.id}`, {
+    const res = await fetch(`/api/projects/${projectId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -68,12 +71,12 @@ export function ProjectsEditPanel({
 
   async function deleteProject() {
     const ok = window.confirm(
-      `Delete "${project.customer_name}" and all jobs and uploaded files? This cannot be undone.`
+      `Delete "${projectLabel}" and all jobs and uploaded files? This cannot be undone.`
     )
     if (!ok) return
 
     setDeleting(true)
-    const res = await fetch(`/api/projects/${project.id}`, { method: 'DELETE' })
+    const res = await fetch(`/api/projects/${projectId}`, { method: 'DELETE' })
     const payload = await res.json().catch(() => ({}))
     setDeleting(false)
 
@@ -82,7 +85,7 @@ export function ProjectsEditPanel({
       return
     }
 
-    onDeleted(project.id)
+    onDeleted(projectId)
     onClose()
   }
 

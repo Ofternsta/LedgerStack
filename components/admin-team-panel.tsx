@@ -69,14 +69,7 @@ export function AdminTeamPanel() {
     setLoading(false)
   }
 
-  async function act(memberId: string, action: 'approve' | 'reject' | 'promote_admin') {
-    if (action === 'promote_admin') {
-      const ok = window.confirm(
-        'Make this worker the organization admin? You will become a worker on the team.'
-      )
-      if (!ok) return
-    }
-
+  async function act(memberId: string, action: 'approve' | 'reject') {
     setActingId(memberId)
     await fetch('/api/team', {
       method: 'POST',
@@ -85,9 +78,6 @@ export function AdminTeamPanel() {
     })
     await load()
     setActingId(null)
-    if (action === 'promote_admin') {
-      window.location.reload()
-    }
   }
 
   async function saveMember(memberId: string) {
@@ -325,24 +315,14 @@ export function AdminTeamPanel() {
                         </p>
                       </label>
 
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          disabled={actingId === m.id}
-                          onClick={() => saveMember(m.id)}
-                          className="text-sm btn-primary text-[#052e16] px-3 py-2 rounded-lg min-h-[40px] disabled:opacity-50"
-                        >
-                          {actingId === m.id ? 'Saving…' : 'Save title'}
-                        </button>
-                        <button
-                          type="button"
-                          disabled={actingId === m.id}
-                          onClick={() => act(m.id, 'promote_admin')}
-                          className="text-sm border border-border px-3 py-2 rounded-lg font-medium text-foreground min-h-[40px] disabled:opacity-50"
-                        >
-                          Make organization admin
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        disabled={actingId === m.id}
+                        onClick={() => saveMember(m.id)}
+                        className="text-sm btn-primary text-[#052e16] px-3 py-2 rounded-lg min-h-[40px] disabled:opacity-50"
+                      >
+                        {actingId === m.id ? 'Saving…' : 'Save title'}
+                      </button>
                     </div>
                   )}
                 </li>

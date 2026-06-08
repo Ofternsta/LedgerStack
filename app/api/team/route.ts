@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { assertCanAddWorker } from '@/lib/plan-enforcement'
-import { transferOrgAdmin } from '@/lib/transfer-org-admin'
 import { requireAuth } from '@/lib/require-auth'
 import { normalizeJobTitle } from '@/lib/worker-job-titles'
 import { parseDefaultWorkerPermissions } from '@/lib/org-status-labels'
@@ -107,18 +106,6 @@ export async function POST(req: Request) {
   const body = await req.json()
   const memberId = body.member_id as string
   const action = body.action as string
-
-  if (action === 'promote_admin') {
-    if (!memberId) {
-      return NextResponse.json({ error: 'member_id required' }, { status: 400 })
-    }
-
-    const result = await transferOrgAdmin(supabase, user.id, memberId)
-    if (result.error) {
-      return NextResponse.json({ error: result.error }, { status: 400 })
-    }
-    return NextResponse.json({ ok: true })
-  }
 
   if (!memberId || !['approve', 'reject'].includes(action)) {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
