@@ -16,6 +16,7 @@ import { getOrgPlanContext } from '@/lib/org-plan'
 import { validateUploadForPlan } from '@/lib/plan-enforcement'
 import { assertProjectMemberPermission } from '@/lib/member-permissions-server'
 import { requireAuth } from '@/lib/require-auth'
+import { createServiceClient } from '@/lib/supabase/service'
 import { normalizeUploadFile } from '@/lib/file-meta'
 import { validateUploadSize } from '@/lib/upload-limits'
 import { touchProjectActivity } from '@/lib/touch-project-activity'
@@ -97,7 +98,12 @@ export async function POST(req: Request) {
         )
       }
 
-      file = await fileFromStorage(supabase, existingPath, fileName, fileType)
+      file = await fileFromStorage(
+        createServiceClient(),
+        existingPath,
+        fileName,
+        fileType
+      )
     } else {
       const formData = await req.formData()
       file = formData.get('file') as File | null
@@ -144,6 +150,9 @@ export async function POST(req: Request) {
       )
     }
 
+    // Service role: storage RLS may block inserts even when app permission checks pass.
+    const storage = createServiceClient()
+
     const planCtx = await getOrgPlanContext(supabase, project.organization_id)
     if (!planCtx) {
       return NextResponse.json(
@@ -181,7 +190,7 @@ export async function POST(req: Request) {
 
     const filePath =
       existingPath ||
-      (await uploadEvidenceFile(supabase, projectId, claimId, file, {
+      (await uploadEvidenceFile(storage, projectId, claimId, file, {
         storageFileName,
       })).filePath
 
@@ -197,7 +206,7 @@ export async function POST(req: Request) {
     const { evidenceType, summary } = analysis
 
     const previous = existingPath
-      ? await readEvidenceMeta(supabase, existingPath)
+      ? await readEvidenceMeta(storage, existingPath)
       : null
 
     const uploader =
@@ -214,7 +223,7 @@ export async function POST(req: Request) {
 
     const uploadedAt = previous?.created_at ?? new Date().toISOString()
 
-    const evidence = await saveEvidence(supabase, {
+    const evidence = await saveEvidence(storage, {
       id: previous?.id ?? newEvidenceId(),
       claim_id: claimId,
       file_name: displayFileName,

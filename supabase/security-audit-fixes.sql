@@ -328,3 +328,60 @@ DROP POLICY IF EXISTS "anon read project files" ON storage.objects;
 DROP POLICY IF EXISTS "anon insert project files" ON storage.objects;
 DROP POLICY IF EXISTS "anon update project files" ON storage.objects;
 DROP POLICY IF EXISTS "anon delete project files" ON storage.objects;
+
+-- Re-apply project-scoped storage policies (requires project-worker-permissions.sql helpers).
+CREATE OR REPLACE FUNCTION public.storage_project_id(object_name text)
+RETURNS uuid
+LANGUAGE sql
+IMMUTABLE
+AS $$
+  SELECT NULLIF(split_part(object_name, '/', 1), '')::uuid;
+$$;
+
+DROP POLICY IF EXISTS "authenticated read project files" ON storage.objects;
+CREATE POLICY "authenticated read project files"
+  ON storage.objects FOR SELECT TO authenticated
+  USING (
+    bucket_id = 'project-files'
+    AND public.can_view_project_files(public.storage_project_id(name))
+  );
+
+DROP POLICY IF EXISTS "staff upload project files" ON storage.objects;
+CREATE POLICY "staff upload project files"
+  ON storage.objects FOR INSERT TO authenticated
+  WITH CHECK (
+    bucket_id = 'project-files'
+    AND public.member_has_project_permission(
+      public.storage_project_id(name),
+      'upload'
+    )
+  );
+
+DROP POLICY IF EXISTS "staff update project files" ON storage.objects;
+CREATE POLICY "staff update project files"
+  ON storage.objects FOR UPDATE TO authenticated
+  USING (
+    bucket_id = 'project-files'
+    AND public.member_has_project_permission(
+      public.storage_project_id(name),
+      'upload'
+    )
+  )
+  WITH CHECK (
+    bucket_id = 'project-files'
+    AND public.member_has_project_permission(
+      public.storage_project_id(name),
+      'upload'
+    )
+  );
+
+DROP POLICY IF EXISTS "staff delete project files" ON storage.objects;
+CREATE POLICY "staff delete project files"
+  ON storage.objects FOR DELETE TO authenticated
+  USING (
+    bucket_id = 'project-files'
+    AND public.member_has_project_permission(
+      public.storage_project_id(name),
+      'delete'
+    )
+  );
