@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EvidenceCard } from '@/components/evidence-card'
 import {
   defaultFileCategories,
@@ -55,7 +56,7 @@ type EvidenceFoldersProps = {
   canRescan: boolean
   emptyMessage?: string
   onOpen: (filePath: string) => void
-  onDelete: (filePath: string) => void
+  onDelete: (filePath: string) => void | Promise<void>
   onUpdated: () => void
   /** Scroll to and expand this file (e.g. from AI chat citation). */
   focusFilePath?: string | null
@@ -102,6 +103,10 @@ export function EvidenceFolders({
 
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [selectedPath, setSelectedPath] = useState<string | null>(null)
+  const [pendingDeletePath, setPendingDeletePath] = useState<string | null>(
+    null
+  )
+  const [deleting, setDeleting] = useState(false)
   const grouped = useMemo(() => {
     const map = Object.fromEntries(
       categories.map((c) => [c.key, [] as EvidenceDoc[]])
@@ -165,15 +170,48 @@ export function EvidenceFolders({
     setSelectedPath((current) => (current === filePath ? null : filePath))
   }
 
-  function handleDelete(filePath: string) {
-    setSelectedPath((current) => (current === filePath ? null : current))
-    void onDelete(filePath)
+  function requestDelete(filePath: string) {
+    setPendingDeletePath(filePath)
   }
+
+  async function confirmDelete() {
+    if (!pendingDeletePath) return
+    const filePath = pendingDeletePath
+    setDeleting(true)
+    setSelectedPath((current) => (current === filePath ? null : current))
+    try {
+      await onDelete(filePath)
+    } finally {
+      setDeleting(false)
+      setPendingDeletePath(null)
+    }
+  }
+
+  const pendingDeleteDoc = pendingDeletePath
+    ? documents.find((d) => d.file_path === pendingDeletePath)
+    : null
+
+  const deleteConfirmDialog = (
+    <ConfirmDialog
+      open={pendingDeletePath !== null}
+      title="Delete document?"
+      description={`Delete "${pendingDeleteDoc?.file_name ?? 'this file'}"? This cannot be undone.`}
+      confirmLabel="Delete"
+      destructive
+      busy={deleting}
+      onCancel={() => {
+        if (!deleting) setPendingDeletePath(null)
+      }}
+      onConfirm={() => void confirmDelete()}
+    />
+  )
 
   const categoryLabels = categories.map((c) => c.label)
 
   if (totalCount === 0) {
     return (
+      <>
+      {deleteConfirmDialog}
       <section className="space-y-2" aria-label="Documents">
         <h2 className="font-bold text-lg text-foreground">Documents</h2>
         {categories.map((cat) => (
@@ -190,10 +228,13 @@ export function EvidenceFolders({
         ))}
         <p className="text-sm text-muted-dim text-center py-4">{emptyMessage}</p>
       </section>
+      </>
     )
   }
 
   return (
+    <>
+    {deleteConfirmDialog}
     <section className="space-y-2" aria-label="Documents">
       <h2 className="font-bold text-lg text-foreground">Documents</h2>
       {categories.map((cat) => {
@@ -269,7 +310,7 @@ export function EvidenceFolders({
                             canRescan={canRescan}
                             variant="detail"
                             onOpen={onOpen}
-                            onDelete={handleDelete}
+                            onDelete={requestDelete}
                             onUpdated={onUpdated}
                           />
                         </div>
@@ -283,5 +324,6 @@ export function EvidenceFolders({
         )
       })}
     </section>
+    </>
   )
 }
