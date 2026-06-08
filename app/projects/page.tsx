@@ -382,7 +382,7 @@ export default function ProjectsPage() {
             {filteredProjects.map((p) => (
               <li
                 key={p.id}
-                className={`border rounded-xl bg-surface-elevated shadow-sm overflow-hidden flex flex-col min-h-[120px] ${
+                className={`border rounded-xl bg-surface-elevated shadow-sm overflow-hidden flex flex-col min-h-[140px] ${
                   editingProjects && access.canDeleteProject
                     ? 'border-brand-dim/50'
                     : 'border-border'
@@ -390,10 +390,10 @@ export default function ProjectsPage() {
               >
                 {access.workerBlockedByStaffLimit ? (
                   <div className="block p-4 flex-1 opacity-80 text-center">
-                    <p className="font-bold text-base leading-snug line-clamp-2">
+                    <p className="font-bold text-2xl text-brand-bright leading-snug line-clamp-2">
                       {p.customer_name}
                     </p>
-                    <p className="text-sm text-muted mt-2 line-clamp-3">
+                    <p className="text-lg text-muted mt-2 line-clamp-3">
                       {p.project_address}
                     </p>
                   </div>
@@ -401,13 +401,13 @@ export default function ProjectsPage() {
                   <button
                     type="button"
                     onClick={() => setEditingProject(p)}
-                    className="flex flex-col flex-1 active:bg-surface hover:bg-surface transition-colors min-h-[120px]"
+                    className="flex flex-col flex-1 active:bg-surface hover:bg-surface transition-colors min-h-[140px]"
                   >
                     <div className="p-4 flex-1 text-center">
-                      <p className="font-bold text-base leading-snug line-clamp-2">
+                      <p className="font-bold text-2xl text-brand-bright leading-snug line-clamp-2">
                         {p.customer_name}
                       </p>
-                      <p className="text-sm text-muted mt-2 line-clamp-3">
+                      <p className="text-lg text-muted mt-2 line-clamp-3">
                         {p.project_address}
                       </p>
                     </div>
@@ -420,10 +420,10 @@ export default function ProjectsPage() {
                     href={`/project/${p.id}`}
                     className="block p-4 flex-1 active:bg-surface hover:bg-surface transition-colors text-center"
                   >
-                    <p className="font-bold text-base leading-snug line-clamp-2">
+                    <p className="font-bold text-2xl text-brand-bright leading-snug line-clamp-2">
                       {p.customer_name}
                     </p>
-                    <p className="text-sm text-muted mt-2 line-clamp-3">
+                    <p className="text-lg text-muted mt-2 line-clamp-3">
                       {p.project_address}
                     </p>
                   </Link>
