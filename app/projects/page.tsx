@@ -389,7 +389,7 @@ export default function ProjectsPage() {
                 }`}
               >
                 {access.workerBlockedByStaffLimit ? (
-                  <div className="block p-4 flex-1 opacity-80">
+                  <div className="block p-4 flex-1 opacity-80 text-center">
                     <p className="font-bold text-base leading-snug line-clamp-2">
                       {p.customer_name}
                     </p>
@@ -401,9 +401,9 @@ export default function ProjectsPage() {
                   <button
                     type="button"
                     onClick={() => setEditingProject(p)}
-                    className="flex flex-col flex-1 text-left active:bg-surface hover:bg-surface transition-colors min-h-[120px]"
+                    className="flex flex-col flex-1 active:bg-surface hover:bg-surface transition-colors min-h-[120px]"
                   >
-                    <div className="p-4 flex-1">
+                    <div className="p-4 flex-1 text-center">
                       <p className="font-bold text-base leading-snug line-clamp-2">
                         {p.customer_name}
                       </p>
@@ -418,7 +418,7 @@ export default function ProjectsPage() {
                 ) : (
                   <Link
                     href={`/project/${p.id}`}
-                    className="block p-4 flex-1 active:bg-surface hover:bg-surface transition-colors"
+                    className="block p-4 flex-1 active:bg-surface hover:bg-surface transition-colors text-center"
                   >
                     <p className="font-bold text-base leading-snug line-clamp-2">
                       {p.customer_name}
