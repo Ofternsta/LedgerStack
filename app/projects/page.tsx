@@ -11,6 +11,7 @@ import { LegalNotice } from '@/components/legal-notice'
 import { PlanUpgradeBanner } from '@/components/plan-upgrade-banner'
 import { ClientSignatureBanner } from '@/components/client-signature-banner'
 import { AdminSignatureNotificationsBanner } from '@/components/admin-signature-notifications-banner'
+import { ProjectsEditPanel } from '@/components/projects-edit-panel'
 import { isUnlimited } from '@/lib/plan-entitlements'
 import { linkClientAccessByEmail } from '@/lib/auth-signup'
 import { loadUserAccess } from '@/lib/load-access'
@@ -34,8 +35,8 @@ export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([])
   const [creating, setCreating] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
+  const [showEditPanel, setShowEditPanel] = useState(false)
   const [projectSearch, setProjectSearch] = useState('')
-  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [signingOut, setSigningOut] = useState(false)
 
   async function refreshAccess() {
@@ -155,23 +156,6 @@ export default function ProjectsPage() {
     setCreating(false)
   }
 
-  async function removeProject(project: Project) {
-    const ok = window.confirm(
-      `Delete "${project.customer_name}" and all jobs and uploaded files? This cannot be undone.`
-    )
-    if (!ok) return
-
-    setDeletingId(project.id)
-    const res = await fetch(`/api/projects/${project.id}`, { method: 'DELETE' })
-    const payload = await res.json().catch(() => ({}))
-    if (!res.ok) {
-      alert(payload.error || 'Could not delete project.')
-    } else if (access) {
-      await fetchProjects(access.role)
-    }
-    setDeletingId(null)
-  }
-
   useEffect(() => {
     refreshAccess().then((a) => {
       if (!a) return
@@ -266,7 +250,18 @@ export default function ProjectsPage() {
       />
 
       <main className="flex-1 safe-x px-4 sm:px-6 lg:px-8 py-4 w-full max-w-[1600px] mx-auto pb-28 safe-bottom space-y-5">
-        <AppNav access={access} />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <AppNav access={access} />
+          {access.canDeleteProject && (
+            <button
+              type="button"
+              onClick={() => setShowEditPanel(true)}
+              className="text-sm border border-border px-4 py-2 rounded-xl font-medium hover:border-brand-dim/50 min-h-[40px] shrink-0"
+            >
+              Edit projects
+            </button>
+          )}
+        </div>
 
         <label className="block">
           <span className="sr-only">Search projects</span>
@@ -356,7 +351,7 @@ export default function ProjectsPage() {
                 ? 'No projects shared with you yet. Ask your contractor admin to grant access using your signup email.'
                 : access.role === 'worker'
                   ? 'No projects assigned to you yet. Your organization admin must assign you to a project before you can open it.'
-                  : 'No projects yet. Use Create project in the bottom left to add your first one.'}
+                  : 'No projects yet. Use Create project in the bottom right to add your first one.'}
             </p>
           )}
 
@@ -395,16 +390,6 @@ export default function ProjectsPage() {
                     </p>
                   </Link>
                 )}
-                {access.canDeleteProject && (
-                  <button
-                    type="button"
-                    onClick={() => removeProject(p)}
-                    disabled={deletingId === p.id}
-                    className="w-full border-t border-red-900/40 py-2.5 text-red-400 text-sm font-semibold disabled:opacity-50 min-h-[44px] active:bg-red-50 mt-auto"
-                  >
-                    {deletingId === p.id ? 'Deleting…' : 'Delete project'}
-                  </button>
-                )}
               </li>
             ))}
           </ul>
@@ -413,11 +398,27 @@ export default function ProjectsPage() {
         <AppFooter />
       </main>
 
+      {access.canDeleteProject && (
+        <ProjectsEditPanel
+          projects={projects}
+          open={showEditPanel}
+          onClose={() => setShowEditPanel(false)}
+          onUpdated={(project) => {
+            setProjects((prev) =>
+              prev.map((p) => (p.id === project.id ? { ...p, ...project } : p))
+            )
+          }}
+          onDeleted={(projectId) => {
+            setProjects((prev) => prev.filter((p) => p.id !== projectId))
+          }}
+        />
+      )}
+
       {access.canCreateProject && (
         <>
           {showCreateForm && (
             <section
-              className="fixed z-40 bottom-[4.75rem] left-4 right-4 sm:right-auto sm:w-full sm:max-w-md border border-border rounded-xl p-4 bg-surface-elevated shadow-2xl space-y-3 safe-left safe-right"
+              className="fixed z-40 bottom-[4.75rem] right-4 left-4 sm:left-auto sm:w-full sm:max-w-md border border-border rounded-xl p-4 bg-surface-elevated shadow-2xl space-y-3 safe-left safe-right"
               aria-label="New project"
             >
               <div className="flex items-center justify-between gap-2">
@@ -478,7 +479,7 @@ export default function ProjectsPage() {
           <button
             type="button"
             onClick={() => setShowCreateForm((open) => !open)}
-            className="fixed z-50 bottom-4 left-4 safe-left btn-primary text-[#052e16] px-5 py-3 rounded-xl font-semibold shadow-lg min-h-[48px]"
+            className="fixed z-50 bottom-4 right-4 safe-right btn-primary text-[#052e16] px-5 py-3 rounded-xl font-semibold shadow-lg min-h-[48px]"
           >
             {showCreateForm ? 'Hide form' : 'Create project'}
           </button>

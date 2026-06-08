@@ -105,11 +105,11 @@ export async function PATCH(req: Request, context: RouteContext) {
 
     await touchProjectActivity(supabase, projectId)
 
-    if (customerName) {
-      await supabase
-        .from('claims')
-        .update({ client_name: customerName })
-        .eq('project_id', projectId)
+    const claimUpdate: Record<string, string> = {}
+    if (customerName) claimUpdate.client_name = customerName
+    if (projectAddress) claimUpdate.property_address = projectAddress
+    if (Object.keys(claimUpdate).length) {
+      await supabase.from('claims').update(claimUpdate).eq('project_id', projectId)
     }
 
     return NextResponse.json({ project: data })
