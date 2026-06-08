@@ -8,7 +8,6 @@ import { AppHeader } from '@/components/app-header'
 import { LedgerStackLoader } from '@/components/ledgerstack-loader'
 import { AppFooter } from '@/components/app-footer'
 import { AppNav } from '@/components/app-nav'
-import { LegalNotice } from '@/components/legal-notice'
 import { PlanUpgradeBanner } from '@/components/plan-upgrade-banner'
 import { ClientSignatureBanner } from '@/components/client-signature-banner'
 import { AdminSignatureNotificationsBanner } from '@/components/admin-signature-notifications-banner'
@@ -345,10 +344,6 @@ export default function ProjectsPage() {
           </>
         )}
 
-        {access.role === 'admin' && (
-          <LegalNotice id="data-retention" className="mb-4" />
-        )}
-
         <section className="flex-1 min-h-0">
           <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4">
             <h2 className="font-bold text-lg">
@@ -438,7 +433,7 @@ export default function ProjectsPage() {
           </ul>
         </section>
 
-        <AppFooter />
+        <AppFooter showDataRetention={access.role === 'admin'} />
       </main>
 
       {access.canDeleteProject && (
