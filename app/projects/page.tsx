@@ -35,7 +35,8 @@ export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([])
   const [creating, setCreating] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
-  const [showEditPanel, setShowEditPanel] = useState(false)
+  const [editingProjects, setEditingProjects] = useState(false)
+  const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [projectSearch, setProjectSearch] = useState('')
   const [signingOut, setSigningOut] = useState(false)
 
@@ -255,10 +256,19 @@ export default function ProjectsPage() {
           {access.canDeleteProject && (
             <button
               type="button"
-              onClick={() => setShowEditPanel(true)}
-              className="text-sm border border-border px-4 py-2 rounded-xl font-medium hover:border-brand-dim/50 min-h-[40px] shrink-0"
+              onClick={() => {
+                setEditingProjects((on) => {
+                  if (on) setEditingProject(null)
+                  return !on
+                })
+              }}
+              className={`text-sm border px-4 py-2 rounded-xl font-medium min-h-[40px] shrink-0 ${
+                editingProjects
+                  ? 'border-brand bg-surface-elevated text-brand-bright'
+                  : 'border-border hover:border-brand-dim/50'
+              }`}
             >
-              Edit projects
+              {editingProjects ? 'Stop editing projects' : 'Edit projects'}
             </button>
           )}
         </div>
@@ -366,7 +376,11 @@ export default function ProjectsPage() {
             {filteredProjects.map((p) => (
               <li
                 key={p.id}
-                className="border border-border rounded-xl bg-surface-elevated shadow-sm overflow-hidden flex flex-col min-h-[120px]"
+                className={`border rounded-xl bg-surface-elevated shadow-sm overflow-hidden flex flex-col min-h-[120px] ${
+                  editingProjects && access.canDeleteProject
+                    ? 'border-brand-dim/50'
+                    : 'border-border'
+                }`}
               >
                 {access.workerBlockedByStaffLimit ? (
                   <div className="block p-4 flex-1 opacity-80">
@@ -377,6 +391,24 @@ export default function ProjectsPage() {
                       {p.project_address}
                     </p>
                   </div>
+                ) : editingProjects && access.canDeleteProject ? (
+                  <button
+                    type="button"
+                    onClick={() => setEditingProject(p)}
+                    className="flex flex-col flex-1 text-left active:bg-surface hover:bg-surface transition-colors min-h-[120px]"
+                  >
+                    <div className="p-4 flex-1">
+                      <p className="font-bold text-base leading-snug line-clamp-2">
+                        {p.customer_name}
+                      </p>
+                      <p className="text-sm text-muted mt-2 line-clamp-3">
+                        {p.project_address}
+                      </p>
+                    </div>
+                    <p className="border-t border-border px-4 py-2.5 text-sm font-medium text-brand-bright text-center">
+                      Click to edit
+                    </p>
+                  </button>
                 ) : (
                   <Link
                     href={`/project/${p.id}`}
@@ -400,9 +432,9 @@ export default function ProjectsPage() {
 
       {access.canDeleteProject && (
         <ProjectsEditPanel
-          projects={projects}
-          open={showEditPanel}
-          onClose={() => setShowEditPanel(false)}
+          project={editingProject}
+          open={editingProject !== null}
+          onClose={() => setEditingProject(null)}
           onUpdated={(project) => {
             setProjects((prev) =>
               prev.map((p) => (p.id === project.id ? { ...p, ...project } : p))

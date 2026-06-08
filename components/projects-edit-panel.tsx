@@ -9,7 +9,7 @@ type Project = {
 }
 
 type Props = {
-  projects: Project[]
+  project: Project | null
   open: boolean
   onClose: () => void
   onUpdated: (project: Project) => void
@@ -17,47 +17,34 @@ type Props = {
 }
 
 export function ProjectsEditPanel({
-  projects,
+  project,
   open,
   onClose,
   onUpdated,
   onDeleted,
 }: Props) {
-  const [selectedId, setSelectedId] = useState('')
   const [customerName, setCustomerName] = useState('')
   const [projectAddress, setProjectAddress] = useState('')
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
-  const selected = projects.find((p) => p.id === selectedId)
-
   useEffect(() => {
-    if (!open) return
-    const first = projects[0]
-    if (!first) {
-      setSelectedId('')
+    if (!project) {
       setCustomerName('')
       setProjectAddress('')
       return
     }
-    setSelectedId(first.id)
-    setCustomerName(first.customer_name)
-    setProjectAddress(first.project_address)
-  }, [open, projects])
+    setCustomerName(project.customer_name)
+    setProjectAddress(project.project_address)
+  }, [project?.id, project?.customer_name, project?.project_address])
 
-  useEffect(() => {
-    if (!selected) return
-    setCustomerName(selected.customer_name)
-    setProjectAddress(selected.project_address)
-  }, [selected?.id, selected?.customer_name, selected?.project_address])
-
-  if (!open) return null
+  if (!open || !project) return null
 
   async function saveProject() {
-    if (!selectedId || !customerName.trim() || !projectAddress.trim()) return
+    if (!customerName.trim() || !projectAddress.trim()) return
 
     setSaving(true)
-    const res = await fetch(`/api/projects/${selectedId}`, {
+    const res = await fetch(`/api/projects/${project.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -76,17 +63,17 @@ export function ProjectsEditPanel({
     if (payload.project) {
       onUpdated(payload.project as Project)
     }
+    onClose()
   }
 
   async function deleteProject() {
-    if (!selected) return
     const ok = window.confirm(
-      `Delete "${selected.customer_name}" and all jobs and uploaded files? This cannot be undone.`
+      `Delete "${project.customer_name}" and all jobs and uploaded files? This cannot be undone.`
     )
     if (!ok) return
 
     setDeleting(true)
-    const res = await fetch(`/api/projects/${selected.id}`, { method: 'DELETE' })
+    const res = await fetch(`/api/projects/${project.id}`, { method: 'DELETE' })
     const payload = await res.json().catch(() => ({}))
     setDeleting(false)
 
@@ -95,10 +82,8 @@ export function ProjectsEditPanel({
       return
     }
 
-    onDeleted(selected.id)
-    if (projects.length <= 1) {
-      onClose()
-    }
+    onDeleted(project.id)
+    onClose()
   }
 
   return (
@@ -115,7 +100,7 @@ export function ProjectsEditPanel({
       >
         <div className="flex items-center justify-between gap-2">
           <h2 id="edit-projects-title" className="font-bold text-lg">
-            Edit projects
+            Edit project
           </h2>
           <button
             type="button"
@@ -126,63 +111,39 @@ export function ProjectsEditPanel({
           </button>
         </div>
 
-        {projects.length === 0 ? (
-          <p className="text-sm text-muted">No projects to edit yet.</p>
-        ) : (
-          <>
-            <label className="block space-y-1">
-              <span className="text-sm font-medium">Project</span>
-              <select
-                value={selectedId}
-                onChange={(e) => setSelectedId(e.target.value)}
-                className="border border-border rounded-xl p-3 w-full bg-surface"
-              >
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.customer_name} — {p.project_address}
-                  </option>
-                ))}
-              </select>
-            </label>
+        <input
+          className="border border-border rounded-xl p-3 w-full bg-surface"
+          placeholder="Customer name"
+          value={customerName}
+          onChange={(e) => setCustomerName(e.target.value)}
+        />
 
-            <input
-              className="border border-border rounded-xl p-3 w-full bg-surface"
-              placeholder="Customer name"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-            />
+        <input
+          className="border border-border rounded-xl p-3 w-full bg-surface"
+          placeholder="Project address"
+          value={projectAddress}
+          onChange={(e) => setProjectAddress(e.target.value)}
+        />
 
-            <input
-              className="border border-border rounded-xl p-3 w-full bg-surface"
-              placeholder="Project address"
-              value={projectAddress}
-              onChange={(e) => setProjectAddress(e.target.value)}
-            />
+        <button
+          type="button"
+          onClick={saveProject}
+          disabled={
+            saving || deleting || !customerName.trim() || !projectAddress.trim()
+          }
+          className="w-full btn-primary text-[#052e16] py-3 rounded-xl font-medium disabled:opacity-50 min-h-[48px]"
+        >
+          {saving ? 'Saving…' : 'Save changes'}
+        </button>
 
-            <button
-              type="button"
-              onClick={saveProject}
-              disabled={
-                saving ||
-                deleting ||
-                !customerName.trim() ||
-                !projectAddress.trim()
-              }
-              className="w-full btn-primary text-[#052e16] py-3 rounded-xl font-medium disabled:opacity-50 min-h-[48px]"
-            >
-              {saving ? 'Saving…' : 'Save changes'}
-            </button>
-
-            <button
-              type="button"
-              onClick={deleteProject}
-              disabled={saving || deleting}
-              className="w-full border border-red-900/40 py-3 rounded-xl text-red-400 text-sm font-semibold disabled:opacity-50 min-h-[48px]"
-            >
-              {deleting ? 'Deleting…' : 'Delete project'}
-            </button>
-          </>
-        )}
+        <button
+          type="button"
+          onClick={deleteProject}
+          disabled={saving || deleting}
+          className="w-full border border-red-900/40 py-3 rounded-xl text-red-400 text-sm font-semibold disabled:opacity-50 min-h-[48px]"
+        >
+          {deleting ? 'Deleting…' : 'Delete project'}
+        </button>
       </div>
     </div>
   )
