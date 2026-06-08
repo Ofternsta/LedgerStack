@@ -74,15 +74,14 @@ function TrashIcon({ className }: { className?: string }) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="1.75"
       aria-hidden
     >
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
-        d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m-7 0l1 12a1 1 0 001 1h6a1 1 0 001-1l1-12"
+        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
       />
-      <path strokeLinecap="round" d="M10 11v5M14 11v5" />
     </svg>
   )
 }
@@ -457,16 +456,16 @@ export function MessagingLauncher({
                   <h2 className="font-bold text-lg text-white justify-self-start">
                     Messages
                   </h2>
-                  <div className="justify-self-center min-h-[44px] flex items-center justify-center">
+                  <div className="justify-self-center flex items-center justify-center w-11 h-11">
                     {hasMarkedChats && (
                       <button
                         type="button"
                         onClick={() => void deleteMarkedChats()}
-                        className="flex items-center justify-center w-10 h-10 rounded-full bg-red-500/15 text-red-400 hover:bg-red-500/25 hover:text-red-300 transition-colors"
+                        className="flex items-center justify-center w-9 h-9 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
                         aria-label={`Delete ${markedChatIds.size} selected chat${markedChatIds.size === 1 ? '' : 's'}`}
                         title={`Delete ${markedChatIds.size} selected chat${markedChatIds.size === 1 ? '' : 's'}`}
                       >
-                        <TrashIcon className="w-5 h-5" />
+                        <TrashIcon className="w-[1.375rem] h-[1.375rem] shrink-0" />
                       </button>
                     )}
                   </div>
