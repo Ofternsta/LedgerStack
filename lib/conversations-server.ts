@@ -40,7 +40,26 @@ export async function markConversationRead(
 ): Promise<void> {
   const { error } = await supabase
     .from('conversation_participants')
-    .update({ last_read_at: new Date().toISOString() })
+    .update({
+      last_read_at: new Date().toISOString(),
+      list_hidden_at: null,
+    })
+    .eq('conversation_id', conversationId)
+    .eq('user_id', userId)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+}
+
+export async function hideConversationForUser(
+  supabase: SupabaseClient,
+  conversationId: string,
+  userId: string
+): Promise<void> {
+  const { error } = await supabase
+    .from('conversation_participants')
+    .update({ list_hidden_at: new Date().toISOString() })
     .eq('conversation_id', conversationId)
     .eq('user_id', userId)
 
@@ -66,11 +85,20 @@ export async function listConversationsForUser(
 ): Promise<ConversationListItem[]> {
   const { data: memberships, error } = await supabase
     .from('conversation_participants')
-    .select('conversation_id, last_read_at')
+    .select('conversation_id, last_read_at, list_hidden_at')
     .eq('user_id', userId)
 
   if (error || !memberships?.length) return []
 
+  const membershipByConv = Object.fromEntries(
+    memberships.map((m) => [
+      m.conversation_id,
+      {
+        last_read_at: m.last_read_at as string | null,
+        list_hidden_at: m.list_hidden_at as string | null,
+      },
+    ])
+  )
   const lastReadByConv = Object.fromEntries(
     memberships.map((m) => [m.conversation_id, m.last_read_at as string | null])
   )
@@ -85,12 +113,20 @@ export async function listConversationsForUser(
 
   if (!conversations?.length) return []
 
+  const visibleConversations = conversations.filter((c) => {
+    const hiddenAt = membershipByConv[c.id]?.list_hidden_at
+    if (!hiddenAt) return true
+    return new Date(c.last_message_at).getTime() > new Date(hiddenAt).getTime()
+  })
+
+  if (!visibleConversations.length) return []
+
   const roster = await loadTeamRoster(supabase, organizationId)
 
   const { data: allParticipants } = await supabase
     .from('conversation_participants')
     .select('conversation_id, user_id')
-    .in('conversation_id', conversations.map((c) => c.id))
+    .in('conversation_id', visibleConversations.map((c) => c.id))
 
   const participantsByConv: Record<string, string[]> = {}
   for (const row of allParticipants || []) {
@@ -102,7 +138,7 @@ export async function listConversationsForUser(
   const { data: latestMessages } = await supabase
     .from('conversation_messages')
     .select('conversation_id, body, created_at')
-    .in('conversation_id', conversations.map((c) => c.id))
+    .in('conversation_id', visibleConversations.map((c) => c.id))
     .order('created_at', { ascending: false })
 
   const previewByConv: Record<string, string> = {}
@@ -114,7 +150,7 @@ export async function listConversationsForUser(
 
   const unreadByConv: Record<string, number> = {}
   await Promise.all(
-    conversations.map(async (c) => {
+    visibleConversations.map(async (c) => {
       unreadByConv[c.id] = await unreadCountForConversation(
         supabase,
         c.id,
@@ -124,7 +160,7 @@ export async function listConversationsForUser(
     })
   )
 
-  return conversations.map((c) => {
+  return visibleConversations.map((c) => {
     const participantIds = participantsByConv[c.id] || []
     const title =
       c.conversation_type === 'group' && c.title?.trim()

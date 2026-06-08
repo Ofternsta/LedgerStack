@@ -67,6 +67,26 @@ function UnreadDot({ className }: { className?: string }) {
   )
 }
 
+function TrashIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m-7 0l1 12a1 1 0 001 1h6a1 1 0 001-1l1-12"
+      />
+      <path strokeLinecap="round" d="M10 11v5M14 11v5" />
+    </svg>
+  )
+}
+
 export function MessagingLauncher({
   currentUserId,
   canSend,
@@ -79,7 +99,8 @@ export function MessagingLauncher({
     unread_conversation_count: 0,
   })
   const [roster, setRoster] = useState<RosterMember[]>([])
-  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [composeMemberIds, setComposeMemberIds] = useState<Set<string>>(new Set())
+  const [markedChatIds, setMarkedChatIds] = useState<Set<string>>(new Set())
   const [groupTitle, setGroupTitle] = useState('')
   const [activeId, setActiveId] = useState<string | null>(null)
   const [activeTitle, setActiveTitle] = useState('')
@@ -212,18 +233,18 @@ export function MessagingLauncher({
 
   async function startCompose() {
     setView('compose')
-    setSelected(new Set())
+    setComposeMemberIds(new Set())
     setGroupTitle('')
     setError(null)
     await loadRoster()
   }
 
   async function createChat() {
-    if (!selected.size) {
+    if (!composeMemberIds.size) {
       setError('Select at least one person.')
       return
     }
-    if (selected.size > 1 && !groupTitle.trim()) {
+    if (composeMemberIds.size > 1 && !groupTitle.trim()) {
       setError('Name your group chat.')
       return
     }
@@ -234,7 +255,7 @@ export function MessagingLauncher({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        participant_ids: [...selected],
+        participant_ids: [...composeMemberIds],
         title: groupTitle.trim(),
       }),
     })
@@ -249,9 +270,9 @@ export function MessagingLauncher({
     await loadConversations()
     const id = payload.conversation_id as string
     const title =
-      selected.size === 1
-        ? roster.find((m) => m.id === [...selected][0])?.display_label ||
-          roster.find((m) => m.id === [...selected][0])?.label ||
+      composeMemberIds.size === 1
+        ? roster.find((m) => m.id === [...composeMemberIds][0])?.display_label ||
+          roster.find((m) => m.id === [...composeMemberIds][0])?.label ||
           'Chat'
         : groupTitle.trim()
 
@@ -288,11 +309,20 @@ export function MessagingLauncher({
     await loadConversations()
   }
 
-  function toggleMember(id: string) {
-    setSelected((prev) => {
+  function toggleComposeMember(id: string) {
+    setComposeMemberIds((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
       else next.add(id)
+      return next
+    })
+  }
+
+  function toggleMarkChat(conversationId: string) {
+    setMarkedChatIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(conversationId)) next.delete(conversationId)
+      else next.add(conversationId)
       return next
     })
   }
@@ -301,6 +331,7 @@ export function MessagingLauncher({
     setOpen(false)
     setView('list')
     setActiveId(null)
+    setMarkedChatIds(new Set())
     setError(null)
     void loadConversations()
   }
@@ -311,9 +342,77 @@ export function MessagingLauncher({
     void loadConversations()
   }
 
+  async function hideConversation(conversationId: string) {
+    const res = await fetch(
+      `/api/conversations/${encodeURIComponent(conversationId)}/hide`,
+      { method: 'POST' }
+    )
+    const payload = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      throw new Error(payload.error || 'Could not remove chat from your list')
+    }
+
+    if (activeId === conversationId) {
+      setView('list')
+      setActiveId(null)
+      setActiveTitle('')
+      setMessages([])
+    }
+
+    setConversations((prev) => {
+      const removed = prev.find((c) => c.id === conversationId)
+      if (removed?.unread_count) {
+        setUnread((u) => ({
+          total_unread_messages: Math.max(
+            0,
+            u.total_unread_messages - removed.unread_count
+          ),
+          unread_conversation_count: Math.max(
+            0,
+            u.unread_conversation_count - 1
+          ),
+        }))
+      }
+      return prev.filter((c) => c.id !== conversationId)
+    })
+
+    setMarkedChatIds((prev) => {
+      if (!prev.has(conversationId)) return prev
+      const next = new Set(prev)
+      next.delete(conversationId)
+      return next
+    })
+  }
+
+  async function deleteMarkedChats() {
+    if (markedChatIds.size === 0) return
+
+    const count = markedChatIds.size
+    const ok = window.confirm(
+      count === 1
+        ? 'Remove this chat from your list? Other participants will still see it. It will reappear if someone sends a new message.'
+        : `Remove ${count} chats from your list? Other participants will still see them. They will reappear if someone sends a new message.`
+    )
+    if (!ok) return
+
+    setError(null)
+    const ids = [...markedChatIds]
+    try {
+      for (const id of ids) {
+        await hideConversation(id)
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Could not remove selected chats'
+      )
+      await loadConversations()
+    }
+  }
+
   const totalUnread = unread.total_unread_messages
   const hasUnread = totalUnread > 0
-  const isGroupCompose = selected.size > 1
+  const isGroupCompose = composeMemberIds.size > 1
+  const hasMarkedChats = markedChatIds.size > 0
 
   return (
     <>
@@ -352,36 +451,57 @@ export function MessagingLauncher({
             role="dialog"
             aria-label="Messages"
           >
-            <header className="shrink-0 border-b border-border px-4 py-3 flex items-center gap-2">
-              {view !== 'list' ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (view === 'thread') backToList()
-                    else setView('list')
-                  }}
-                  className="text-sm text-brand-bright font-medium min-h-[44px] px-1"
-                >
-                  ← Back
-                </button>
+            <header className="shrink-0 border-b border-border px-4 py-3">
+              {view === 'list' ? (
+                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                  <h2 className="font-bold text-lg text-white justify-self-start">
+                    Messages
+                  </h2>
+                  <div className="justify-self-center min-h-[44px] flex items-center justify-center">
+                    {hasMarkedChats && (
+                      <button
+                        type="button"
+                        onClick={() => void deleteMarkedChats()}
+                        className="flex items-center justify-center w-10 h-10 rounded-full bg-red-500/15 text-red-400 hover:bg-red-500/25 hover:text-red-300 transition-colors"
+                        aria-label={`Delete ${markedChatIds.size} selected chat${markedChatIds.size === 1 ? '' : 's'}`}
+                        title={`Delete ${markedChatIds.size} selected chat${markedChatIds.size === 1 ? '' : 's'}`}
+                      >
+                        <TrashIcon className="w-5 h-5" />
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={closePanel}
+                    className="text-sm text-muted min-h-[44px] px-2 justify-self-end"
+                  >
+                    Close
+                  </button>
+                </div>
               ) : (
-                <h2 className="font-bold text-lg text-white flex-1">Messages</h2>
+                <div className="flex items-center gap-2 min-h-[44px]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (view === 'thread') backToList()
+                      else setView('list')
+                    }}
+                    className="text-sm text-brand-bright font-medium min-h-[44px] px-1 shrink-0"
+                  >
+                    ← Back
+                  </button>
+                  <h2 className="font-bold text-base text-white flex-1 truncate">
+                    {view === 'thread' ? activeTitle : 'New chat'}
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={closePanel}
+                    className="text-sm text-muted min-h-[44px] px-2 shrink-0"
+                  >
+                    Close
+                  </button>
+                </div>
               )}
-              {view === 'thread' && (
-                <h2 className="font-bold text-base text-white flex-1 truncate">
-                  {activeTitle}
-                </h2>
-              )}
-              {view === 'compose' && (
-                <h2 className="font-bold text-base text-white flex-1">New chat</h2>
-              )}
-              <button
-                type="button"
-                onClick={closePanel}
-                className="text-sm text-muted min-h-[44px] px-2"
-              >
-                Close
-              </button>
             </header>
 
             {error && (
@@ -415,51 +535,73 @@ export function MessagingLauncher({
                   )}
                   {conversations.map((c) => {
                     const hasChatUnread = c.unread_count > 0
+                    const marked = markedChatIds.has(c.id)
                     return (
-                      <button
-                        key={c.id}
-                        type="button"
-                        onClick={() => openThread(c)}
-                        className={`relative w-full text-left border rounded-xl p-3 hover:bg-surface ${
-                          hasChatUnread
-                            ? 'border-brand-bright/40 bg-surface-elevated'
-                            : 'border-border bg-surface-elevated'
-                        }`}
-                      >
-                        {hasChatUnread && (
-                          <>
-                            <UnreadDot className="top-2 right-2" />
-                            <span className="messaging-unread-pulse absolute top-1.5 right-2 min-w-[1.125rem] h-[1.125rem] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">
-                              {formatBadgeCount(c.unread_count)}
-                            </span>
-                          </>
-                        )}
-                        <p
-                          className={`text-sm truncate pr-8 ${
-                            hasChatUnread
-                              ? 'font-semibold text-foreground'
-                              : 'font-medium text-foreground'
+                      <div key={c.id} className="relative group">
+                        <button
+                          type="button"
+                          onClick={() => openThread(c)}
+                          className={`relative w-full text-left border rounded-xl p-3 pr-12 hover:bg-surface ${
+                            marked
+                              ? 'border-red-500/50 bg-red-500/5'
+                              : hasChatUnread
+                                ? 'border-brand-bright/40 bg-surface-elevated'
+                                : 'border-border bg-surface-elevated'
                           }`}
                         >
-                          {c.title}
-                          {c.conversation_type === 'group' && (
-                            <span className="text-xs text-muted-dim ml-1 font-normal">
-                              (group)
-                            </span>
+                          {hasChatUnread && !marked && (
+                            <>
+                              <UnreadDot className="top-2 right-10" />
+                              <span className="messaging-unread-pulse absolute top-1.5 right-9 min-w-[1.125rem] h-[1.125rem] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">
+                                {formatBadgeCount(c.unread_count)}
+                              </span>
+                            </>
                           )}
-                        </p>
-                        {c.last_message_preview && (
                           <p
-                            className={`text-xs mt-1 truncate pr-8 ${
+                            className={`text-sm truncate ${
                               hasChatUnread
-                                ? 'text-foreground/90'
-                                : 'text-muted-dim'
+                                ? 'font-semibold text-foreground'
+                                : 'font-medium text-foreground'
                             }`}
                           >
-                            {c.last_message_preview}
+                            {c.title}
+                            {c.conversation_type === 'group' && (
+                              <span className="text-xs text-muted-dim ml-1 font-normal">
+                                (group)
+                              </span>
+                            )}
                           </p>
-                        )}
-                      </button>
+                          {c.last_message_preview && (
+                            <p
+                              className={`text-xs mt-1 truncate ${
+                                hasChatUnread
+                                  ? 'text-foreground/90'
+                                  : 'text-muted-dim'
+                              }`}
+                            >
+                              {c.last_message_preview}
+                            </p>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            toggleMarkChat(c.id)
+                          }}
+                          className={`absolute top-1/2 -translate-y-1/2 right-3 z-10 w-5 h-5 rounded-full border-2 transition-all ${
+                            marked
+                              ? 'bg-red-500 border-red-500 opacity-100 scale-100'
+                              : 'border-muted-dim bg-surface-elevated opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 max-sm:opacity-70 max-sm:scale-100'
+                          }`}
+                          aria-label={
+                            marked
+                              ? `Unselect ${c.title} for deletion`
+                              : `Select ${c.title} for deletion`
+                          }
+                          aria-pressed={marked}
+                        />
+                      </div>
                     )
                   })}
                 </div>
@@ -486,8 +628,8 @@ export function MessagingLauncher({
                       <label className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface cursor-pointer">
                         <input
                           type="checkbox"
-                          checked={selected.has(m.id)}
-                          onChange={() => toggleMember(m.id)}
+                          checked={composeMemberIds.has(m.id)}
+                          onChange={() => toggleComposeMember(m.id)}
                         />
                         <span className="text-sm text-foreground">
                           {m.display_label || m.label}
@@ -498,7 +640,7 @@ export function MessagingLauncher({
                 </ul>
                 <button
                   type="button"
-                  disabled={sending || !selected.size}
+                  disabled={sending || !composeMemberIds.size}
                   onClick={createChat}
                   className="w-full btn-primary text-[#052e16] py-3 rounded-xl font-medium disabled:opacity-50"
                 >
