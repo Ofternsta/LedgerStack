@@ -156,10 +156,6 @@ export function InternalNotesPanel({
         <h2 className={isSidebar ? 'font-bold text-foreground' : 'font-bold text-lg'}>
           Project notes
         </h2>
-        <p className="text-sm text-muted mt-1">
-          Worker notes, @mentions, status updates, and communication history.
-          Clients cannot see this.
-        </p>
       </div>
 
       {error && (

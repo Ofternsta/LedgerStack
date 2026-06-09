@@ -251,7 +251,7 @@ export function ProjectJobsList({
 
   return (
     <>
-      <aside className="hidden lg:flex lg:flex-col w-full min-h-0 h-full shrink-0">
+      <aside className="flex flex-col flex-1 min-h-0 w-full">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-3 px-1">
           <h2 className="font-bold text-foreground">Jobs</h2>
           {canAddJob && (

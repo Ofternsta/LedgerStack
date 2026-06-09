@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { EvidenceFolders } from '@/components/evidence-folders'
 import { ProjectPageHeader } from '@/components/project-page-header'
-import { JobStatusTimelinePanel } from '@/components/job-status-timeline-panel'
+import { JobTimelinePanel } from '@/components/job-timeline-panel'
+import { ClaimStatusWorkflow } from '@/components/claim-status-workflow'
 import { ProjectAiExportSection } from '@/components/project-ai-export-section'
 import { ProjectArchivePanel } from '@/components/project-archive-panel'
 import {
@@ -500,9 +501,10 @@ export default function ProjectPageClient() {
         backLabel="Projects"
       />
 
-      <div className="flex flex-1 min-h-0 w-full">
-        <div className="hidden lg:flex w-72 xl:w-80 shrink-0 border-r border-border bg-surface-elevated flex-col min-h-0 self-stretch overflow-hidden p-4">
-          <ProjectJobsList
+      <div className="flex flex-1 min-h-0 w-full gap-3 lg:gap-4 px-3 sm:px-4 lg:px-5 py-4">
+        <div className="hidden lg:flex w-72 xl:w-80 shrink-0 flex-col min-h-0 self-stretch">
+          <div className="card-elevated flex flex-col flex-1 min-h-0 max-h-[calc(100dvh-6.5rem)] overflow-hidden p-4 shadow-sm">
+            <ProjectJobsList
             jobs={claims}
             projectId={id}
             legacyProjectNotes={projectNotes}
@@ -529,10 +531,11 @@ export default function ProjectPageClient() {
               if (claim) setSelectedClaim(claim)
             }}
           />
+          </div>
         </div>
 
-        <main className="flex-1 min-w-0 overflow-y-auto">
-          <div className="safe-x px-4 sm:px-6 py-4 w-full max-w-4xl mx-auto pb-8 safe-bottom space-y-4">
+        <main className="flex-1 min-w-0 overflow-y-auto min-h-0">
+          <div className="w-full max-w-4xl mx-auto pb-8 safe-bottom space-y-4">
         {access.planName && access.role !== 'client' && (
           <p className="text-xs text-gray-600">
             {access.planName} plan
@@ -654,13 +657,13 @@ export default function ProjectPageClient() {
           </p>
         )}
 
-        <JobStatusTimelinePanel
+        <ClaimStatusWorkflow
           claimId={activeClaim.id}
           projectId={id}
           status={activeClaim.status}
           workflow={statusWorkflow}
-          canEditStatus={access.canUpdateReportStatus}
-          showStatusReadOnlyHint={!isClientViewer}
+          canEdit={access.canUpdateReportStatus}
+          showReadOnlyHint={!isClientViewer}
           onStatusChange={(next: string) => {
             setClaims((prev) =>
               prev.map((c) =>
@@ -675,13 +678,19 @@ export default function ProjectPageClient() {
           onMarkedCompleted={() => {
             if (access.canArchiveProject) setArchivePrompt(true)
           }}
-          jobLabel={activeClaim.client_name}
-          timelineRefreshKey={timelineRefreshKey}
-          canGenerateTimeline={access.canUpdateClaimInfo}
-          aiSummariesLimit={access.aiSummariesLimit}
-          aiSummariesUsed={access.aiSummariesUsed}
-          showTimeline={!isClientViewer}
         />
+
+        {!isClientViewer && (
+          <JobTimelinePanel
+            claimId={activeClaim.id}
+            projectId={id}
+            jobLabel={activeClaim.client_name}
+            timelineRefreshKey={timelineRefreshKey}
+            canGenerate={access.canUpdateClaimInfo}
+            aiSummariesLimit={access.aiSummariesLimit}
+            aiSummariesUsed={access.aiSummariesUsed}
+          />
+        )}
 
         {access.canViewCalendar && (
           <ProjectSchedulePanel
@@ -789,14 +798,16 @@ export default function ProjectPageClient() {
         </main>
 
         {access.canViewInternalNotes && (
-          <aside className="hidden lg:flex w-80 xl:w-96 shrink-0 border-l border-border bg-surface-elevated flex-col min-h-0 self-stretch overflow-hidden p-4">
-            <InternalNotesPanel
-              variant="sidebar"
-              projectId={id}
-              claimId={activeClaim.id}
-              currentUserId={userId}
-              canPost={access.canUpdateClaimInfo}
-            />
+          <aside className="hidden lg:flex w-80 xl:w-96 shrink-0 flex-col min-h-0 self-stretch">
+            <div className="card-elevated flex flex-col flex-1 min-h-0 max-h-[calc(100dvh-6.5rem)] overflow-hidden p-4 shadow-sm">
+              <InternalNotesPanel
+                variant="sidebar"
+                projectId={id}
+                claimId={activeClaim.id}
+                currentUserId={userId}
+                canPost={access.canUpdateClaimInfo}
+              />
+            </div>
           </aside>
         )}
       </div>
