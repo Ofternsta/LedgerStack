@@ -48,15 +48,11 @@ export function OrganizationSettingsPanel({
   })
   const [projects, setProjects] = useState<ProjectRow[]>([])
   const [expandedProjectId, setExpandedProjectId] = useState<string | null>(null)
-  const [draftNames, setDraftNames] = useState<
-    Record<string, { customer_name: string; project_address: string }>
-  >({})
   const [loading, setLoading] = useState(true)
   const [savingWorkers, setSavingWorkers] = useState(false)
   const [editingWorkerDefaults, setEditingWorkerDefaults] = useState(false)
   const [workerDefaultsDraft, setWorkerDefaultsDraft] =
     useState<WorkerPermissions>({ ...DEFAULT_WORKER_PERMISSIONS })
-  const [savingProjectId, setSavingProjectId] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -92,17 +88,6 @@ export function OrganizationSettingsPanel({
 
     const rows = (projectsPayload.projects || []) as ProjectRow[]
     setProjects(rows)
-    setDraftNames(
-      Object.fromEntries(
-        rows.map((p) => [
-          p.id,
-          {
-            customer_name: p.customer_name,
-            project_address: p.project_address,
-          },
-        ])
-      )
-    )
     setLoading(false)
   }, [])
 
@@ -194,33 +179,6 @@ export function OrganizationSettingsPanel({
     setSavingOrganizationName(false)
   }
 
-  async function saveProjectName(projectId: string) {
-    const draft = draftNames[projectId]
-    if (!draft?.customer_name.trim() || !draft?.project_address.trim()) return
-
-    setSavingProjectId(projectId)
-    setMessage(null)
-    setError(null)
-
-    const res = await fetch(`/api/projects/${projectId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        customer_name: draft.customer_name.trim(),
-        project_address: draft.project_address.trim(),
-      }),
-    })
-    const payload = await res.json().catch(() => ({}))
-
-    if (!res.ok) {
-      setError(payload.error || 'Could not update project')
-    } else {
-      setMessage('Project updated.')
-      await load()
-    }
-    setSavingProjectId(null)
-  }
-
   if (loading) {
     return <p className="text-muted text-sm">Loading organization settings…</p>
   }
@@ -241,8 +199,8 @@ export function OrganizationSettingsPanel({
       <section className="card p-4 space-y-4">
         <h2 className="font-bold text-foreground">Projects</h2>
         <p className="text-sm text-muted">
-          Rename projects, customize job status stages and file categories per
-          project, and manage client and worker access.
+          Customize job status stages and file categories per project, and
+          manage client and worker access.
         </p>
 
         {projects.length === 0 ? (
@@ -250,10 +208,6 @@ export function OrganizationSettingsPanel({
         ) : (
           <ul className="space-y-3">
             {projects.map((p) => {
-              const draft = draftNames[p.id] ?? {
-                customer_name: p.customer_name,
-                project_address: p.project_address,
-              }
               const expanded = expandedProjectId === p.id
 
               return (
@@ -280,51 +234,6 @@ export function OrganizationSettingsPanel({
                     <div className="px-4 pb-4 space-y-4 border-t border-border pt-4">
                       <ProjectWorkerPanel projectId={p.id} />
                       <ProjectClientPanel projectId={p.id} />
-
-                      <div className="space-y-2">
-                        <label className="block text-sm">
-                          <span className="text-muted">Project name</span>
-                          <input
-                            type="text"
-                            value={draft.customer_name}
-                            onChange={(e) =>
-                              setDraftNames((prev) => ({
-                                ...prev,
-                                [p.id]: {
-                                  ...draft,
-                                  customer_name: e.target.value,
-                                },
-                              }))
-                            }
-                            className="input mt-1 w-full"
-                          />
-                        </label>
-                        <label className="block text-sm">
-                          <span className="text-muted">Address</span>
-                          <input
-                            type="text"
-                            value={draft.project_address}
-                            onChange={(e) =>
-                              setDraftNames((prev) => ({
-                                ...prev,
-                                [p.id]: {
-                                  ...draft,
-                                  project_address: e.target.value,
-                                },
-                              }))
-                            }
-                            className="input mt-1 w-full"
-                          />
-                        </label>
-                        <button
-                          type="button"
-                          disabled={savingProjectId === p.id}
-                          onClick={() => saveProjectName(p.id)}
-                          className="btn-secondary text-sm px-3 py-2 min-h-[40px]"
-                        >
-                          {savingProjectId === p.id ? 'Saving…' : 'Save name'}
-                        </button>
-                      </div>
 
                       <ProjectStatusWorkflowEditor projectId={p.id} />
                       <ProjectFileCategoriesEditor projectId={p.id} />
