@@ -251,7 +251,7 @@ export function ProjectJobsList({
 
   return (
     <>
-      <aside className="flex flex-col flex-1 min-h-0 w-full">
+      <aside className="flex flex-col w-full">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-3 px-1">
           <h2 className="font-bold text-foreground">Jobs</h2>
           {canAddJob && (
@@ -270,7 +270,7 @@ export function ProjectJobsList({
         {jobs.length === 0 ? (
           <p className="text-sm text-muted-dim px-1">No jobs on this project yet.</p>
         ) : (
-          <ul className="space-y-2 flex-1 min-h-0 overflow-y-auto px-1 pb-2">
+          <ul className="space-y-2 px-1 pb-2">
             {jobs.map((job) => {
               const isSelected = selectedId === job.id
               return (

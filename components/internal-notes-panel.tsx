@@ -147,7 +147,7 @@ export function InternalNotesPanel({
   const isSidebar = variant === 'sidebar'
   const Wrapper = isSidebar ? 'div' : 'section'
   const wrapperClass = isSidebar
-    ? 'flex flex-col h-full min-h-0 gap-3'
+    ? 'flex flex-col gap-3'
     : 'border border-border rounded-xl p-4 bg-surface-elevated space-y-3'
 
   return (
@@ -226,8 +226,8 @@ export function InternalNotesPanel({
       )}
 
       <div
-        className={`border border-neutral-700 rounded-xl bg-neutral-900 overflow-y-auto divide-y divide-neutral-800 ${
-          isSidebar ? 'flex-1 min-h-0' : 'max-h-[360px]'
+        className={`border border-neutral-700 rounded-xl bg-neutral-900 divide-y divide-neutral-800 ${
+          isSidebar ? '' : 'max-h-[360px] overflow-y-auto'
         }`}
         aria-live="polite"
       >

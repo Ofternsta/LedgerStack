@@ -501,9 +501,9 @@ export default function ProjectPageClient() {
         backLabel="Projects"
       />
 
-      <div className="flex flex-1 min-h-0 w-full gap-3 lg:gap-4 px-3 sm:px-4 lg:px-5 py-4">
-        <div className="hidden lg:flex w-72 xl:w-80 shrink-0 flex-col min-h-0 self-stretch">
-          <div className="card-elevated flex flex-col flex-1 min-h-0 max-h-[calc(100dvh-6.5rem)] overflow-hidden p-4 shadow-sm">
+      <div className="flex w-full gap-3 lg:gap-4 px-3 sm:px-4 lg:px-5 py-4 items-start">
+        <div className="hidden lg:block w-72 xl:w-80 shrink-0">
+          <div className="card-elevated p-4 shadow-sm">
             <ProjectJobsList
             jobs={claims}
             projectId={id}
@@ -534,7 +534,7 @@ export default function ProjectPageClient() {
           </div>
         </div>
 
-        <main className="flex-1 min-w-0 overflow-y-auto min-h-0">
+        <main className="flex-1 min-w-0">
           <div className="w-full max-w-4xl mx-auto pb-8 safe-bottom space-y-4">
         {access.planName && access.role !== 'client' && (
           <p className="text-xs text-gray-600">
@@ -692,16 +692,6 @@ export default function ProjectPageClient() {
           />
         )}
 
-        {access.canViewCalendar && (
-          <ProjectSchedulePanel
-            projectId={id}
-            canMarkComplete={
-              access.canManageSchedule && access.canUpdateClaimInfo
-            }
-            canManageEvents={access.canManageSchedule}
-          />
-        )}
-
         {access.canUploadEvidence && (
           <EvidenceUpload
             uploading={uploading}
@@ -784,30 +774,55 @@ export default function ProjectPageClient() {
           />
         )}
 
-        {access.canViewInternalNotes && (
-          <div className="lg:hidden">
-            <InternalNotesPanel
-              projectId={id}
-              claimId={activeClaim.id}
-              currentUserId={userId}
-              canPost={access.canUpdateClaimInfo}
-            />
-          </div>
-        )}
-          </div>
-        </main>
-
-        {access.canViewInternalNotes && (
-          <aside className="hidden lg:flex w-80 xl:w-96 shrink-0 flex-col min-h-0 self-stretch">
-            <div className="card-elevated flex flex-col flex-1 min-h-0 max-h-[calc(100dvh-6.5rem)] overflow-hidden p-4 shadow-sm">
+        {(access.canViewInternalNotes || access.canViewCalendar) && (
+          <div className="lg:hidden space-y-4">
+            {access.canViewInternalNotes && (
               <InternalNotesPanel
-                variant="sidebar"
                 projectId={id}
                 claimId={activeClaim.id}
                 currentUserId={userId}
                 canPost={access.canUpdateClaimInfo}
               />
-            </div>
+            )}
+            {access.canViewCalendar && (
+              <ProjectSchedulePanel
+                projectId={id}
+                canMarkComplete={
+                  access.canManageSchedule && access.canUpdateClaimInfo
+                }
+                canManageEvents={access.canManageSchedule}
+              />
+            )}
+          </div>
+        )}
+          </div>
+        </main>
+
+        {(access.canViewInternalNotes || access.canViewCalendar) && (
+          <aside className="hidden lg:flex w-80 xl:w-96 shrink-0 flex-col gap-4">
+            {access.canViewInternalNotes && (
+              <div className="card-elevated p-4 shadow-sm">
+                <InternalNotesPanel
+                  variant="sidebar"
+                  projectId={id}
+                  claimId={activeClaim.id}
+                  currentUserId={userId}
+                  canPost={access.canUpdateClaimInfo}
+                />
+              </div>
+            )}
+            {access.canViewCalendar && (
+              <div className="card-elevated p-4 shadow-sm">
+                <ProjectSchedulePanel
+                  variant="sidebar"
+                  projectId={id}
+                  canMarkComplete={
+                    access.canManageSchedule && access.canUpdateClaimInfo
+                  }
+                  canManageEvents={access.canManageSchedule}
+                />
+              </div>
+            )}
           </aside>
         )}
       </div>
