@@ -27,7 +27,7 @@ export type PlanEntitlements = {
 
 export const PLAN_ENTITLEMENTS: Record<BillingPlanId, PlanEntitlements> = {
   trial: {
-    tagline: '7-day trial — experience the workflow, not the full business stack',
+    tagline: '7-day trial — one admin account, no worker or client logins',
     maxStaffUsers: 1,
     maxActiveProjects: 2,
     aiSummariesPerMonth: 10,
@@ -111,6 +111,7 @@ export const PLAN_FEATURE_COPY: Record<
 > = {
   trial: {
     includes: [
+      'Admin account only — no worker or client accounts',
       '1 user · 2 active projects',
       'Job timeline, uploads & status workflow',
       'Limited AI summaries & Project AI chat (10/month)',
