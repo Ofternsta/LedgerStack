@@ -1,16 +1,11 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import Link from 'next/link'
-import { accessShellSubtitle } from '@/lib/access-role-label'
 import type { UserAccess } from '@/lib/roles'
+import { AppShellHeader } from '@/components/app-shell-header'
 import { AppSidebar } from '@/components/app-sidebar'
-import { AutoFitHeaderSubtitle } from '@/components/auto-fit-header-subtitle'
 import { MobileLegalFooterNav } from '@/components/mobile-legal-footer-nav'
 import { SupportLink } from '@/components/support-link'
-
-const headerUtilityLinkClass =
-  'text-sm text-muted hover:text-brand-bright transition-colors whitespace-nowrap'
 
 type AppShellProps = {
   access: UserAccess
@@ -29,33 +24,7 @@ export function AppShell({
 }: AppShellProps) {
   return (
     <div className="min-h-dvh flex flex-col">
-      <header className="border-b border-border bg-background safe-top shrink-0 w-full">
-        <div className="safe-x px-4 sm:px-6 lg:px-8 py-3 w-full flex items-center gap-4">
-          <div className="min-w-0 flex-1 md:flex-none md:shrink-0 md:w-[calc(13rem+2in)]">
-            <h1 className="text-xl sm:text-2xl font-bold leading-tight text-[var(--header-title)]">
-              LedgerStack
-            </h1>
-            <AutoFitHeaderSubtitle text={accessShellSubtitle(access)} />
-          </div>
-          <nav
-            className="hidden md:flex flex-1 flex-wrap items-center justify-center gap-x-4 gap-y-1 lg:gap-x-6"
-            aria-label="Legal and billing"
-          >
-            <Link href="/privacy" className={headerUtilityLinkClass}>
-              Privacy Policy
-            </Link>
-            <Link href="/terms" className={headerUtilityLinkClass}>
-              Terms of Service
-            </Link>
-            {access.canManageBilling && (
-              <Link href="/settings/billing" className={headerUtilityLinkClass}>
-                Billing
-              </Link>
-            )}
-          </nav>
-          <div className="hidden md:block w-52 shrink-0" aria-hidden />
-        </div>
-      </header>
+      <AppShellHeader access={access} />
 
       <div className="flex flex-1 min-h-0 w-full">
         <AppSidebar

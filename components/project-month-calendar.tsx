@@ -253,22 +253,42 @@ export function ProjectMonthCalendar({
           {grid.map((cell) => {
             const key = dayKey(cell.date)
             const dayEvents = eventsByDay.get(key) || []
+            const hasEvents = dayEvents.length > 0
             const selected =
               selectedDay !== null && sameCalendarDay(cell.date, selectedDay)
+            const todayInMonth = isToday(cell.date) && cell.inMonth
+
+            let cellClass =
+              'aspect-square md:aspect-auto md:min-h-[80px] rounded-lg border p-1 flex flex-col max-md:items-center max-md:justify-center max-md:p-0.5 text-left'
+            if (!cell.inMonth) {
+              cellClass += ' border-transparent bg-surface/40 text-muted-dim'
+            } else {
+              cellClass += ' border-border bg-surface'
+              if (todayInMonth) {
+                cellClass += ' bg-brand/10'
+                if (!hasEvents) {
+                  cellClass += ' border-brand-dim/40'
+                }
+              }
+              if (hasEvents) {
+                cellClass += ' max-md:border-2 max-md:border-brand-bright'
+              }
+            }
+            if (selected) {
+              cellClass += ' ring-2 ring-brand-bright border-brand-dim'
+            }
+
+            const dayLabel = hasEvents
+              ? `${cell.day}, ${dayEvents.length} scheduled event${dayEvents.length === 1 ? '' : 's'}`
+              : String(cell.day)
+
             return (
               <button
                 key={key}
                 type="button"
                 onClick={() => openDay(cell.date, cell.inMonth)}
-                className={`min-h-[72px] sm:min-h-[80px] rounded-lg border p-1 text-left flex flex-col ${
-                  cell.inMonth
-                    ? 'border-border bg-surface'
-                    : 'border-transparent bg-surface/40 text-muted-dim'
-                } ${selected ? 'ring-2 ring-brand-bright border-brand-dim' : ''} ${
-                  isToday(cell.date) && cell.inMonth
-                    ? 'bg-brand/10 border-brand-dim/40'
-                    : ''
-                }`}
+                className={cellClass}
+                aria-label={dayLabel}
               >
                 <span
                   className={`text-sm font-semibold ${
@@ -277,7 +297,7 @@ export function ProjectMonthCalendar({
                 >
                   {cell.day}
                 </span>
-                <span className="flex-1 mt-1 space-y-0.5 overflow-hidden min-h-0">
+                <span className="hidden md:flex flex-1 mt-1 space-y-0.5 overflow-hidden min-h-0 flex-col w-full">
                   {dayEvents.slice(0, 2).map((ev) => (
                     <span
                       key={ev.id}
@@ -296,8 +316,8 @@ export function ProjectMonthCalendar({
                     </span>
                   )}
                 </span>
-                {dayEvents.length > 0 && (
-                  <span className="text-[10px] leading-tight text-muted-dim truncate mt-auto pt-0.5">
+                {hasEvents && (
+                  <span className="hidden md:block text-[10px] leading-tight text-muted-dim truncate mt-auto pt-0.5">
                     {dayEvents
                       .slice(0, 2)
                       .map((ev) => formatEventTime(ev.starts_at))
