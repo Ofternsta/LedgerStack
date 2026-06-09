@@ -537,7 +537,7 @@ export default function ProjectPageClient() {
         <main className="flex-1 min-w-0">
           <div className="w-full max-w-4xl mx-auto pb-8 safe-bottom space-y-4">
         {access.planName && access.role !== 'client' && (
-          <p className="text-xs text-gray-600">
+          <p className="text-xs text-gray-600 text-center">
             {access.planName} plan
             {!isUnlimited(access.aiSummariesLimit) && (
               <>
