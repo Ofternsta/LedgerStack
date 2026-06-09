@@ -61,6 +61,8 @@ type EvidenceFoldersProps = {
   /** Scroll to and expand this file (e.g. from AI chat citation). */
   focusFilePath?: string | null
   onFocusFilePathHandled?: () => void
+  /** When set, hide empty categories and show only matching files. */
+  searchQuery?: string
 }
 
 function formatUploadedAt(createdAt?: string) {
@@ -96,10 +98,13 @@ export function EvidenceFolders({
   onUpdated,
   focusFilePath,
   onFocusFilePathHandled,
+  searchQuery = '',
 }: EvidenceFoldersProps) {
   const categories = categoriesProp?.length
     ? categoriesProp
     : defaultFileCategories()
+
+  const isSearching = searchQuery.trim().length > 0
 
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [selectedPath, setSelectedPath] = useState<string | null>(null)
@@ -126,7 +131,23 @@ export function EvidenceFolders({
     return map
   }, [documents, categories])
 
+  const visibleCategories = useMemo(() => {
+    if (!isSearching) return categories
+    return categories.filter((cat) => grouped[cat.key].length > 0)
+  }, [categories, grouped, isSearching])
+
   const totalCount = documents.length
+
+  useEffect(() => {
+    if (!isSearching) return
+    setExpanded(new Set(visibleCategories.map((cat) => cat.key)))
+  }, [isSearching, visibleCategories])
+
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setExpanded(new Set())
+    }
+  }, [searchQuery])
 
   useEffect(() => {
     if (
@@ -214,19 +235,27 @@ export function EvidenceFolders({
       {deleteConfirmDialog}
       <section className="space-y-2" aria-label="Documents">
         <h2 className="font-bold text-lg text-foreground">Documents</h2>
-        {categories.map((cat) => (
-          <div
-            key={cat.key}
-            id={categoryDomId(cat.label)}
-            className="border border-border rounded-xl bg-surface-elevated overflow-hidden"
-          >
-            <div className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left">
-              <span className="font-semibold text-foreground">{cat.label}</span>
-              <span className="text-sm text-muted-dim tabular-nums">0 files</span>
-            </div>
-          </div>
-        ))}
-        <p className="text-sm text-muted-dim text-center py-4">{emptyMessage}</p>
+        {isSearching ? (
+          <p className="text-sm text-muted-dim text-center py-4">
+            No files match your search.
+          </p>
+        ) : (
+          <>
+            {categories.map((cat) => (
+              <div
+                key={cat.key}
+                id={categoryDomId(cat.label)}
+                className="border border-border rounded-xl bg-surface-elevated overflow-hidden"
+              >
+                <div className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left">
+                  <span className="font-semibold text-foreground">{cat.label}</span>
+                  <span className="text-sm text-muted-dim tabular-nums">0 files</span>
+                </div>
+              </div>
+            ))}
+            <p className="text-sm text-muted-dim text-center py-4">{emptyMessage}</p>
+          </>
+        )}
       </section>
       </>
     )
@@ -237,7 +266,7 @@ export function EvidenceFolders({
     {deleteConfirmDialog}
     <section className="space-y-2" aria-label="Documents">
       <h2 className="font-bold text-lg text-foreground">Documents</h2>
-      {categories.map((cat) => {
+      {visibleCategories.map((cat) => {
         const files = grouped[cat.key]
         const count = files.length
         const isOpen = expanded.has(cat.key)

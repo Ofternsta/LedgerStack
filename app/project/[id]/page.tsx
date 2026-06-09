@@ -720,6 +720,7 @@ export default function ProjectPageClient() {
 
             <EvidenceFolders
               documents={filtered}
+              searchQuery={search}
               projectId={id}
               claimId={activeClaim.id}
               categories={fileCategories}
