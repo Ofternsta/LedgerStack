@@ -6,6 +6,21 @@ import { usePathname } from 'next/navigation'
 import type { UserAccess } from '@/lib/roles'
 
 const SIDEBAR_COLLAPSED_KEY = 'ledgerstack-sidebar-collapsed'
+const MOBILE_SIDEBAR_MQ = '(max-width: 767px)'
+
+function useIsMobileSidebar() {
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const mq = window.matchMedia(MOBILE_SIDEBAR_MQ)
+    const update = () => setIsMobile(mq.matches)
+    update()
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
+  }, [])
+
+  return isMobile
+}
 
 type NavIconId =
   | 'projects'
@@ -129,6 +144,8 @@ export function AppSidebar({
   const pathname = usePathname()
   const [platformOwner, setPlatformOwner] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
+  const isMobile = useIsMobileSidebar()
+  const effectiveCollapsed = isMobile || collapsed
 
   useEffect(() => {
     try {
@@ -146,6 +163,7 @@ export function AppSidebar({
   }, [])
 
   function toggleCollapsed() {
+    if (isMobile) return
     setCollapsed((prev) => {
       const next = !prev
       try {
@@ -223,7 +241,7 @@ export function AppSidebar({
     let cls = 'app-sidebar-link'
     if (active) cls += ' app-sidebar-link-active'
     if (admin) cls += ' app-sidebar-link-admin'
-    if (collapsed) cls += ' app-sidebar-link-collapsed'
+    if (effectiveCollapsed) cls += ' app-sidebar-link-collapsed'
     return cls
   }
 
@@ -234,13 +252,13 @@ export function AppSidebar({
         key={item.href}
         href={item.href}
         className={linkClass(active, item.admin)}
-        title={collapsed ? item.label : undefined}
-        aria-label={collapsed ? item.label : undefined}
+        title={effectiveCollapsed ? item.label : undefined}
+        aria-label={effectiveCollapsed ? item.label : undefined}
       >
         <span className="app-sidebar-link-icon">
           <NavIcon id={item.icon} />
         </span>
-        {!collapsed && (
+        {!effectiveCollapsed && (
           <span className="app-sidebar-link-label">{item.label}</span>
         )}
       </Link>
@@ -253,13 +271,13 @@ export function AppSidebar({
       onClick={onSignOut}
       disabled={signingOut}
       className={`${linkClass(false)} disabled:opacity-50`}
-      title={collapsed ? (signingOut ? 'Signing out…' : 'Sign out') : undefined}
-      aria-label={collapsed ? (signingOut ? 'Signing out' : 'Sign out') : undefined}
+      title={effectiveCollapsed ? (signingOut ? 'Signing out…' : 'Sign out') : undefined}
+      aria-label={effectiveCollapsed ? (signingOut ? 'Signing out' : 'Sign out') : undefined}
     >
       <span className="app-sidebar-link-icon">
         <NavIcon id="sign-out" />
       </span>
-      {!collapsed && (
+      {!effectiveCollapsed && (
         <span className="app-sidebar-link-label">
           {signingOut ? 'Signing out…' : 'Sign out'}
         </span>
@@ -270,21 +288,22 @@ export function AppSidebar({
   return (
     <aside
       className={`app-sidebar flex flex-col shrink-0 border-r border-border bg-surface min-h-0 ${
-        collapsed ? 'app-sidebar--collapsed w-[3.75rem]' : 'w-48 sm:w-56'
+        effectiveCollapsed ? 'app-sidebar--collapsed w-[3.75rem]' : 'w-48 sm:w-56'
       }`}
     >
+      {!isMobile && (
       <div
         className={`flex items-center shrink-0 px-2 pt-2 ${
-          collapsed ? 'justify-center' : 'justify-end'
+          effectiveCollapsed ? 'justify-center' : 'justify-end'
         }`}
       >
         <button
           type="button"
           onClick={toggleCollapsed}
           className="app-sidebar-toggle"
-          aria-expanded={!collapsed}
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-expanded={!effectiveCollapsed}
+          aria-label={effectiveCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          title={effectiveCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           <svg
             width={18}
@@ -296,12 +315,13 @@ export function AppSidebar({
             strokeLinecap="round"
             strokeLinejoin="round"
             aria-hidden
-            className={`transition-transform ${collapsed ? 'rotate-180' : ''}`}
+            className={`transition-transform ${effectiveCollapsed ? 'rotate-180' : ''}`}
           >
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
       </div>
+      )}
 
       <nav className="py-2 space-y-0.5 flex-1 overflow-y-auto" aria-label="App">
         {mainItems.map((item, index) => (

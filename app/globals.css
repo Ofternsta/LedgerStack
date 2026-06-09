@@ -451,6 +451,29 @@ button {
   margin-right: auto;
 }
 
+@media (max-width: 767px) {
+  .app-sidebar {
+    width: 3.75rem !important;
+  }
+
+  .app-sidebar .app-sidebar-link-label {
+    display: none !important;
+  }
+
+  .app-sidebar-toggle {
+    display: none !important;
+  }
+
+  .app-sidebar .app-sidebar-link {
+    width: calc(100% - 0.5rem);
+    margin-left: 0.25rem;
+    margin-right: 0.25rem;
+    padding-left: 0;
+    padding-right: 0;
+    justify-content: center;
+  }
+}
+
 .app-sidebar-link:hover {
   background: color-mix(in srgb, var(--brand) 16%, transparent);
   color: var(--brand-bright);
