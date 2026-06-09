@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { accessShellSubtitle } from '@/lib/access-role-label'
 import type { UserAccess } from '@/lib/roles'
 import { AppSidebar } from '@/components/app-sidebar'
+import { AutoFitHeaderSubtitle } from '@/components/auto-fit-header-subtitle'
 import { SupportLink } from '@/components/support-link'
 
 const headerUtilityLinkClass =
@@ -36,9 +37,7 @@ export function AppShell({
             <h1 className="text-xl sm:text-2xl font-bold leading-tight text-[var(--header-title)]">
               LedgerStack
             </h1>
-            <p className="text-sm text-muted mt-1 leading-snug truncate">
-              {accessShellSubtitle(access)}
-            </p>
+            <AutoFitHeaderSubtitle text={accessShellSubtitle(access)} />
           </div>
           <nav
             className="hidden md:flex flex-1 flex-wrap items-center justify-center gap-x-4 gap-y-1 lg:gap-x-6"
