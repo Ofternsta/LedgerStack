@@ -24,25 +24,10 @@ export function formatTimelineSource(source?: string): string | undefined {
 }
 
 export function formatEventWhen(e: TimelineEvent): string {
-  if (e.created_at) {
-    return `Added ${new Date(e.created_at).toLocaleString(undefined, {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    })}`
-  }
-  return e.event_date ? `Event · ${e.event_date}` : ''
-}
-
-/** When the milestone date differs from when it was logged. */
-export function formatEventMilestoneDate(e: TimelineEvent): string | null {
-  if (!e.event_date || !e.created_at) return null
-  const milestoneDay = String(e.event_date).slice(0, 10)
-  const addedDay = e.created_at.slice(0, 10)
-  if (milestoneDay === addedDay) return null
-  const parsed = Date.parse(milestoneDay)
-  if (Number.isNaN(parsed)) return `Event · ${e.event_date}`
-  return `Event · ${new Date(parsed).toLocaleDateString(undefined, {
+  if (!e.created_at) return ''
+  return `Added ${new Date(e.created_at).toLocaleString(undefined, {
     dateStyle: 'medium',
+    timeStyle: 'short',
   })}`
 }
 
@@ -66,15 +51,16 @@ export function TimelineList({
 
   return (
     <ol className="space-y-3 border-l-2 border-border pl-4 ml-1">
-      {ordered.map((e, i) => (
+      {ordered.map((e, i) => {
+        const addedLabel = formatEventWhen(e)
+        return (
         <li
           key={e.id || `${e.event_date}-${e.title}-${i}`}
           className="relative"
         >
           <span className="absolute -left-[1.15rem] top-1.5 h-2 w-2 rounded-full bg-brand" />
-          <p className="text-xs text-muted-dim">{formatEventWhen(e)}</p>
-          {formatEventMilestoneDate(e) ? (
-            <p className="text-[10px] text-muted-dim">{formatEventMilestoneDate(e)}</p>
+          {addedLabel ? (
+            <p className="text-xs text-muted-dim">{addedLabel}</p>
           ) : null}
           <p className="font-medium text-sm text-foreground">
             {e.title}
@@ -91,7 +77,8 @@ export function TimelineList({
             </p>
           ) : null}
         </li>
-      ))}
+        )
+      })}
     </ol>
   )
 }
