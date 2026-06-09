@@ -1,10 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
-  formatEventWhen,
-  formatTimelineSource,
+  TimelineList,
   type TimelineEvent,
 } from '@/components/timeline-list'
 import { isUnlimited } from '@/lib/plan-entitlements'
@@ -18,12 +17,6 @@ type JobTimelinePanelProps = {
   aiSummariesLimit: number
   aiSummariesUsed: number
   embedded?: boolean
-}
-
-function eventSortTime(e: TimelineEvent): number {
-  const raw = e.created_at || e.event_date
-  const t = Date.parse(raw)
-  return Number.isNaN(t) ? 0 : t
 }
 
 export function JobTimelinePanel({
@@ -43,11 +36,11 @@ export function JobTimelinePanel({
   const aiAtLimit =
     !isUnlimited(aiSummariesLimit) && aiSummariesUsed >= aiSummariesLimit
 
-  const timelineHref = useMemo(() => {
+  const timelineHref = (() => {
     const params = new URLSearchParams({ claim_id: claimId })
     if (jobLabel?.trim()) params.set('job', jobLabel.trim())
     return `/project/${projectId}/timeline?${params}`
-  }, [claimId, projectId, jobLabel])
+  })()
 
   const loadTimeline = useCallback(async () => {
     if (!claimId) return
@@ -68,11 +61,6 @@ export function JobTimelinePanel({
   useEffect(() => {
     loadTimeline()
   }, [loadTimeline, timelineRefreshKey])
-
-  const latestEvent = useMemo(() => {
-    if (!events.length) return null
-    return [...events].sort((a, b) => eventSortTime(b) - eventSortTime(a))[0]
-  }, [events])
 
   async function regenerateTimeline() {
     if (!canGenerate || aiAtLimit) return
@@ -138,43 +126,39 @@ export function JobTimelinePanel({
 
       <div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm font-semibold text-foreground">Latest update</p>
+          <p className="text-sm font-semibold text-foreground">
+            Activity history
+            {events.length > 0 ? (
+              <span className="font-normal text-muted">
+                {' '}
+                · {events.length} {events.length === 1 ? 'entry' : 'entries'}
+              </span>
+            ) : null}
+          </p>
           {events.length > 0 && (
             <Link
               href={timelineHref}
               className="text-xs border border-border px-2.5 py-1.5 rounded-lg hover:border-brand-dim/50 inline-flex items-center min-h-[32px]"
             >
-              View full timeline
+              Open full page
             </Link>
           )}
         </div>
 
-        {loadingTimeline && !latestEvent && (
+        {loadingTimeline && events.length === 0 && (
           <p className="text-sm text-muted-dim">Loading…</p>
         )}
 
-        {!loadingTimeline && !latestEvent && (
+        {!loadingTimeline && events.length === 0 && (
           <p className="text-sm text-muted-dim">
-            Upload documents or change job status to build history. Use Refresh
-            timeline to add AI-derived milestones from files.
+            Upload documents or change job status to build history. Refresh
+            timeline adds new AI-derived milestones without removing past
+            entries.
           </p>
         )}
 
-        {latestEvent && (
-          <div className="border border-border rounded-lg p-3 bg-surface">
-            <p className="text-xs text-muted-dim">{formatEventWhen(latestEvent)}</p>
-            <p className="font-medium text-sm text-foreground mt-0.5">
-              {latestEvent.title}
-            </p>
-            {latestEvent.description && (
-              <p className="text-sm text-muted mt-1">{latestEvent.description}</p>
-            )}
-            {formatTimelineSource(latestEvent.source) && (
-              <p className="text-[10px] uppercase tracking-wide text-muted-dim mt-2">
-                {formatTimelineSource(latestEvent.source)}
-              </p>
-            )}
-          </div>
+        {events.length > 0 && (
+          <TimelineList events={events} newestFirst />
         )}
       </div>
     </Wrapper>

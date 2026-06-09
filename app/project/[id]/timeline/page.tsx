@@ -112,7 +112,8 @@ export default function ProjectTimelinePage() {
       <main className="flex-1 safe-x px-4 py-4 max-w-2xl mx-auto w-full pb-8 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm text-muted">
-            {events.length} {events.length === 1 ? 'entry' : 'entries'}
+            {events.length} {events.length === 1 ? 'entry' : 'entries'}. Refresh
+            adds new milestones and keeps all past entries.
           </p>
           {canGenerate && (
             <button

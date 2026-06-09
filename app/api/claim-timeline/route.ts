@@ -8,6 +8,16 @@ import { requireAuthUser } from '@/lib/require-auth-user'
 
 export const maxDuration = 60
 
+function timelineEventKey(event: {
+  source: string
+  event_date: string
+  title: string
+  description?: string | null
+}) {
+  const day = String(event.event_date).slice(0, 10)
+  return `${event.source}\0${day}\0${event.title}\0${event.description || ''}`
+}
+
 export async function GET(req: Request) {
   try {
     const auth = await requireAuthUser()
@@ -150,32 +160,43 @@ export async function POST(req: Request) {
     }
 
     if (persist && events.length) {
-      const { error: deleteError } = await supabase
+      const { data: existing, error: loadError } = await supabase
         .from('claim_timeline_events')
-        .delete()
+        .select('event_date, title, description, source')
         .eq('claim_id', claim_id)
-        .in('source', ['ai', 'evidence'])
 
-      if (deleteError) {
+      if (loadError) {
         await refundAiSummary(project.organization_id)
-        return NextResponse.json({ error: deleteError.message }, { status: 500 })
+        return NextResponse.json({ error: loadError.message }, { status: 500 })
       }
 
-      const { error: insertError } = await supabase
-        .from('claim_timeline_events')
-        .insert(
-          events.map((e) => ({
-            claim_id,
-            event_date: e.event_date,
-            title: e.title,
-            description: e.description,
-            source: e.source,
-          }))
-        )
+      const existingKeys = new Set(
+        (existing || []).map((row) => timelineEventKey(row))
+      )
 
-      if (insertError) {
+      const toInsert = events.filter(
+        (e) => !existingKeys.has(timelineEventKey(e))
+      )
+
+      if (!toInsert.length) {
         await refundAiSummary(project.organization_id)
-        return NextResponse.json({ error: insertError.message }, { status: 500 })
+      } else {
+        const { error: insertError } = await supabase
+          .from('claim_timeline_events')
+          .insert(
+            toInsert.map((e) => ({
+              claim_id,
+              event_date: e.event_date,
+              title: e.title,
+              description: e.description,
+              source: e.source,
+            }))
+          )
+
+        if (insertError) {
+          await refundAiSummary(project.organization_id)
+          return NextResponse.json({ error: insertError.message }, { status: 500 })
+        }
       }
     }
 
