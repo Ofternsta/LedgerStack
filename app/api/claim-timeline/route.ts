@@ -3,7 +3,7 @@ import { generateClaimTimeline } from '@/lib/claim-ai'
 import { listEvidence } from '@/lib/evidence-storage'
 import { consumeAiSummary, refundAiSummary } from '@/lib/plan-enforcement'
 import { getOrgPlanContext } from '@/lib/org-plan'
-import { assertStaffProjectAiAccess } from '@/lib/project-staff-ai-access'
+import { assertAdminProjectTimelineAccess } from '@/lib/project-timeline-access'
 import { requireAuthUser } from '@/lib/require-auth-user'
 
 export const maxDuration = 60
@@ -33,7 +33,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'project_id required' }, { status: 400 })
     }
 
-    const access = await assertStaffProjectAiAccess(
+    const access = await assertAdminProjectTimelineAccess(
       supabase,
       user.id,
       projectId
@@ -107,7 +107,7 @@ export async function POST(req: Request) {
       )
     }
 
-    const access = await assertStaffProjectAiAccess(
+    const access = await assertAdminProjectTimelineAccess(
       supabase,
       user.id,
       project_id

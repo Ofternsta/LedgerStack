@@ -680,13 +680,13 @@ export default function ProjectPageClient() {
           }}
         />
 
-        {!isClientViewer && (
+        {!isClientViewer && access.canViewTimeline && (
           <JobTimelinePanel
             claimId={activeClaim.id}
             projectId={id}
             jobLabel={activeClaim.client_name}
             timelineRefreshKey={timelineRefreshKey}
-            canGenerate={access.canUpdateClaimInfo}
+            canGenerate={access.canViewTimeline}
             aiSummariesLimit={access.aiSummariesLimit}
             aiSummariesUsed={access.aiSummariesUsed}
           />

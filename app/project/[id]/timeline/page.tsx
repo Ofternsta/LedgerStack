@@ -28,7 +28,8 @@ export default function ProjectTimelinePage() {
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const canGenerate = Boolean(access?.canUpdateClaimInfo)
+  const canViewTimeline = Boolean(access?.canViewTimeline)
+  const canGenerate = canViewTimeline
   const aiSummariesLimit = access?.aiSummariesLimit ?? 0
   const aiSummariesUsed = access?.aiSummariesUsed ?? 0
   const aiAtLimit =
@@ -53,7 +54,7 @@ export default function ProjectTimelinePage() {
 
   useEffect(() => {
     loadUserAccess().then(({ access: a }) => {
-      if (!a || a.role === 'client') {
+      if (!a || a.role === 'client' || !a.canViewTimeline) {
         router.replace(`/project/${projectId}`)
         return
       }

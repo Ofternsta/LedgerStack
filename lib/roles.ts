@@ -33,6 +33,8 @@ export type UserAccess = {
   canUpdateClaimInfo: boolean
   /** Report workflow status (Inspection → Completed) — admins only */
   canUpdateReportStatus: boolean
+  /** Job timeline — organization admins only */
+  canViewTimeline: boolean
   canViewInternalNotes: boolean
   canViewCalendar: boolean
   canManageSchedule: boolean
@@ -181,6 +183,7 @@ export function buildAccess(input: {
     canUpdateClaimInfo:
       staffCapable && hasPlan && !workerBlockedByStaffLimit && !downgradeReadOnly,
     canUpdateReportStatus: isAdmin && hasPlan,
+    canViewTimeline: isAdmin && hasPlan && !downgradeReadOnly,
     canViewInternalNotes: canViewInternalNotes && !downgradeReadOnly,
     canViewCalendar:
       canViewCalendar && !workerBlockedByStaffLimit && !downgradeReadOnly,
