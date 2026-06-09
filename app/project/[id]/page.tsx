@@ -85,6 +85,17 @@ export default function ProjectPageClient() {
   const [addJobOpen, setAddJobOpen] = useState(false)
   const [deletingJob, setDeletingJob] = useState(false)
   const [highlightFilePath, setHighlightFilePath] = useState<string | null>(null)
+  const [mobileNotesOpen, setMobileNotesOpen] = useState(false)
+  const [mobileScheduleOpen, setMobileScheduleOpen] = useState(false)
+  const [isPhoneLayout, setIsPhoneLayout] = useState(false)
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)')
+    const sync = () => setIsPhoneLayout(mq.matches)
+    sync()
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
+  }, [])
 
   function mergeWorkerProjectAccess(
     base: UserAccess,
@@ -554,13 +565,13 @@ export default function ProjectPageClient() {
           </p>
         )}
 
-        <div className="flex flex-wrap items-end gap-2 lg:hidden">
-        <label className="block flex-1 min-w-[200px]">
+        <div className="lg:hidden space-y-2">
+        <label className="block w-full">
           <span className="text-sm font-medium text-muted mb-1 block">
             Active job
           </span>
           <select
-            className="input-field"
+            className="input-field w-full"
             value={selectedClaim?.id || ''}
             onChange={(e) => {
               const claim = claims.find((c) => c.id === e.target.value)
@@ -570,57 +581,62 @@ export default function ProjectPageClient() {
             {claims.map((c) => {
               const label =
                 displayJobDescription(c.notes, projectNotes) || c.client_name
+              const optionLabel = isPhoneLayout
+                ? label
+                : `${label} — ${statusLabel(c.status, statusWorkflow)}`
               return (
                 <option key={c.id} value={c.id}>
-                  {label} — {statusLabel(c.status, statusWorkflow)}
+                  {optionLabel}
                 </option>
               )
             })}
           </select>
         </label>
         {access.canCreateProject && (
-          <button
-            type="button"
-            onClick={() => setAddJobOpen(true)}
-            className="text-sm border border-border px-3 py-2 rounded-lg min-h-[40px] shrink-0"
-          >
-            Add a job
-          </button>
-        )}
-        {access.canCreateProject && claims.length > 1 && activeClaim && (
-          <button
-            type="button"
-            disabled={deletingJob}
-            onClick={async () => {
-              const label =
-                displayJobDescription(activeClaim.notes, projectNotes) ||
-                activeClaim.client_name
-              const ok = window.confirm(
-                `Delete "${label}" and all of its files, timeline entries, and status history? This cannot be undone.`
-              )
-              if (!ok) return
-              setDeletingJob(true)
-              const res = await fetch(
-                `/api/projects/${id}/jobs/${activeClaim.id}`,
-                { method: 'DELETE' }
-              )
-              const payload = await res.json().catch(() => ({}))
-              setDeletingJob(false)
-              if (!res.ok) {
-                alert(payload.error || 'Could not delete job')
-                return
-              }
-              const remaining = claims.filter((c) => c.id !== activeClaim.id)
-              setClaims(remaining)
-              const next = remaining[0] ?? null
-              setSelectedClaim(next)
-              if (next) void fetchEvidence(next.id)
-              else setDocuments([])
-            }}
-            className="text-sm border border-red-300 text-red-800 bg-red-50 px-3 py-2 rounded-lg min-h-[40px] shrink-0 disabled:opacity-50"
-          >
-            {deletingJob ? 'Deleting…' : 'Delete job'}
-          </button>
+          <div className="flex flex-wrap gap-2 max-md:flex-nowrap">
+            <button
+              type="button"
+              onClick={() => setAddJobOpen(true)}
+              className="text-sm border border-border px-3 py-2 rounded-lg min-h-[40px] shrink-0 max-md:flex-1"
+            >
+              Add a job
+            </button>
+            {claims.length > 1 && activeClaim && (
+              <button
+                type="button"
+                disabled={deletingJob}
+                onClick={async () => {
+                  const label =
+                    displayJobDescription(activeClaim.notes, projectNotes) ||
+                    activeClaim.client_name
+                  const ok = window.confirm(
+                    `Delete "${label}" and all of its files, timeline entries, and status history? This cannot be undone.`
+                  )
+                  if (!ok) return
+                  setDeletingJob(true)
+                  const res = await fetch(
+                    `/api/projects/${id}/jobs/${activeClaim.id}`,
+                    { method: 'DELETE' }
+                  )
+                  const payload = await res.json().catch(() => ({}))
+                  setDeletingJob(false)
+                  if (!res.ok) {
+                    alert(payload.error || 'Could not delete job')
+                    return
+                  }
+                  const remaining = claims.filter((c) => c.id !== activeClaim.id)
+                  setClaims(remaining)
+                  const next = remaining[0] ?? null
+                  setSelectedClaim(next)
+                  if (next) void fetchEvidence(next.id)
+                  else setDocuments([])
+                }}
+                className="text-sm border border-red-300 text-red-800 bg-red-50 px-3 py-2 rounded-lg min-h-[40px] shrink-0 max-md:flex-1 disabled:opacity-50"
+              >
+                {deletingJob ? 'Deleting…' : 'Delete job'}
+              </button>
+            )}
+          </div>
         )}
         </div>
 
@@ -650,6 +666,55 @@ export default function ProjectPageClient() {
             if (claim) setSelectedClaim(claim)
           }}
         />
+
+        {(access.canViewInternalNotes || access.canViewCalendar) && (
+          <div className="md:hidden space-y-4">
+            <div className="flex gap-2 w-full">
+              {access.canViewInternalNotes && (
+                <button
+                  type="button"
+                  onClick={() => setMobileNotesOpen((open) => !open)}
+                  className={`text-sm border px-3 py-2 rounded-xl font-medium min-h-[40px] flex-1 min-w-0 ${
+                    mobileNotesOpen
+                      ? 'border-brand bg-surface-elevated text-brand-bright'
+                      : 'border-border hover:border-brand-dim/50'
+                  }`}
+                >
+                  {mobileNotesOpen ? 'Hide project notes' : 'Project notes'}
+                </button>
+              )}
+              {access.canViewCalendar && (
+                <button
+                  type="button"
+                  onClick={() => setMobileScheduleOpen((open) => !open)}
+                  className={`text-sm border px-3 py-2 rounded-xl font-medium min-h-[40px] flex-1 min-w-0 ${
+                    mobileScheduleOpen
+                      ? 'border-brand bg-surface-elevated text-brand-bright'
+                      : 'border-border hover:border-brand-dim/50'
+                  }`}
+                >
+                  {mobileScheduleOpen ? 'Hide schedule' : 'Schedule & calendar'}
+                </button>
+              )}
+            </div>
+            {mobileNotesOpen && access.canViewInternalNotes && (
+              <InternalNotesPanel
+                projectId={id}
+                claimId={activeClaim.id}
+                canPost={access.canUpdateClaimInfo}
+              />
+            )}
+            {mobileScheduleOpen && access.canViewCalendar && (
+              <ProjectSchedulePanel
+                projectId={id}
+                canMarkComplete={
+                  access.canManageSchedule && access.canUpdateClaimInfo
+                }
+                canManageEvents={access.canManageSchedule}
+              />
+            )}
+          </div>
+        )}
 
         {configError && (
           <p className="text-sm text-red-700 border border-red-200 bg-red-50 p-3 rounded-xl">
@@ -776,7 +841,7 @@ export default function ProjectPageClient() {
         )}
 
         {(access.canViewInternalNotes || access.canViewCalendar) && (
-          <div className="lg:hidden space-y-4">
+          <div className="hidden md:block lg:hidden space-y-4">
             {access.canViewInternalNotes && (
               <InternalNotesPanel
                 projectId={id}

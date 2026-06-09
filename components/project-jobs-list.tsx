@@ -78,7 +78,7 @@ function JobDetails({
           )}
         </p>
       </div>
-      <div>
+      <div className="max-md:hidden">
         <p className={labelClass}>Current status</p>
         <p className={metaClass}>{currentStatus}</p>
       </div>
