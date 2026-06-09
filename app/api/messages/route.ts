@@ -109,6 +109,26 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
+    const { data: project } = await supabase
+      .from('projects')
+      .select('organization_id')
+      .eq('id', projectId)
+      .maybeSingle()
+
+    if (!project?.organization_id) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
+
+    const projectMessagesPlan = await requireOrgPlanFeature(
+      supabase,
+      project.organization_id,
+      'internalNotes',
+      'Project messages'
+    )
+    if (!projectMessagesPlan.ok) {
+      return NextResponse.json({ error: projectMessagesPlan.error }, { status: 403 })
+    }
+
     const { data: rows, error } = await supabase
       .from('messages')
       .select('id, sender_id, body, created_at')
@@ -119,16 +139,6 @@ export async function GET(req: Request) {
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
-    const { data: project } = await supabase
-      .from('projects')
-      .select('organization_id')
-      .eq('id', projectId)
-      .maybeSingle()
-
-    if (!project?.organization_id) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
     const messages = await enrichMessageSenders(
@@ -265,6 +275,16 @@ export async function POST(req: Request) {
 
     if (!project?.organization_id) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
+
+    const projectMessagesPlan = await requireOrgPlanFeature(
+      supabase,
+      project.organization_id,
+      'internalNotes',
+      'Project messages'
+    )
+    if (!projectMessagesPlan.ok) {
+      return NextResponse.json({ error: projectMessagesPlan.error }, { status: 403 })
     }
 
     const { data: row, error } = await supabase

@@ -5,6 +5,7 @@ import { consumeAiSummary, refundAiSummary } from '@/lib/plan-enforcement'
 import { getOrgPlanContext } from '@/lib/org-plan'
 import { assertAdminProjectTimelineAccess } from '@/lib/project-timeline-access'
 import { requireAuthUser } from '@/lib/require-auth-user'
+import { createServiceClient } from '@/lib/supabase/service'
 
 export const maxDuration = 60
 
@@ -145,7 +146,8 @@ export async function POST(req: Request) {
       )
     }
 
-    const evidence = await listEvidence(supabase, project_id, claim_id)
+    const storage = createServiceClient()
+    const evidence = await listEvidence(storage, project_id, claim_id)
     const events = await generateClaimTimeline(claim, evidence)
 
     const aiCheck = await consumeAiSummary(

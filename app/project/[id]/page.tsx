@@ -705,7 +705,7 @@ export default function ProjectPageClient() {
 
         {access.canViewFiles ? (
           <div id="project-documents" className="space-y-4">
-            {access.role === 'admin' && (
+            {access.canManageProjectClients && (
               <AdminSignatureRequestsPanel projectId={id} />
             )}
 
@@ -828,6 +828,7 @@ export default function ProjectPageClient() {
 
       {!isClientViewer &&
         !access.workerBlockedByStaffLimit &&
+        !access.downgradeReadOnly &&
         (access.role === 'admin' || access.canUseProjectAiChat) && (
         <ProjectAiChat
           projectId={id}

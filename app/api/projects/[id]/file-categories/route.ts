@@ -10,6 +10,7 @@ import {
   type FileCategory,
 } from '@/lib/project-file-categories'
 import { repairSignedEvidenceOnProject } from '@/lib/repair-signed-evidence'
+import { assertProjectMemberPermission } from '@/lib/member-permissions-server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { requireAuth } from '@/lib/require-auth'
 import { touchProjectActivity } from '@/lib/touch-project-activity'
@@ -90,6 +91,20 @@ export async function GET(req: Request, context: RouteContext) {
     const project = await loadProject(supabase, projectId)
     if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
+
+    const viewGate = await assertProjectMemberPermission(
+      supabase,
+      user.id,
+      projectId,
+      'can_view_files',
+      { email: user.email }
+    )
+    if (!viewGate.ok) {
+      return NextResponse.json(
+        { error: viewGate.error },
+        { status: viewGate.status }
+      )
     }
 
     const service = createServiceClient()

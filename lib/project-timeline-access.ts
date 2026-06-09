@@ -2,6 +2,7 @@ import 'server-only'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { isOrganizationAdmin } from '@/lib/org-admin'
+import { assertOrgAdminCanMutate } from '@/lib/org-access-guards'
 import { getProjectOrgId } from '@/lib/staff-project-access'
 
 /** Job timeline is visible to organization admins only (not workers or clients). */
@@ -21,6 +22,15 @@ export async function assertAdminProjectTimelineAccess(
       error: 'Only organization admins can view the job timeline.',
       status: 403,
     }
+  }
+
+  const mutate = await assertOrgAdminCanMutate(
+    supabase,
+    organizationId,
+    userId
+  )
+  if (!mutate.ok) {
+    return { ok: false, error: mutate.error, status: mutate.status }
   }
 
   return { ok: true }

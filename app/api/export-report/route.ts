@@ -11,6 +11,7 @@ import { consumeAiSummary, refundAiSummary } from '@/lib/plan-enforcement'
 import { getOrgPlanContext } from '@/lib/org-plan'
 import { assertAdminProjectAiSummaryExportAccess } from '@/lib/project-staff-ai-access'
 import { requireAuthUser } from '@/lib/require-auth-user'
+import { createServiceClient } from '@/lib/supabase/service'
 
 export const maxDuration = 90
 
@@ -137,7 +138,11 @@ export async function GET(req: Request) {
     let report = await loadJobAiSummary(supabase, projectId, claimId)
 
     if (!report) {
-      report = await generateJobIntelligenceReport(supabase, projectId, claimId)
+      report = await generateJobIntelligenceReport(
+        createServiceClient(),
+        projectId,
+        claimId
+      )
       if (!report) {
         return NextResponse.json({ error: 'Job not found' }, { status: 404 })
       }
@@ -186,7 +191,11 @@ export async function POST(req: Request) {
     let report = await loadJobAiSummary(supabase, projectId, claimId)
 
     if (!report) {
-      report = await generateJobIntelligenceReport(supabase, projectId, claimId)
+      report = await generateJobIntelligenceReport(
+        createServiceClient(),
+        projectId,
+        claimId
+      )
       if (!report) {
         return NextResponse.json({ error: 'Job not found' }, { status: 404 })
       }

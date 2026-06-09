@@ -52,6 +52,8 @@ export default function OrganizationSettingsPage() {
       mainClassName="flex-1 safe-x px-4 sm:px-6 lg:px-8 py-4 max-w-2xl mx-auto w-full pb-8 safe-bottom space-y-6"
     >
       <OrganizationSettingsPanel
+        canManageTeam={access.canManageTeam}
+        canManageProjectClients={access.canManageProjectClients}
         onOrganizationRenamed={(name) => {
           setAccess((current) =>
             current ? { ...current, organizationName: name } : current

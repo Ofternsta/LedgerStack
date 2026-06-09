@@ -3,6 +3,7 @@ import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { isOrganizationAdmin } from '@/lib/org-admin'
 import { getProjectWorkerPermissions } from '@/lib/project-worker-assignments'
+import { assertOrgAdminCanMutate } from '@/lib/org-access-guards'
 import { getProjectOrgId } from '@/lib/staff-project-access'
 
 export async function canStaffGenerateProjectAi(
@@ -58,6 +59,15 @@ export async function assertAdminProjectAiSummaryExportAccess(
       error: 'Only organization admins can use AI summary and export.',
       status: 403,
     }
+  }
+
+  const mutate = await assertOrgAdminCanMutate(
+    supabase,
+    organizationId,
+    userId
+  )
+  if (!mutate.ok) {
+    return { ok: false, error: mutate.error, status: mutate.status }
   }
 
   return { ok: true }

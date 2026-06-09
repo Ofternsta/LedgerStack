@@ -8,6 +8,7 @@ import { consumeAiSummary } from '@/lib/plan-enforcement'
 import { getOrgPlanContext } from '@/lib/org-plan'
 import { assertAdminProjectAiSummaryExportAccess } from '@/lib/project-staff-ai-access'
 import { requireAuthUser } from '@/lib/require-auth-user'
+import { createServiceClient } from '@/lib/supabase/service'
 
 export const maxDuration = 90
 
@@ -99,7 +100,7 @@ export async function POST(req: Request) {
     }
 
     const report = await generateJobIntelligenceReport(
-      supabase,
+      createServiceClient(),
       project_id,
       claim_id,
       { timeZone }

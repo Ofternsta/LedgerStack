@@ -1,5 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { isWorkerAssignedToProject } from '@/lib/project-worker-assignments'
+import {
+  isOrgAdminDowngradeReadOnly,
+  isWorkerOverStaffLimit,
+} from '@/lib/org-access-guards'
 import type { AppRole } from '@/lib/roles'
 
 /** Admin or approved worker on the project's organization (not clients). */
@@ -32,7 +36,15 @@ export async function canAccessStaffProjectFeatures(
       .eq('id', project.organization_id)
       .eq('admin_user_id', userId)
       .maybeSingle()
-    return Boolean(org)
+    if (!org) return false
+    if (await isOrgAdminDowngradeReadOnly(supabase, project.organization_id)) {
+      return false
+    }
+    return true
+  }
+
+  if (await isWorkerOverStaffLimit(supabase, project.organization_id)) {
+    return false
   }
 
   const { data: membership } = await supabase

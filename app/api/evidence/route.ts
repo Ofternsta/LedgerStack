@@ -9,6 +9,7 @@ import {
   isOrganizationAdmin,
   projectIdFromEvidencePath,
 } from '@/lib/org-admin'
+import { assertOrgAdminCanMutate } from '@/lib/org-access-guards'
 import { assertProjectMemberPermission } from '@/lib/member-permissions-server'
 import { getProjectOrgId } from '@/lib/staff-project-access'
 import { requireAuth } from '@/lib/require-auth'
@@ -103,6 +104,14 @@ async function requireEvidenceDeleteAccess(
   }
 
   if (await isOrganizationAdmin(supabase, organizationId, userId)) {
+    const mutate = await assertOrgAdminCanMutate(
+      supabase,
+      organizationId,
+      userId
+    )
+    if (!mutate.ok) {
+      return { ok: false as const, error: mutate.error, status: mutate.status }
+    }
     return { ok: true as const }
   }
 
@@ -141,6 +150,15 @@ async function requireEvidenceOrgAdmin(
   )
   if (!isAdmin) {
     return { ok: false as const, error: 'Organization admin only' }
+  }
+
+  const mutate = await assertOrgAdminCanMutate(
+    supabase,
+    organizationId,
+    userId
+  )
+  if (!mutate.ok) {
+    return { ok: false as const, error: mutate.error }
   }
 
   return { ok: true as const }
@@ -185,7 +203,7 @@ export async function PATCH(req: Request) {
       normalizedType = normalizeFileCategoryLabel(evidenceType, categories)
     }
 
-    const evidence = await updateEvidenceMeta(supabase, filePath, {
+    const evidence = await updateEvidenceMeta(createServiceClient(), filePath, {
       summary,
       evidence_type: normalizedType,
       file_name:
@@ -223,7 +241,7 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: gate.error }, { status: gate.status })
     }
 
-    await deleteEvidence(supabase, filePath)
+    await deleteEvidence(createServiceClient(), filePath)
     return NextResponse.json({ ok: true })
   } catch (err: unknown) {
     const message =

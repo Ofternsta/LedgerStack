@@ -34,10 +34,14 @@ const PERM_KEYS = Object.keys(
 
 type OrganizationSettingsPanelProps = {
   onOrganizationRenamed?: (name: string) => void
+  canManageTeam?: boolean
+  canManageProjectClients?: boolean
 }
 
 export function OrganizationSettingsPanel({
   onOrganizationRenamed,
+  canManageTeam = false,
+  canManageProjectClients = false,
 }: OrganizationSettingsPanelProps = {}) {
   const [organizationName, setOrganizationName] = useState('')
   const [organizationNameDraft, setOrganizationNameDraft] = useState('')
@@ -199,8 +203,17 @@ export function OrganizationSettingsPanel({
       <section className="card p-4 space-y-4">
         <h2 className="font-bold text-foreground">Projects</h2>
         <p className="text-sm text-muted">
-          Customize job status stages and file categories per project, and
-          manage client and worker access.
+          Customize job status stages and file categories per project
+          {canManageTeam || canManageProjectClients
+            ? ', and manage client and worker access.'
+            : '.'}
+          {!canManageTeam && !canManageProjectClients && (
+            <>
+              {' '}
+              Worker and client accounts require a Professional or Enterprise
+              plan.
+            </>
+          )}
         </p>
 
         {projects.length === 0 ? (
@@ -232,8 +245,12 @@ export function OrganizationSettingsPanel({
 
                   {expanded && (
                     <div className="px-4 pb-4 space-y-4 border-t border-border pt-4">
-                      <ProjectWorkerPanel projectId={p.id} />
-                      <ProjectClientPanel projectId={p.id} />
+                      {canManageTeam && (
+                        <ProjectWorkerPanel projectId={p.id} />
+                      )}
+                      {canManageProjectClients && (
+                        <ProjectClientPanel projectId={p.id} />
+                      )}
 
                       <ProjectStatusWorkflowEditor projectId={p.id} />
                       <ProjectFileCategoriesEditor projectId={p.id} />
@@ -246,6 +263,7 @@ export function OrganizationSettingsPanel({
         )}
       </section>
 
+      {canManageTeam && (
       <section className="card p-4 space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -325,6 +343,7 @@ export function OrganizationSettingsPanel({
           </ul>
         )}
       </section>
+      )}
 
       <section className="card p-4 space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">

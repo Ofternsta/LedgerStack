@@ -2,6 +2,12 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { isOrganizationAdmin } from '@/lib/org-admin'
 import { getOrgPlanContext } from '@/lib/org-plan'
 import { countApprovedWorkers } from '@/lib/plan-usage'
+import {
+  ADMIN_READ_ONLY_PERMISSIONS,
+  DOWNGRADE_READ_ONLY_MESSAGE,
+  isOrgAdminDowngradeReadOnly,
+  WORKER_STAFF_LIMIT_MESSAGE,
+} from '@/lib/org-access-guards'
 import { clientCanAccessProject } from '@/lib/project-client-access'
 import { getProjectWorkerPermissions } from '@/lib/project-worker-assignments'
 import {
@@ -41,6 +47,16 @@ export async function assertProjectMemberPermission(
   }
 
   if (await isOrganizationAdmin(supabase, organizationId, userId)) {
+    if (
+      !ADMIN_READ_ONLY_PERMISSIONS.has(permission) &&
+      (await isOrgAdminDowngradeReadOnly(supabase, organizationId))
+    ) {
+      return {
+        ok: false,
+        error: DOWNGRADE_READ_ONLY_MESSAGE,
+        status: 403,
+      }
+    }
     return { ok: true }
   }
 
@@ -117,8 +133,7 @@ export async function assertProjectMemberPermission(
     ) {
       return {
         ok: false,
-        error:
-          'This organization is over the worker limit on its current plan. Workers cannot access projects until limits are satisfied or the organization upgrades.',
+        error: WORKER_STAFF_LIMIT_MESSAGE,
         status: 403,
       }
     }
