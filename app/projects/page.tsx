@@ -248,7 +248,7 @@ export default function ProjectsPage() {
       access={access}
       onSignOut={signOut}
       signingOut={signingOut}
-      mainClassName="flex-1 safe-x px-4 sm:px-6 lg:px-8 py-4 w-full max-w-[1600px] mx-auto pb-28 safe-bottom space-y-5"
+      mainClassName="flex-1 safe-x px-4 sm:px-6 lg:px-8 py-4 w-full max-w-[1600px] mx-auto max-md:pb-[12.5rem] md:pb-28 safe-bottom space-y-5"
     >
         {access.canDeleteProject && (
           <div className="flex flex-wrap items-center justify-end gap-3">
@@ -443,7 +443,7 @@ export default function ProjectsPage() {
           <>
             {showCreateForm && (
               <section
-                className="fixed z-40 bottom-[calc(max(env(safe-area-inset-bottom,0px),1rem)+3.75rem)] right-[max(env(safe-area-inset-right,0px),1rem)] left-4 sm:left-auto sm:w-full sm:max-w-md border border-border rounded-xl p-4 bg-surface-elevated shadow-2xl space-y-3"
+                className="fixed z-40 max-md:fixed-bottom-fab-form md:bottom-[calc(max(env(safe-area-inset-bottom,0px),1rem)+3.75rem)] right-[max(env(safe-area-inset-right,0px),1rem)] left-4 sm:left-auto sm:w-full sm:max-w-md border border-border rounded-xl p-4 bg-surface-elevated shadow-2xl space-y-3"
                 aria-label="New project"
               >
                 <div className="flex items-center justify-between gap-2">
@@ -510,7 +510,7 @@ export default function ProjectsPage() {
             <button
               type="button"
               onClick={() => setShowCreateForm((open) => !open)}
-              className="fixed z-50 bottom-[max(env(safe-area-inset-bottom,0px),1rem)] right-[max(env(safe-area-inset-right,0px),1rem)] btn-primary text-[#052e16] px-5 py-3 rounded-xl font-semibold shadow-lg min-h-[48px]"
+              className="fixed z-50 max-md:fixed-bottom-fab md:bottom-[max(env(safe-area-inset-bottom,0px),1rem)] right-[max(env(safe-area-inset-right,0px),1rem)] btn-primary text-[#052e16] px-5 py-3 rounded-xl font-semibold shadow-lg min-h-[48px]"
             >
               {showCreateForm ? 'Hide form' : 'Create project'}
             </button>

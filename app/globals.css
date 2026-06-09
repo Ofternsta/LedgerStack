@@ -472,6 +472,15 @@ button {
     padding-right: 0;
     justify-content: center;
   }
+
+  /* Fixed FABs: sit above AppShell mobile footer (Questions + legal links). */
+  .fixed-bottom-fab {
+    bottom: calc(max(env(safe-area-inset-bottom, 0px), 1rem) + 5.5rem);
+  }
+
+  .fixed-bottom-fab-form {
+    bottom: calc(max(env(safe-area-inset-bottom, 0px), 1rem) + 3.75rem + 5.5rem);
+  }
 }
 
 .app-sidebar-link:hover {
