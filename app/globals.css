@@ -425,15 +425,6 @@ button {
   box-shadow: 0 0 12px rgb(239 68 68 / 0.25);
 }
 
-.app-sidebar-sign-out {
-  margin-top: 0.5rem;
-  color: var(--muted);
-}
-
-.app-sidebar-sign-out:hover {
-  color: var(--foreground);
-}
-
 /* —— App-wide motion —— */
 @keyframes app-page-fade-in {
   from {
