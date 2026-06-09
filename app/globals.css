@@ -377,6 +377,7 @@ button {
 .app-sidebar-link {
   display: flex;
   align-items: center;
+  gap: 0.625rem;
   width: calc(100% - 1rem);
   margin-left: 0.5rem;
   margin-right: 0.5rem;
@@ -392,7 +393,62 @@ button {
     background 0.15s ease,
     color 0.15s ease,
     border-color 0.15s ease,
-    box-shadow 0.15s ease;
+    box-shadow 0.15s ease,
+    width 0.15s ease,
+    padding 0.15s ease;
+}
+
+.app-sidebar-link-collapsed {
+  width: calc(100% - 0.5rem);
+  margin-left: 0.25rem;
+  margin-right: 0.25rem;
+  padding-left: 0;
+  padding-right: 0;
+  justify-content: center;
+}
+
+.app-sidebar-link-icon {
+  display: inline-flex;
+  shrink: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-sidebar-link-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-sidebar--collapsed .app-sidebar-link-label {
+  display: none;
+}
+
+.app-sidebar-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 0.5rem;
+  color: var(--muted);
+  border: 1px solid transparent;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.app-sidebar-toggle:hover {
+  color: var(--brand-bright);
+  background: color-mix(in srgb, var(--brand) 16%, transparent);
+  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
+}
+
+.app-sidebar--collapsed .app-sidebar-toggle {
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .app-sidebar-link:hover {
