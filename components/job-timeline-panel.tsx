@@ -1,9 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  TimelineList,
+  formatEventWhen,
+  formatTimelineSource,
   type TimelineEvent,
 } from '@/components/timeline-list'
 import { isUnlimited } from '@/lib/plan-entitlements'
@@ -17,6 +18,12 @@ type JobTimelinePanelProps = {
   aiSummariesLimit: number
   aiSummariesUsed: number
   embedded?: boolean
+}
+
+function eventSortTime(e: TimelineEvent): number {
+  const raw = e.created_at || e.event_date
+  const t = Date.parse(raw)
+  return Number.isNaN(t) ? 0 : t
 }
 
 export function JobTimelinePanel({
@@ -36,53 +43,62 @@ export function JobTimelinePanel({
   const aiAtLimit =
     !isUnlimited(aiSummariesLimit) && aiSummariesUsed >= aiSummariesLimit
 
-  const timelineHref = (() => {
+  const timelineHref = useMemo(() => {
     const params = new URLSearchParams({ claim_id: claimId })
     if (jobLabel?.trim()) params.set('job', jobLabel.trim())
     return `/project/${projectId}/timeline?${params}`
-  })()
+  }, [claimId, projectId, jobLabel])
 
   const loadTimeline = useCallback(async () => {
     if (!claimId) return
-    setLoadingTimeline(true)
-    setError(null)
     const res = await fetch(
       `/api/claim-timeline?claim_id=${claimId}&project_id=${projectId}`
     )
     const payload = await res.json().catch(() => ({}))
     if (res.ok) {
       setEvents(payload.events || [])
-    } else {
-      setError(payload.error || 'Could not load timeline')
+      return true
     }
-    setLoadingTimeline(false)
+    setError(payload.error || 'Could not load timeline')
+    setEvents([])
+    return false
   }, [claimId, projectId])
 
-  useEffect(() => {
-    loadTimeline()
-  }, [loadTimeline, timelineRefreshKey])
-
-  async function regenerateTimeline() {
-    if (!canGenerate || aiAtLimit) return
+  const syncTimeline = useCallback(async () => {
+    if (!claimId) return
     setLoadingTimeline(true)
     setError(null)
-    const res = await fetch('/api/claim-timeline', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        claim_id: claimId,
-        project_id: projectId,
-        persist: true,
-      }),
-    })
-    const payload = await res.json().catch(() => ({}))
-    if (!res.ok) {
-      setError(payload.error || 'Could not generate timeline')
-    } else {
-      await loadTimeline()
+
+    if (canGenerate && !aiAtLimit) {
+      const res = await fetch('/api/claim-timeline', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          claim_id: claimId,
+          project_id: projectId,
+          persist: true,
+        }),
+      })
+      const payload = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError(payload.error || 'Could not update timeline')
+      }
     }
+
+    await loadTimeline()
     setLoadingTimeline(false)
-  }
+  }, [aiAtLimit, canGenerate, claimId, projectId, loadTimeline])
+
+  useEffect(() => {
+    void syncTimeline()
+  }, [syncTimeline, timelineRefreshKey])
+
+  const latestEvent = useMemo(() => {
+    if (!events.length) return null
+    return [...events].sort((a, b) => eventSortTime(b) - eventSortTime(a))[0]
+  }, [events])
+
+  const latestAddedLabel = latestEvent ? formatEventWhen(latestEvent) : ''
 
   const Wrapper = embedded ? 'div' : 'section'
   const wrapperClass = embedded
@@ -101,24 +117,7 @@ export function JobTimelinePanel({
         >
           Job timeline
         </h2>
-        {canGenerate && (
-          <button
-            type="button"
-            onClick={() => void regenerateTimeline()}
-            disabled={loadingTimeline || aiAtLimit}
-            className="text-sm border border-border px-3 py-2 rounded-lg min-h-[40px] disabled:opacity-50"
-          >
-            {loadingTimeline ? 'Updating…' : 'Refresh timeline'}
-          </button>
-        )}
       </div>
-
-      {!isUnlimited(aiSummariesLimit) && (
-        <p className="text-xs text-muted">
-          AI summaries this month: {aiSummariesUsed} / {aiSummariesLimit}
-          {aiAtLimit && ' — limit reached. Upgrade for more.'}
-        </p>
-      )}
 
       {error && (
         <p className="text-sm alert-error rounded-lg p-2">{error}</p>
@@ -126,39 +125,45 @@ export function JobTimelinePanel({
 
       <div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm font-semibold text-foreground">
-            Activity history
-            {events.length > 0 ? (
-              <span className="font-normal text-muted">
-                {' '}
-                · {events.length} {events.length === 1 ? 'entry' : 'entries'}
-              </span>
-            ) : null}
-          </p>
+          <p className="text-sm font-semibold text-foreground">Latest update</p>
           {events.length > 0 && (
             <Link
               href={timelineHref}
               className="text-xs border border-border px-2.5 py-1.5 rounded-lg hover:border-brand-dim/50 inline-flex items-center min-h-[32px]"
             >
-              Open full page
+              View full timeline
             </Link>
           )}
         </div>
 
-        {loadingTimeline && events.length === 0 && (
+        {loadingTimeline && !latestEvent && (
           <p className="text-sm text-muted-dim">Loading…</p>
         )}
 
-        {!loadingTimeline && events.length === 0 && (
+        {!loadingTimeline && !latestEvent && (
           <p className="text-sm text-muted-dim">
-            Upload documents or change job status to build history. Refresh
-            timeline adds new AI-derived milestones without removing past
-            entries.
+            Upload documents or change job status to build history. New milestones
+            are added automatically when you open this project.
           </p>
         )}
 
-        {events.length > 0 && (
-          <TimelineList events={events} newestFirst />
+        {latestEvent && (
+          <div className="border border-border rounded-lg p-3 bg-surface">
+            {latestAddedLabel ? (
+              <p className="text-xs text-muted-dim">{latestAddedLabel}</p>
+            ) : null}
+            <p className="font-medium text-sm text-foreground mt-0.5">
+              {latestEvent.title}
+            </p>
+            {latestEvent.description && (
+              <p className="text-sm text-muted mt-1">{latestEvent.description}</p>
+            )}
+            {formatTimelineSource(latestEvent.source) && (
+              <p className="text-[10px] uppercase tracking-wide text-muted-dim mt-2">
+                {formatTimelineSource(latestEvent.source)}
+              </p>
+            )}
+          </div>
         )}
       </div>
     </Wrapper>
