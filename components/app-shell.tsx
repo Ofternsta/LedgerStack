@@ -6,13 +6,11 @@ import { accessShellSubtitle } from '@/lib/access-role-label'
 import type { UserAccess } from '@/lib/roles'
 import { AppSidebar } from '@/components/app-sidebar'
 import { AutoFitHeaderSubtitle } from '@/components/auto-fit-header-subtitle'
+import { MobileLegalFooterNav } from '@/components/mobile-legal-footer-nav'
 import { SupportLink } from '@/components/support-link'
 
 const headerUtilityLinkClass =
   'text-sm text-muted hover:text-brand-bright transition-colors whitespace-nowrap'
-
-const mobileFooterLinkClass =
-  'text-xs text-muted hover:text-brand-bright transition-colors whitespace-nowrap'
 
 type AppShellProps = {
   access: UserAccess
@@ -70,34 +68,11 @@ export function AppShell({
         </main>
       </div>
 
-      <footer className="md:hidden border-t border-border bg-background safe-bottom shrink-0 px-3 py-4 text-center text-sm text-muted space-y-2">
+      <footer className="md:hidden border-t border-border bg-background safe-bottom shrink-0 px-2 py-4 text-center text-sm text-muted space-y-2 w-full">
         <p>
           Questions? <SupportLink />
         </p>
-        <nav
-          className="flex flex-nowrap items-center justify-center gap-x-2 overflow-x-auto"
-          aria-label="Legal and billing"
-        >
-          <Link href="/privacy" className={mobileFooterLinkClass}>
-            Privacy Policy
-          </Link>
-          <span className="text-muted-dim text-xs" aria-hidden>
-            ·
-          </span>
-          <Link href="/terms" className={mobileFooterLinkClass}>
-            Terms of Service
-          </Link>
-          {access.canManageBilling && (
-            <>
-              <span className="text-muted-dim text-xs" aria-hidden>
-                ·
-              </span>
-              <Link href="/settings/billing" className={mobileFooterLinkClass}>
-                Billing
-              </Link>
-            </>
-          )}
-        </nav>
+        <MobileLegalFooterNav access={access} />
       </footer>
     </div>
   )
