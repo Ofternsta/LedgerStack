@@ -8,6 +8,7 @@ import {
   formatAiSummariesPerMonth,
   formatPlanLimit,
 } from '@/lib/plan-entitlements'
+import { COMPLETED_PROJECT_RETENTION_DAYS } from '@/lib/data-retention'
 import { BILLING_PLANS } from '@/lib/stripe-config'
 import { MARKETING_FAQ } from '@/lib/site-seo'
 
@@ -144,6 +145,14 @@ export function MarketingHome() {
                 <p className="marketing-hero-item marketing-hero-item--5 mt-6 text-sm text-muted-dim">
                   {BILLING_PLANS.trial.days}-day trial · Card required · Plans from $
                   {BILLING_PLANS.starter.price}/mo
+                </p>
+                <p className="marketing-hero-item marketing-hero-item--6 mt-4 text-sm text-muted border border-border/80 rounded-xl px-4 py-3 max-w-2xl mx-auto lg:mx-0 text-left leading-relaxed">
+                  <strong className="text-foreground font-semibold">
+                    Built for active jobs, not archives.
+                  </strong>{' '}
+                  Run open projects with your crew and clients — then export or back
+                  up when work wraps up. Completed projects are removed automatically
+                  after {COMPLETED_PROJECT_RETENTION_DAYS} days.
                 </p>
               </div>
               <div className="hidden lg:flex shrink-0 justify-center items-center order-2">

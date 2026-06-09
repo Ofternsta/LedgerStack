@@ -1,4 +1,8 @@
 import type { Metadata } from 'next'
+import {
+  COMPLETED_PROJECT_RETENTION_DAYS,
+  INACTIVE_PROJECT_RETENTION_MONTHS,
+} from '@/lib/data-retention'
 import { BILLING_PLANS, billingAppUrl } from '@/lib/stripe-config'
 
 export const SITE_NAME = 'LedgerStack'
@@ -82,6 +86,11 @@ export const MARKETING_FAQ = [
     question: 'Does LedgerStack support document signatures?',
     answer:
       'Yes. On Professional and Enterprise plans, admins can request a client signature on supported project files (PDF, Word, Excel, PowerPoint, images, and more). Clients sign with a typed name in an embedded SignWell window, receive email and in-app notifications, and the completed signed PDF is stored in the Signed documents category on the project.',
+  },
+  {
+    question: 'Is LedgerStack long-term file storage?',
+    answer:
+      `No. LedgerStack is a workspace for active jobs — not a document archive. When every job on a project is marked Completed, the project is deleted after ${COMPLETED_PROJECT_RETENTION_DAYS} days. Projects with open jobs and no activity for ${INACTIVE_PROJECT_RETENTION_MONTHS} months may also be removed. Export job packets or use organization backups, then keep permanent records in your own storage (Drive, SharePoint, your CMS, etc.).`,
   },
 ] as const
 

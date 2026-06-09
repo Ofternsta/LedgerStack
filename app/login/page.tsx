@@ -17,6 +17,7 @@ import {
   PASSWORD_REQUIREMENTS_TEXT,
   validatePasswordPair,
 } from '@/lib/password-policy'
+import { COMPLETED_PROJECT_RETENTION_DAYS } from '@/lib/data-retention'
 import { supabase } from '@/lib/supabase'
 import { BrandLogo } from '@/components/brand-logo'
 import { SupportLink } from '@/components/support-link'
@@ -654,6 +655,12 @@ export default function LoginPage() {
                   <p className="text-xs text-muted-dim mt-2">
                     Next step: choose a subscription plan, then your account is
                     created.
+                  </p>
+                  <p className="text-xs text-muted mt-2 leading-relaxed">
+                    LedgerStack is for active jobs, not long-term file storage.
+                    Export or back up completed work — completed projects are
+                    deleted automatically after {COMPLETED_PROJECT_RETENTION_DAYS}{' '}
+                    days.
                   </p>
                 </div>
               )}

@@ -17,6 +17,7 @@ import { isUnlimited } from '@/lib/plan-entitlements'
 import { linkClientAccessByEmail } from '@/lib/auth-signup'
 import { loadUserAccess } from '@/lib/load-access'
 import type { UserAccess } from '@/lib/roles'
+import { COMPLETED_PROJECT_RETENTION_DAYS } from '@/lib/data-retention'
 import { supabase } from '@/lib/supabase'
 
 type Project = {
@@ -499,6 +500,12 @@ export default function ProjectsPage() {
                     required
                   />
                 </label>
+
+                <p className="text-xs text-muted leading-relaxed">
+                  Each project is for active work. Export or back up when jobs are
+                  done — completed projects are deleted automatically after{' '}
+                  {COMPLETED_PROJECT_RETENTION_DAYS} days.
+                </p>
 
                 <button
                   type="button"
