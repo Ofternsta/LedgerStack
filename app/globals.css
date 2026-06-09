@@ -473,13 +473,14 @@ button {
     justify-content: center;
   }
 
-  /* Fixed FABs: sit above AppShell mobile footer (Questions + legal links). */
-  .fixed-bottom-fab {
-    bottom: calc(max(env(safe-area-inset-bottom, 0px), 1rem) + 5.5rem);
+  /* Leave bottom-right corner for fixed FABs; keep footer text visible. */
+  .app-mobile-footer-safe-fab {
+    padding-bottom: calc(max(env(safe-area-inset-bottom, 0px), 1rem) + 3.25rem);
   }
 
-  .fixed-bottom-fab-form {
-    bottom: calc(max(env(safe-area-inset-bottom, 0px), 1rem) + 3.75rem + 5.5rem);
+  .app-mobile-footer-safe-fab__content {
+    margin-inline: auto;
+    max-width: calc(100% - 5.5rem);
   }
 }
 

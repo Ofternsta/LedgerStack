@@ -37,11 +37,13 @@ export function AppShell({
         </main>
       </div>
 
-      <footer className="md:hidden border-t border-border bg-background safe-bottom shrink-0 px-2 py-4 text-center text-sm text-muted space-y-2 w-full">
-        <p>
-          Questions? <SupportLink />
-        </p>
-        <MobileLegalFooterNav access={access} />
+      <footer className="md:hidden app-mobile-footer-safe-fab border-t border-border bg-background safe-bottom shrink-0 px-2 pt-4 text-center text-sm text-muted w-full">
+        <div className="app-mobile-footer-safe-fab__content space-y-2">
+          <p>
+            Questions? <SupportLink />
+          </p>
+          <MobileLegalFooterNav access={access} />
+        </div>
       </footer>
     </div>
   )
