@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { StripeEmbeddedCheckout } from '@/components/stripe-embedded-checkout'
 import { VerifyEmailBeforeCheckout } from '@/components/verify-email-before-checkout'
 import { BrandLogo } from '@/components/brand-logo'
+import { PublicSiteFooter } from '@/components/public-site-footer'
 import { BILLING_PLANS, type BillingPlanId } from '@/lib/stripe-config'
 import {
   loadAdminSignupDraft,
@@ -395,6 +396,7 @@ function CheckoutContent() {
           </Link>
         )}
       </main>
+      <PublicSiteFooter />
     </div>
   )
 }

@@ -122,6 +122,15 @@ export const GUIDE_PARTS: GuidePart[] = [
           'On Professional+, approved staff see a message launcher (top right) on most app pages. It opens direct messages and group chats with your org roster, separate from job-scoped project messages on the project page.',
         ],
       },
+      {
+        id: 'phones-tablets',
+        title: 'Phones & tablets',
+        bullets: [
+          'On phones the sidebar stays collapsed to icons only. Settings sits above Sign out.',
+          'Privacy Policy, Terms of Service, and Billing (admins) appear in the app footer on phones, with Questions? support@ledgerstack.org above them.',
+          'On the public site (home, how-to, privacy, terms, login), the same support line and legal links appear in the page footer.',
+        ],
+      },
     ],
   },
   {
@@ -134,6 +143,7 @@ export const GUIDE_PARTS: GuidePart[] = [
         paragraphs: [
           'Admins see all organization projects, can create new ones (customer name, address, required job description), and delete projects with confirmation. A plan banner appears when you hit the active project limit.',
           'Workers see only assigned projects. Clients see only shared projects.',
+          'On phones, Create project stays in the bottom-right corner; the footer leaves room so Questions? and the legal links stay readable.',
         ],
       },
       {
@@ -157,6 +167,7 @@ export const GUIDE_PARTS: GuidePart[] = [
         paragraphs: [
           'The left column lists jobs for this project. Each row shows job description and current status. Admins use Add a job to add another job with its own description. Select a job to work on its timeline, files, and status controls.',
           'Admins advance jobs through customizable stages (default: Inspection → Documentation → Estimate Sent → Approved → In Progress → Completed). Completing a job triggers a confirmation that explains retention. Workers and clients see status but cannot change it.',
+          'On phones, pick the active job from the dropdown (description only), with Add a job and Delete job side by side below it. The active job card shows the description; status appears on larger screens.',
         ],
       },
       {
@@ -166,6 +177,7 @@ export const GUIDE_PARTS: GuidePart[] = [
           'The job intelligence panel (admins only) can generate a categorized AI project summary (status, timeline, messages, notes, calendar, documents), refresh an AI-built timeline, and export a formatted PDF or HTML report. Exports start on Starter (PDF); full job packets and project archives are on Professional+.',
           'The job timeline panel shows the latest update only, with Refresh timeline to regenerate and View full timeline for the complete history on a dedicated page.',
           'Monthly AI usage is capped by plan and shown on project pages. Uploads can be auto-categorized and summarized; admins can re-scan a file, edit its summary, rename its display name, or move it to another category from the expanded file detail view (Rename is next to Download).',
+          'On phones, Download and Export PDF save to your device (Share sheet on iPhone, Downloads on most Android browsers) instead of opening only an in-browser preview.',
         ],
       },
       {
@@ -209,13 +221,15 @@ export const GUIDE_PARTS: GuidePart[] = [
         paragraphs: [
           'Each project has a monthly calendar. On the project page, the schedule panel is a read-only preview — use Full calendar → to manage events. Workers with calendar permission may mark events complete from the project preview.',
           'On Calendar (/calendar), pick a project first, then use the monthly grid (previous/next month) to view days with events. Admins click a day to add inspections, deadlines, reminders, and other event types, and may delete events from this page. Mark events complete with the checkbox on each item.',
+          'On phones, calendar days are square; days with events get a green outline and show only the date (tap a day for details). On the project page, Schedule & calendar is a toggle button under the active job (with Project notes above it).',
         ],
       },
       {
         id: 'messages-notes',
         title: 'Project messages & internal notes (Professional+)',
         paragraphs: [
-          'Project messages are a job-scoped chat thread for the team on that project. Internal notes are staff-only: post updates or status notes, with @mentions for colleagues. Clients never see either.',
+          'Project messages are a job-scoped chat thread for the team on that project. Internal notes are staff-only team log entries. Clients never see either.',
+          'On phones, Project notes opens from a toggle button under the active job (above Schedule & calendar). Tap again to hide.',
         ],
       },
       {

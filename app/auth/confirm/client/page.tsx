@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { BrandLogo } from '@/components/brand-logo'
+import { PublicSiteFooter } from '@/components/public-site-footer'
 import { supabase } from '@/lib/supabase'
 import { LedgerStackLoader } from '@/components/ledgerstack-loader'
 
@@ -102,6 +103,7 @@ function ConfirmEmailClient() {
           </>
         )}
       </main>
+      <PublicSiteFooter />
     </div>
   )
 }

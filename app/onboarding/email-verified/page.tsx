@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { BrandLogo } from '@/components/brand-logo'
+import { PublicSiteFooter } from '@/components/public-site-footer'
 import { loadAdminSignupDraft } from '@/lib/signup-draft'
 import { signupCheckoutPath } from '@/lib/auth-redirect'
 import { BILLING_PLANS, type BillingPlanId } from '@/lib/stripe-config'
@@ -133,6 +134,7 @@ function EmailVerifiedContent() {
           </p>
         </section>
       </main>
+      <PublicSiteFooter />
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { BrandLogo } from '@/components/brand-logo'
+import { PublicSiteFooter } from '@/components/public-site-footer'
 import { SupportLink } from '@/components/support-link'
 import {
   LEGAL_LAST_UPDATED,
@@ -39,28 +40,12 @@ export function LegalDocumentLayout({
           {children}
         </article>
 
-        <p className="mt-10 text-sm text-muted">
+        <p className="mt-10 text-sm text-muted hidden md:block">
           Questions? <SupportLink className="text-brand-bright hover:underline" />
         </p>
       </main>
 
-      <footer className="border-t border-border py-6 text-center text-sm text-muted">
-        <Link href="/how-to" className="hover:text-brand-bright px-2">
-          How-to guide
-        </Link>
-        <span aria-hidden>·</span>
-        <Link href="/privacy" className="hover:text-brand-bright px-2">
-          Privacy Policy
-        </Link>
-        <span aria-hidden>·</span>
-        <Link href="/terms" className="hover:text-brand-bright px-2">
-          Terms of Service
-        </Link>
-        <span aria-hidden>·</span>
-        <Link href="/" className="hover:text-brand-bright px-2">
-          Home
-        </Link>
-      </footer>
+      <PublicSiteFooter />
     </div>
   )
 }

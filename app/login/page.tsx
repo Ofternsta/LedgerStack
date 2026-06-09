@@ -21,6 +21,7 @@ import { COMPLETED_PROJECT_RETENTION_DAYS } from '@/lib/data-retention'
 import { supabase } from '@/lib/supabase'
 import { BrandLogo } from '@/components/brand-logo'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { PublicSiteFooter } from '@/components/public-site-footer'
 import { SupportLink } from '@/components/support-link'
 import { SUPPORT_EMAIL } from '@/lib/support'
 import {
@@ -960,19 +961,11 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="mt-8 text-center text-sm text-muted">
-          Need help? <SupportLink className="text-brand-bright hover:underline" />
-        </p>
-        <p className="mt-3 text-center text-xs text-muted-dim">
-          <Link href="/privacy" className="hover:text-brand-bright">
-            Privacy Policy
-          </Link>
-          {' · '}
-          <Link href="/terms" className="hover:text-brand-bright">
-            Terms of Service
-          </Link>
+        <p className="mt-8 text-center text-sm text-muted hidden md:block">
+          Questions? <SupportLink className="text-brand-bright hover:underline" />
         </p>
       </main>
+      <PublicSiteFooter />
     </div>
   )
 }

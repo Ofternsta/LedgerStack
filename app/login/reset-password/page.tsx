@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { BrandLogo } from '@/components/brand-logo'
+import { PublicSiteFooter } from '@/components/public-site-footer'
 import {
   PASSWORD_MIN_LENGTH,
   PASSWORD_REQUIREMENTS_TEXT,
@@ -141,6 +142,7 @@ export default function ResetPasswordPage() {
           </Link>
         </form>
       </main>
+      <PublicSiteFooter />
     </div>
   )
 }

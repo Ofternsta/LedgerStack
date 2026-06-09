@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { BrandLogo } from '@/components/brand-logo'
 import { Reveal } from '@/components/marketing-motion'
+import { PublicSiteFooter } from '@/components/public-site-footer'
 import { SupportLink } from '@/components/support-link'
 import {
   PLAN_ENTITLEMENTS,
@@ -359,10 +360,15 @@ export function MarketingHome() {
       </main>
 
       <footer className="border-t border-border bg-background">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted">
+        <div className="md:hidden">
+          <PublicSiteFooter className="border-t-0" />
+        </div>
+        <div className="hidden md:block max-w-6xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted">
           <BrandLogo href="/" size="sm" showWordmark />
           <div className="flex flex-wrap items-center justify-center sm:justify-end gap-4 sm:gap-6">
-            <SupportLink className="hover:text-brand-bright transition-colors duration-200" />
+            <p>
+              Questions? <SupportLink className="hover:text-brand-bright transition-colors duration-200" />
+            </p>
             <Link href="/how-to" className="hover:text-brand-bright transition-colors duration-200">
               How-to
             </Link>
