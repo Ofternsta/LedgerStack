@@ -15,6 +15,7 @@ import {
 } from '@/lib/roles'
 import { parseWorkerPermissions } from '@/lib/worker-permissions'
 import { BILLING_PLANS } from '@/lib/stripe-config'
+import { profileDisplayFields } from '@/lib/load-access-profile'
 
 export async function loadUserAccessServer(): Promise<{
   userId: string | null
@@ -30,7 +31,7 @@ export async function loadUserAccessServer(): Promise<{
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, full_name')
     .eq('id', user.id)
     .maybeSingle()
 
@@ -48,6 +49,7 @@ export async function loadUserAccessServer(): Promise<{
   let inviteCode: string | null = null
   let workerStatus: WorkerStatus = 'none'
   let workerPermissions = null
+  let workerJobTitle: string | null = null
 
   if (role === 'admin') {
     const { data: org } = await supabase
@@ -65,7 +67,7 @@ export async function loadUserAccessServer(): Promise<{
     const { data: membership } = await supabase
       .from('organization_members')
       .select(
-        'status, organization_id, can_upload, can_delete, can_add_events, can_view_files, can_download_files, organizations(name, invite_code)'
+        'status, organization_id, job_title, can_upload, can_delete, can_add_events, can_view_files, can_download_files, organizations(name, invite_code)'
       )
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
@@ -80,6 +82,7 @@ export async function loadUserAccessServer(): Promise<{
     organizationId = membership?.organization_id ?? null
     organizationName = org?.name ?? null
     inviteCode = org?.invite_code ?? null
+    workerJobTitle = membership?.job_title ?? null
     workerStatus =
       membership?.status === 'approved'
         ? 'approved'
@@ -114,10 +117,18 @@ export async function loadUserAccessServer(): Promise<{
     }
   }
 
+  const { displayName, jobTitle } = profileDisplayFields({
+    role,
+    fullName: profile.full_name,
+    workerJobTitle,
+  })
+
   return {
     userId: user.id,
     access: buildAccess({
       role,
+      displayName,
+      jobTitle,
       organizationId,
       organizationName,
       inviteCode,

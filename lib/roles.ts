@@ -11,6 +11,8 @@ export type WorkerStatus = 'pending' | 'approved' | 'none'
 
 export type UserAccess = {
   role: AppRole
+  displayName: string | null
+  jobTitle: string | null
   organizationId: string | null
   organizationName: string | null
   inviteCode: string | null
@@ -61,6 +63,8 @@ export type UserAccess = {
 
 export function buildAccess(input: {
   role: AppRole
+  displayName?: string | null
+  jobTitle?: string | null
   organizationId: string | null
   organizationName?: string | null
   inviteCode?: string | null
@@ -153,6 +157,8 @@ export function buildAccess(input: {
 
   return {
     role,
+    displayName: input.displayName?.trim() || null,
+    jobTitle: input.jobTitle?.trim() || null,
     organizationId,
     organizationName: input.organizationName ?? null,
     inviteCode: input.inviteCode ?? null,

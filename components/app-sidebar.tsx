@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { UserAccess } from '@/lib/roles'
@@ -95,8 +95,8 @@ function NavIcon({ id }: { id: NavIconId }) {
     case 'settings':
       return (
         <svg {...common}>
-          <circle cx="12" cy="12" r="3" />
-          <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+          <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
         </svg>
       )
     case 'organization':
@@ -198,12 +198,6 @@ export function AppSidebar({
       icon: 'analytics',
     },
     {
-      href: '/settings/account',
-      label: 'Settings',
-      visible: true,
-      icon: 'settings',
-    },
-    {
       href: '/settings/organization',
       label: 'Organization',
       visible: access.canManageSystemSettings,
@@ -228,14 +222,19 @@ export function AppSidebar({
     return pathname === href || pathname.startsWith(`${href}/`)
   }
 
+  const settingsItem: NavItem = {
+    href: '/settings/account',
+    label: 'Settings',
+    visible: true,
+    icon: 'settings',
+  }
+
   const visibleItems = items.filter((item) => item.visible)
-  const mainItems = visibleItems.filter((item) => item.href !== '/settings/users')
-  const accountsItem = visibleItems.find((item) => item.href === '/settings/users')
-  const backupsIndex = mainItems.findIndex(
-    (item) => item.href === '/settings/backups'
+  const mainItems = visibleItems.filter(
+    (item) =>
+      item.href !== '/settings/users' && item.href !== '/settings/account'
   )
-  const signOutAfterIndex =
-    backupsIndex >= 0 ? backupsIndex : Math.max(0, mainItems.length - 1)
+  const accountsItem = visibleItems.find((item) => item.href === '/settings/users')
 
   function linkClass(active: boolean, admin?: boolean) {
     let cls = 'app-sidebar-link'
@@ -324,14 +323,10 @@ export function AppSidebar({
       )}
 
       <nav className="py-2 space-y-0.5 flex-1 overflow-y-auto" aria-label="App">
-        {mainItems.map((item, index) => (
-          <Fragment key={item.href}>
-            {navLink(item)}
-            {index === signOutAfterIndex && signOutButton}
-          </Fragment>
-        ))}
-        {mainItems.length === 0 && signOutButton}
+        {mainItems.map((item) => navLink(item))}
         {accountsItem && navLink(accountsItem)}
+        {settingsItem.visible && navLink(settingsItem)}
+        {signOutButton}
       </nav>
     </aside>
   )

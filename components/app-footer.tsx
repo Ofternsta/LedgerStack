@@ -16,7 +16,7 @@ export function AppFooter({ showDataRetention = false }: AppFooterProps) {
         />
       )}
       <LegalNotice id="security" className="text-center [&_p]:text-center" />
-      <p>
+      <p className="hidden md:block">
         Questions? <SupportLink />
       </p>
     </footer>
