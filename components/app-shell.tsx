@@ -31,7 +31,7 @@ export function AppShell({
     <div className="min-h-dvh flex flex-col">
       <header className="border-b border-border bg-background safe-top shrink-0 w-full">
         <div className="safe-x px-4 sm:px-6 lg:px-8 py-3 w-full flex items-center gap-4">
-          <div className="min-w-0 flex-1 md:flex-none md:shrink-0 md:w-52">
+          <div className="min-w-0 flex-1 md:flex-none md:shrink-0 md:w-[calc(13rem+2in)]">
             <h1 className="text-xl sm:text-2xl font-bold leading-tight text-[var(--header-title)]">
               LedgerStack
             </h1>
