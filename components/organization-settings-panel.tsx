@@ -215,6 +215,9 @@ export function OrganizationSettingsPanel() {
 
                   {expanded && (
                     <div className="px-4 pb-4 space-y-4 border-t border-border pt-4">
+                      <ProjectWorkerPanel projectId={p.id} />
+                      <ProjectClientPanel projectId={p.id} />
+
                       <div className="space-y-2">
                         <label className="block text-sm">
                           <span className="text-muted">Project name</span>
@@ -262,8 +265,6 @@ export function OrganizationSettingsPanel() {
 
                       <ProjectStatusWorkflowEditor projectId={p.id} />
                       <ProjectFileCategoriesEditor projectId={p.id} />
-                      <ProjectClientPanel projectId={p.id} />
-                      <ProjectWorkerPanel projectId={p.id} />
                     </div>
                   )}
                 </li>

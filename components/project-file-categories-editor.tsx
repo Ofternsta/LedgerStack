@@ -15,6 +15,8 @@ type Props = {
 
 export function ProjectFileCategoriesEditor({ projectId, onSaved }: Props) {
   const [categories, setCategories] = useState<FileCategory[]>([])
+  const [draft, setDraft] = useState<FileCategory[]>([])
+  const [editing, setEditing] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -25,25 +27,26 @@ export function ProjectFileCategoriesEditor({ projectId, onSaved }: Props) {
       setLoading(true)
       const res = await fetch(`/api/projects/${projectId}/file-categories`)
       const payload = await res.json().catch(() => ({}))
-      if (res.ok && payload.categories) {
-        setCategories(payload.categories as FileCategory[])
-      } else {
-        setCategories(defaultFileCategories())
-      }
+      const loaded = res.ok && payload.categories
+        ? (payload.categories as FileCategory[])
+        : defaultFileCategories()
+      setCategories(loaded)
+      setDraft(loaded.map((c) => ({ ...c })))
+      setEditing(false)
       setLoading(false)
     }
     void load()
   }, [projectId])
 
   function updateLabel(index: number, label: string) {
-    setCategories((prev) =>
+    setDraft((prev) =>
       prev.map((c, i) => (i === index ? { ...c, label } : c))
     )
   }
 
   function addCategory() {
-    if (categories.length >= MAX_FILE_CATEGORIES) return
-    setCategories((prev) => {
+    if (draft.length >= MAX_FILE_CATEGORIES) return
+    setDraft((prev) => {
       const keys = new Set(prev.map((c) => c.key))
       const label = `Category ${prev.length + 1}`
       return [...prev, { key: slugifyFileCategoryKey(label, keys), label }]
@@ -51,12 +54,24 @@ export function ProjectFileCategoriesEditor({ projectId, onSaved }: Props) {
   }
 
   function removeCategory(index: number) {
-    if (categories.length <= 1) return
-    setCategories((prev) => prev.filter((_, i) => i !== index))
+    if (draft.length <= 1) return
+    setDraft((prev) => prev.filter((_, i) => i !== index))
   }
 
-  async function save(e: React.FormEvent) {
-    e.preventDefault()
+  function startEdit() {
+    setDraft(categories.map((c) => ({ ...c })))
+    setEditing(true)
+    setError(null)
+    setMessage(null)
+  }
+
+  function cancelEdit() {
+    setDraft(categories.map((c) => ({ ...c })))
+    setEditing(false)
+    setError(null)
+  }
+
+  async function save() {
     setSaving(true)
     setError(null)
     setMessage(null)
@@ -64,7 +79,7 @@ export function ProjectFileCategoriesEditor({ projectId, onSaved }: Props) {
     const res = await fetch(`/api/projects/${projectId}/file-categories`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ categories }),
+      body: JSON.stringify({ categories: draft }),
     })
     const payload = await res.json().catch(() => ({}))
     setSaving(false)
@@ -74,7 +89,10 @@ export function ProjectFileCategoriesEditor({ projectId, onSaved }: Props) {
       return
     }
 
-    setCategories(payload.categories as FileCategory[])
+    const saved = payload.categories as FileCategory[]
+    setCategories(saved)
+    setDraft(saved.map((c) => ({ ...c })))
+    setEditing(false)
     setMessage('File categories saved.')
     onSaved?.()
   }
@@ -84,56 +102,92 @@ export function ProjectFileCategoriesEditor({ projectId, onSaved }: Props) {
   }
 
   return (
-    <form onSubmit={save} className="space-y-3 border border-border rounded-lg p-3">
-      <h3 className="text-sm font-semibold text-foreground">File categories</h3>
-      <p className="text-xs text-muted">
-        Customize document folders for this project. Uploads and AI sorting use
-        these names.
-      </p>
+    <section className="space-y-3 border border-border rounded-lg p-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">File categories</h3>
+          <p className="text-xs text-muted mt-0.5">
+            Customize document folders for this project. Uploads and AI sorting use
+            these names.
+          </p>
+        </div>
+        {!editing && (
+          <button
+            type="button"
+            onClick={startEdit}
+            className="btn-secondary text-sm px-3 py-2 min-h-[40px] shrink-0"
+          >
+            Edit
+          </button>
+        )}
+      </div>
 
-      <ul className="space-y-2">
-        {categories.map((cat, index) => (
-          <li key={cat.key} className="flex gap-2 items-center">
-            <span className="text-xs text-muted-dim w-5 shrink-0">{index + 1}</span>
-            <input
-              type="text"
-              value={cat.label}
-              onChange={(e) => updateLabel(index, e.target.value)}
-              className="input flex-1 text-sm"
-              maxLength={48}
-            />
+      {editing ? (
+        <>
+          <ul className="space-y-2">
+            {draft.map((cat, index) => (
+              <li key={cat.key} className="flex gap-2 items-center">
+                <span className="text-xs text-muted-dim w-5 shrink-0">
+                  {index + 1}
+                </span>
+                <input
+                  type="text"
+                  value={cat.label}
+                  onChange={(e) => updateLabel(index, e.target.value)}
+                  className="input flex-1 text-sm"
+                  maxLength={48}
+                />
+                <button
+                  type="button"
+                  disabled={draft.length <= 1}
+                  onClick={() => removeCategory(index)}
+                  className="text-xs text-red-600 px-2 min-h-[40px] disabled:opacity-40"
+                >
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          {draft.length < MAX_FILE_CATEGORIES && (
             <button
               type="button"
-              disabled={categories.length <= 1}
-              onClick={() => removeCategory(index)}
-              className="text-xs text-red-600 px-2 min-h-[40px] disabled:opacity-40"
+              onClick={addCategory}
+              className="text-sm text-brand-bright font-medium min-h-[40px]"
             >
-              Remove
+              + Add category
             </button>
-          </li>
-        ))}
-      </ul>
+          )}
 
-      {categories.length < MAX_FILE_CATEGORIES && (
-        <button
-          type="button"
-          onClick={addCategory}
-          className="text-sm text-brand-bright font-medium min-h-[40px]"
-        >
-          + Add category
-        </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={saving}
+              onClick={() => void save()}
+              className="btn-primary text-sm px-3 py-2 min-h-[40px]"
+            >
+              {saving ? 'Saving…' : 'Save'}
+            </button>
+            <button
+              type="button"
+              disabled={saving}
+              onClick={cancelEdit}
+              className="btn-secondary text-sm px-3 py-2 min-h-[40px]"
+            >
+              Cancel
+            </button>
+          </div>
+        </>
+      ) : (
+        <ul className="text-sm text-muted space-y-1 list-disc pl-5">
+          {categories.map((cat) => (
+            <li key={cat.key}>{cat.label}</li>
+          ))}
+        </ul>
       )}
 
       {error && <p className="text-xs text-red-600">{error}</p>}
-      {message && <p className="text-xs text-green-700">{message}</p>}
-
-      <button
-        type="submit"
-        disabled={saving}
-        className="btn-secondary text-sm px-3 py-2 min-h-[40px]"
-      >
-        {saving ? 'Saving…' : 'Save categories'}
-      </button>
-    </form>
+      {message && !editing && <p className="text-xs text-green-700">{message}</p>}
+    </section>
   )
 }
