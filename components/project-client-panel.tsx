@@ -8,6 +8,7 @@ import { RequestSignatureModal } from '@/components/request-signature-modal'
 type AccessRow = {
   id: string
   client_email: string
+  client_display_name: string
   status: string
   approved_at: string | null
 }
@@ -146,12 +147,15 @@ export function ProjectClientPanel({ projectId }: { projectId: string }) {
                     onClick={() => toggleClientFiles(r.id)}
                     className="min-w-0 flex-1 text-left min-h-[44px]"
                   >
-                    <span className="break-all font-medium text-foreground">
+                    <p className="text-base font-semibold text-foreground leading-snug">
+                      {r.client_display_name}
+                    </p>
+                    <p className="text-xs text-muted-dim break-all mt-0.5">
                       {r.client_email}
-                    </span>
-                    <span className="text-green-700 ml-2 text-xs font-medium capitalize">
+                    </p>
+                    <p className="text-green-700 text-xs font-medium capitalize mt-1">
                       {r.status}
-                    </span>
+                    </p>
                     <span className="block text-xs text-muted-dim mt-0.5">
                       {isExpanded
                         ? 'Hide shared files'

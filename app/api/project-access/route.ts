@@ -1,8 +1,60 @@
 import { NextResponse } from 'next/server'
+import { getAuthUserIdByEmail } from '@/lib/auth-user-lookup'
+import { clientAccessDisplayName } from '@/lib/client-access-display'
 import { requireOrgPlanFeature } from '@/lib/plan-guard'
 import { requireAuth } from '@/lib/require-auth'
 import { grantClientProjectAccessServer } from '@/lib/link-client-access-server'
 import { createServiceClient } from '@/lib/supabase/service'
+
+type ClientAccessRow = {
+  id: string
+  client_email: string
+  user_id: string | null
+  status: string
+  created_at: string
+  approved_at: string | null
+}
+
+async function enrichClientAccessRows(rows: ClientAccessRow[]) {
+  if (!rows.length) return []
+
+  const service = createServiceClient()
+  const resolvedUserIdByRow = new Map<string, string | null>()
+  const userIds = new Set<string>()
+
+  await Promise.all(
+    rows.map(async (row) => {
+      let uid = row.user_id
+      if (!uid) {
+        uid = await getAuthUserIdByEmail(row.client_email)
+      }
+      resolvedUserIdByRow.set(row.id, uid)
+      if (uid) userIds.add(uid)
+    })
+  )
+
+  const profileById = new Map<string, string | null>()
+  if (userIds.size > 0) {
+    const { data: profiles } = await service
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', [...userIds])
+
+    for (const profile of profiles || []) {
+      profileById.set(profile.id, profile.full_name)
+    }
+  }
+
+  return rows.map((row) => {
+    const uid = resolvedUserIdByRow.get(row.id) ?? null
+    const fullName = uid ? profileById.get(uid) ?? null : null
+
+    return {
+      ...row,
+      client_display_name: clientAccessDisplayName(Boolean(uid), fullName),
+    }
+  })
+}
 
 /** GET client access rows for a project (admin only) */
 export async function GET(req: Request) {
@@ -48,7 +100,8 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json({ access: rows || [] })
+  const access = await enrichClientAccessRows((rows || []) as ClientAccessRow[])
+  return NextResponse.json({ access })
 }
 
 /** POST grant client view access { project_id, client_email } */
