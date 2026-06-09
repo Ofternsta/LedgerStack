@@ -22,6 +22,7 @@ type Props = {
   claimId?: string | null
   currentUserId: string | null
   canPost: boolean
+  variant?: 'panel' | 'sidebar'
 }
 
 function kindLabel(kind: string) {
@@ -64,6 +65,7 @@ export function InternalNotesPanel({
   claimId,
   currentUserId,
   canPost,
+  variant = 'panel',
 }: Props) {
   const [notes, setNotes] = useState<Note[]>([])
   const [roster, setRoster] = useState<RosterMember[]>([])
@@ -142,10 +144,18 @@ export function InternalNotesPanel({
     setSaving(false)
   }
 
+  const isSidebar = variant === 'sidebar'
+  const Wrapper = isSidebar ? 'div' : 'section'
+  const wrapperClass = isSidebar
+    ? 'flex flex-col h-full min-h-0 gap-3'
+    : 'border border-border rounded-xl p-4 bg-surface-elevated space-y-3'
+
   return (
-    <section className="border border-border rounded-xl p-4 bg-surface-elevated space-y-3">
-      <div>
-        <h2 className="font-bold text-lg">Internal notes &amp; team log</h2>
+    <Wrapper className={wrapperClass}>
+      <div className={isSidebar ? 'shrink-0' : undefined}>
+        <h2 className={isSidebar ? 'font-bold text-foreground' : 'font-bold text-lg'}>
+          Project notes
+        </h2>
         <p className="text-sm text-muted mt-1">
           Worker notes, @mentions, status updates, and communication history.
           Clients cannot see this.
@@ -159,7 +169,10 @@ export function InternalNotesPanel({
       )}
 
       {canPost && (
-        <form onSubmit={submit} className="space-y-2 border border-gray-100 rounded-xl p-3 bg-surface">
+        <form
+          onSubmit={submit}
+          className="space-y-2 border border-gray-100 rounded-xl p-3 bg-surface shrink-0"
+        >
           <div className="flex flex-wrap gap-2">
             <select
               value={noteKind}
@@ -217,7 +230,9 @@ export function InternalNotesPanel({
       )}
 
       <div
-        className="border border-neutral-700 rounded-xl bg-neutral-900 max-h-[360px] overflow-y-auto divide-y divide-neutral-800"
+        className={`border border-neutral-700 rounded-xl bg-neutral-900 overflow-y-auto divide-y divide-neutral-800 ${
+          isSidebar ? 'flex-1 min-h-0' : 'max-h-[360px]'
+        }`}
         aria-live="polite"
       >
         {loading && (
@@ -256,12 +271,12 @@ export function InternalNotesPanel({
       <button
         type="button"
         onClick={load}
-        className="text-xs text-brand-bright font-medium min-h-[40px]"
+        className="text-xs text-brand-bright font-medium min-h-[40px] shrink-0"
       >
         Refresh log
       </button>
 
-      <LegalNotice id="worker-audit" />
-    </section>
+      {!isSidebar && <LegalNotice id="worker-audit" />}
+    </Wrapper>
   )
 }

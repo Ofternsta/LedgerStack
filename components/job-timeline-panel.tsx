@@ -17,6 +17,7 @@ type JobTimelinePanelProps = {
   canGenerate: boolean
   aiSummariesLimit: number
   aiSummariesUsed: number
+  embedded?: boolean
 }
 
 function eventSortTime(e: TimelineEvent): number {
@@ -33,6 +34,7 @@ export function JobTimelinePanel({
   canGenerate,
   aiSummariesLimit,
   aiSummariesUsed,
+  embedded = false,
 }: JobTimelinePanelProps) {
   const [events, setEvents] = useState<TimelineEvent[]>([])
   const [loadingTimeline, setLoadingTimeline] = useState(false)
@@ -94,10 +96,23 @@ export function JobTimelinePanel({
     setLoadingTimeline(false)
   }
 
+  const Wrapper = embedded ? 'div' : 'section'
+  const wrapperClass = embedded
+    ? 'space-y-4'
+    : 'border border-border rounded-xl p-4 bg-surface-elevated space-y-4'
+
   return (
-    <section className="border border-border rounded-xl p-4 bg-surface-elevated space-y-4">
+    <Wrapper className={wrapperClass}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-bold text-lg text-foreground">Job timeline</h2>
+        <h2
+          className={
+            embedded
+              ? 'text-sm font-bold uppercase tracking-wide text-muted-dim'
+              : 'font-bold text-lg text-foreground'
+          }
+        >
+          Job timeline
+        </h2>
         {canGenerate && (
           <button
             type="button"
@@ -162,6 +177,6 @@ export function JobTimelinePanel({
           </div>
         )}
       </div>
-    </section>
+    </Wrapper>
   )
 }

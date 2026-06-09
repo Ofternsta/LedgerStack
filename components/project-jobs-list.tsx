@@ -251,8 +251,8 @@ export function ProjectJobsList({
 
   return (
     <>
-      <aside className="hidden lg:block lg:col-span-3 card p-3">
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+      <aside className="hidden lg:flex lg:flex-col w-full min-h-0 h-full shrink-0">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3 px-1">
           <h2 className="font-bold text-foreground">Jobs</h2>
           {canAddJob && (
             <button
@@ -268,9 +268,9 @@ export function ProjectJobsList({
           <p className="text-sm alert-error rounded-lg p-2 mb-2">{deleteError}</p>
         )}
         {jobs.length === 0 ? (
-          <p className="text-sm text-muted-dim">No jobs on this project yet.</p>
+          <p className="text-sm text-muted-dim px-1">No jobs on this project yet.</p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-2 flex-1 min-h-0 overflow-y-auto px-1 pb-2">
             {jobs.map((job) => {
               const isSelected = selectedId === job.id
               return (
@@ -303,7 +303,7 @@ export function ProjectJobsList({
             type="button"
             onClick={deleteSelectedJob}
             disabled={deleting}
-            className="mt-3 w-full text-sm border border-red-300 text-red-800 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-lg min-h-[40px] disabled:opacity-50"
+            className="mt-3 w-full text-sm border border-red-300 text-red-800 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-lg min-h-[40px] disabled:opacity-50 shrink-0"
           >
             {deleting ? 'Deleting…' : 'Delete job'}
           </button>

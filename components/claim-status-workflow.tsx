@@ -23,6 +23,7 @@ type Props = {
   workflow: StatusStage[]
   canEdit: boolean
   showReadOnlyHint?: boolean
+  embedded?: boolean
   onStatusChange: (statusKey: string) => void
   onMarkedCompleted?: () => void
 }
@@ -34,6 +35,7 @@ export function ClaimStatusWorkflow({
   workflow,
   canEdit,
   showReadOnlyHint = true,
+  embedded = false,
   onStatusChange,
   onMarkedCompleted,
 }: Props) {
@@ -90,8 +92,13 @@ export function ClaimStatusWorkflow({
         ? 100
         : 0
 
+  const Wrapper = embedded ? 'div' : 'section'
+  const wrapperClass = embedded
+    ? 'space-y-3'
+    : 'border border-border rounded-xl p-4 bg-surface-elevated'
+
   return (
-    <section className="border border-border rounded-xl p-4 bg-surface-elevated">
+    <Wrapper className={wrapperClass}>
       <ConfirmDialog
         open={pendingKey === COMPLETED_STATUS_KEY}
         title="Mark job as completed?"
@@ -108,7 +115,15 @@ export function ClaimStatusWorkflow({
       />
 
       <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-        <h2 className="font-bold text-foreground">Job status</h2>
+        <h2
+          className={
+            embedded
+              ? 'text-sm font-bold uppercase tracking-wide text-muted-dim'
+              : 'font-bold text-foreground'
+          }
+        >
+          Job status
+        </h2>
         <span className="text-sm font-medium text-muted">{currentLabel}</span>
       </div>
 
@@ -164,6 +179,6 @@ export function ClaimStatusWorkflow({
       {error && <p className="text-sm text-red-400 mt-2">{error}</p>}
 
       <LegalNotice id="no-guarantee" className="mt-3" />
-    </section>
+    </Wrapper>
   )
 }

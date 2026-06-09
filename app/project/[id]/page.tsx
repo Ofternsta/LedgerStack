@@ -4,9 +4,8 @@ import { useEffect, useState } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { EvidenceFolders } from '@/components/evidence-folders'
 import { ProjectPageHeader } from '@/components/project-page-header'
-import { JobTimelinePanel } from '@/components/job-timeline-panel'
+import { JobStatusTimelinePanel } from '@/components/job-status-timeline-panel'
 import { ProjectAiExportSection } from '@/components/project-ai-export-section'
-import { ClaimStatusWorkflow } from '@/components/claim-status-workflow'
 import { ProjectArchivePanel } from '@/components/project-archive-panel'
 import {
   defaultFileCategories,
@@ -501,7 +500,39 @@ export default function ProjectPageClient() {
         backLabel="Projects"
       />
 
-      <main className="flex-1 safe-x px-4 py-4 max-w-5xl mx-auto w-full pb-8 safe-bottom space-y-4">
+      <div className="flex flex-1 min-h-0 w-full">
+        <div className="hidden lg:flex w-72 xl:w-80 shrink-0 border-r border-border bg-surface-elevated flex-col min-h-0 self-stretch overflow-hidden p-4">
+          <ProjectJobsList
+            jobs={claims}
+            projectId={id}
+            legacyProjectNotes={projectNotes}
+            workflow={statusWorkflow}
+            selectedId={selectedClaim?.id ?? null}
+            canAddJob={access.canCreateProject}
+            canDeleteJob={access.canCreateProject}
+            onJobAdded={(job) => {
+              const claim = job as Claim
+              setClaims((prev) => [...prev, claim])
+              setSelectedClaim(claim)
+              void fetchEvidence(claim.id)
+            }}
+            onJobDeleted={(jobId) => {
+              const remaining = claims.filter((c) => c.id !== jobId)
+              setClaims(remaining)
+              const next = remaining[0] ?? null
+              setSelectedClaim(next)
+              if (next) void fetchEvidence(next.id)
+              else setDocuments([])
+            }}
+            onSelect={(job) => {
+              const claim = claims.find((c) => c.id === job.id)
+              if (claim) setSelectedClaim(claim)
+            }}
+          />
+        </div>
+
+        <main className="flex-1 min-w-0 overflow-y-auto">
+          <div className="safe-x px-4 sm:px-6 py-4 w-full max-w-4xl mx-auto pb-8 safe-bottom space-y-4">
         {access.planName && access.role !== 'client' && (
           <p className="text-xs text-gray-600">
             {access.planName} plan
@@ -604,194 +635,171 @@ export default function ProjectPageClient() {
           />
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
-          <ProjectJobsList
-            jobs={claims}
+        <ProjectJobsList
+          variant="summary"
+          jobs={claims}
+          projectId={id}
+          legacyProjectNotes={projectNotes}
+          workflow={statusWorkflow}
+          selectedId={selectedClaim?.id ?? null}
+          onSelect={(job) => {
+            const claim = claims.find((c) => c.id === job.id)
+            if (claim) setSelectedClaim(claim)
+          }}
+        />
+
+        {configError && (
+          <p className="text-sm text-red-700 border border-red-200 bg-red-50 p-3 rounded-xl">
+            {configError}
+          </p>
+        )}
+
+        <JobStatusTimelinePanel
+          claimId={activeClaim.id}
+          projectId={id}
+          status={activeClaim.status}
+          workflow={statusWorkflow}
+          canEditStatus={access.canUpdateReportStatus}
+          showStatusReadOnlyHint={!isClientViewer}
+          onStatusChange={(next: string) => {
+            setClaims((prev) =>
+              prev.map((c) =>
+                c.id === activeClaim.id ? { ...c, status: next } : c
+              )
+            )
+            setSelectedClaim((c) =>
+              c?.id === activeClaim.id ? { ...c, status: next } : c
+            )
+            setTimelineRefreshKey((k) => k + 1)
+          }}
+          onMarkedCompleted={() => {
+            if (access.canArchiveProject) setArchivePrompt(true)
+          }}
+          jobLabel={activeClaim.client_name}
+          timelineRefreshKey={timelineRefreshKey}
+          canGenerateTimeline={access.canUpdateClaimInfo}
+          aiSummariesLimit={access.aiSummariesLimit}
+          aiSummariesUsed={access.aiSummariesUsed}
+          showTimeline={!isClientViewer}
+        />
+
+        {access.canViewCalendar && (
+          <ProjectSchedulePanel
             projectId={id}
-            legacyProjectNotes={projectNotes}
-            workflow={statusWorkflow}
-            selectedId={selectedClaim?.id ?? null}
-            canAddJob={access.canCreateProject}
-            canDeleteJob={access.canCreateProject}
-            onJobAdded={(job) => {
-              const claim = job as Claim
-              setClaims((prev) => [...prev, claim])
-              setSelectedClaim(claim)
-              void fetchEvidence(claim.id)
-            }}
-            onJobDeleted={(jobId) => {
-              const remaining = claims.filter((c) => c.id !== jobId)
-              setClaims(remaining)
-              const next = remaining[0] ?? null
-              setSelectedClaim(next)
-              if (next) void fetchEvidence(next.id)
-              else setDocuments([])
-            }}
-            onSelect={(job) => {
-              const claim = claims.find((c) => c.id === job.id)
-              if (claim) setSelectedClaim(claim)
-            }}
+            canMarkComplete={
+              access.canManageSchedule && access.canUpdateClaimInfo
+            }
+            canManageEvents={access.canManageSchedule}
           />
+        )}
 
-          <div className="lg:col-span-9 space-y-4">
-            <ProjectJobsList
-              variant="summary"
-              jobs={claims}
-              projectId={id}
-              legacyProjectNotes={projectNotes}
-              workflow={statusWorkflow}
-              selectedId={selectedClaim?.id ?? null}
-              onSelect={(job) => {
-                const claim = claims.find((c) => c.id === job.id)
-                if (claim) setSelectedClaim(claim)
-              }}
-            />
-            {configError && (
-              <p className="text-sm text-red-700 border border-red-200 bg-red-50 p-3 rounded-xl">
-                {configError}
-              </p>
+        {access.canUploadEvidence && (
+          <EvidenceUpload
+            uploading={uploading}
+            uploadMessage={uploadMessage}
+            uploadProgress={uploadProgress}
+            uploadProgressLabel={uploadProgressLabel}
+            onUpload={uploadFile}
+            onUploadMany={uploadMany}
+          />
+        )}
+
+        {access.canViewFiles ? (
+          <div id="project-documents" className="space-y-4">
+            {access.role === 'admin' && (
+              <AdminSignatureRequestsPanel projectId={id} />
             )}
 
-            <ClaimStatusWorkflow
+            {isClientViewer && <ClientSignaturesPanel projectId={id} />}
+
+            <input
+              className="input-field w-full"
+              placeholder="Search files, summaries, OCR text…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+
+            <EvidenceFolders
+              documents={filtered}
+              projectId={id}
               claimId={activeClaim.id}
-              projectId={id}
-              status={activeClaim.status}
-              workflow={statusWorkflow}
-              canEdit={access.canUpdateReportStatus}
-              showReadOnlyHint={!isClientViewer}
-              onStatusChange={(next: string) => {
-                setClaims((prev) =>
-                  prev.map((c) =>
-                    c.id === activeClaim.id ? { ...c, status: next } : c
-                  )
-                )
-                setSelectedClaim((c) =>
-                  c?.id === activeClaim.id ? { ...c, status: next } : c
-                )
-                setTimelineRefreshKey((k) => k + 1)
-              }}
-              onMarkedCompleted={() => {
-                if (access.canArchiveProject) setArchivePrompt(true)
-              }}
+              categories={fileCategories}
+              canEdit={access.canEditEvidenceSummary}
+              canDelete={access.canDeleteEvidence}
+              canDownload={access.canDownloadFiles}
+              canRescan={access.canUploadEvidence}
+              emptyMessage={
+                isClientViewer
+                  ? 'No documents have been shared with you yet. Your contractor will select files for you to view.'
+                  : undefined
+              }
+              focusFilePath={highlightFilePath}
+              onFocusFilePathHandled={() => setHighlightFilePath(null)}
+              onOpen={openFile}
+              onDelete={deleteFile}
+              onUpdated={() => fetchEvidence(activeClaim.id)}
             />
-
-            {access.canArchiveProject && (
-              <ProjectArchivePanel
-                projectId={id}
-                projectName={activeClaim.client_name}
-                jobCompleted={
-                  activeStatusKey !== null &&
-                  isCompletedStatus(activeStatusKey, statusWorkflow)
-                }
-                allJobsCompleted={allJobsCompleted}
-                canArchive
-                promptSave={archivePrompt}
-                onPromptDismiss={() => setArchivePrompt(false)}
-              />
-            )}
-
-            {!isClientViewer && (
-              <JobTimelinePanel
-                claimId={activeClaim.id}
-                projectId={id}
-                jobLabel={activeClaim.client_name}
-                timelineRefreshKey={timelineRefreshKey}
-                canGenerate={access.canUpdateClaimInfo}
-                aiSummariesLimit={access.aiSummariesLimit}
-                aiSummariesUsed={access.aiSummariesUsed}
-              />
-            )}
-
-            {access.canViewCalendar && (
-              <ProjectSchedulePanel
-                projectId={id}
-                canMarkComplete={
-                  access.canManageSchedule && access.canUpdateClaimInfo
-                }
-                canManageEvents={access.canManageSchedule}
-              />
-            )}
-
-            {access.canViewInternalNotes && (
-              <InternalNotesPanel
-                projectId={id}
-                claimId={activeClaim.id}
-                currentUserId={userId}
-                canPost={access.canUpdateClaimInfo}
-              />
-            )}
-
-            {access.canUploadEvidence && (
-              <EvidenceUpload
-                uploading={uploading}
-                uploadMessage={uploadMessage}
-                uploadProgress={uploadProgress}
-                uploadProgressLabel={uploadProgressLabel}
-                onUpload={uploadFile}
-                onUploadMany={uploadMany}
-              />
-            )}
-
-            {access.canViewFiles ? (
-              <div id="project-documents" className="space-y-4">
-                {access.role === 'admin' && (
-                  <AdminSignatureRequestsPanel projectId={id} />
-                )}
-
-                {isClientViewer && (
-                  <ClientSignaturesPanel projectId={id} />
-                )}
-
-                <input
-                  className="input-field w-full"
-                  placeholder="Search files, summaries, OCR text…"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-
-                <EvidenceFolders
-                  documents={filtered}
-                  projectId={id}
-                  claimId={activeClaim.id}
-                  categories={fileCategories}
-                  canEdit={access.canEditEvidenceSummary}
-                  canDelete={access.canDeleteEvidence}
-                  canDownload={access.canDownloadFiles}
-                  canRescan={access.canUploadEvidence}
-                  emptyMessage={
-                    isClientViewer
-                      ? 'No documents have been shared with you yet. Your contractor will select files for you to view.'
-                      : undefined
-                  }
-                  focusFilePath={highlightFilePath}
-                  onFocusFilePathHandled={() => setHighlightFilePath(null)}
-                  onOpen={openFile}
-                  onDelete={deleteFile}
-                  onUpdated={() => fetchEvidence(activeClaim.id)}
-                />
-              </div>
-            ) : (
-              <p className="text-sm text-muted border border-border rounded-xl p-4">
-                Your account cannot view project files. Contact your organization
-                admin if you need access.
-              </p>
-            )}
-
-            {!isClientViewer && (
-              <ProjectAiExportSection
-                claimId={activeClaim.id}
-                projectId={id}
-                jobLabel={activeClaim.client_name}
-                canGenerate={access.canUpdateClaimInfo}
-                canExportPdf={access.canExportPdf}
-                canExportHtml={access.canExportHtml}
-                aiSummariesLimit={access.aiSummariesLimit}
-                aiSummariesUsed={access.aiSummariesUsed}
-              />
-            )}
           </div>
-        </div>
-      </main>
+        ) : (
+          <p className="text-sm text-muted border border-border rounded-xl p-4">
+            Your account cannot view project files. Contact your organization
+            admin if you need access.
+          </p>
+        )}
+
+        {!isClientViewer && (
+          <ProjectAiExportSection
+            claimId={activeClaim.id}
+            projectId={id}
+            jobLabel={activeClaim.client_name}
+            canGenerate={access.canUpdateClaimInfo}
+            canExportPdf={access.canExportPdf}
+            canExportHtml={access.canExportHtml}
+            aiSummariesLimit={access.aiSummariesLimit}
+            aiSummariesUsed={access.aiSummariesUsed}
+          />
+        )}
+
+        {access.canArchiveProject && (
+          <ProjectArchivePanel
+            projectId={id}
+            projectName={activeClaim.client_name}
+            jobCompleted={
+              activeStatusKey !== null &&
+              isCompletedStatus(activeStatusKey, statusWorkflow)
+            }
+            allJobsCompleted={allJobsCompleted}
+            canArchive
+            promptSave={archivePrompt}
+            onPromptDismiss={() => setArchivePrompt(false)}
+          />
+        )}
+
+        {access.canViewInternalNotes && (
+          <div className="lg:hidden">
+            <InternalNotesPanel
+              projectId={id}
+              claimId={activeClaim.id}
+              currentUserId={userId}
+              canPost={access.canUpdateClaimInfo}
+            />
+          </div>
+        )}
+          </div>
+        </main>
+
+        {access.canViewInternalNotes && (
+          <aside className="hidden lg:flex w-80 xl:w-96 shrink-0 border-l border-border bg-surface-elevated flex-col min-h-0 self-stretch overflow-hidden p-4">
+            <InternalNotesPanel
+              variant="sidebar"
+              projectId={id}
+              claimId={activeClaim.id}
+              currentUserId={userId}
+              canPost={access.canUpdateClaimInfo}
+            />
+          </aside>
+        )}
+      </div>
 
       {!isClientViewer &&
         !access.workerBlockedByStaffLimit &&
