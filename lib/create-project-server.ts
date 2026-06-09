@@ -10,6 +10,7 @@ import {
   serializeProjectStatusWorkflow,
 } from '@/lib/project-status-workflow'
 import { assertCanCreateProject } from '@/lib/plan-enforcement'
+import { mapProjectListRow, type ProjectListRow } from '@/lib/project-job-count'
 import { createServiceClient } from '@/lib/supabase/service'
 
 export type CreateProjectInput = {
@@ -76,7 +77,7 @@ export async function createProjectForUser(
       status_workflow: serializeProjectStatusWorkflow(workflow),
       file_categories: serializeProjectFileCategories(fileCategories),
     })
-    .select('id, customer_name, project_address, notes, created_at')
+    .select('id, customer_name, project_address, notes, created_at, claims(count)')
     .single()
 
   if (projectError || !project) {
@@ -108,5 +109,5 @@ export async function createProjectForUser(
     }
   }
 
-  return { project }
+  return { project: mapProjectListRow(project as ProjectListRow) }
 }

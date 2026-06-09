@@ -11,7 +11,7 @@ import { PlanUpgradeBanner } from '@/components/plan-upgrade-banner'
 import { ClientSignatureBanner } from '@/components/client-signature-banner'
 import { AdminSignatureNotificationsBanner } from '@/components/admin-signature-notifications-banner'
 import { ProjectsEditPanel } from '@/components/projects-edit-panel'
-import { ProjectActiveDurationBadge } from '@/components/project-active-duration-badge'
+import { ProjectListCardContent } from '@/components/project-list-card-content'
 import { isUnlimited } from '@/lib/plan-entitlements'
 import { linkClientAccessByEmail } from '@/lib/auth-signup'
 import { loadUserAccess } from '@/lib/load-access'
@@ -25,6 +25,7 @@ type Project = {
   project_address: string
   notes?: string
   created_at?: string
+  job_count?: number
 }
 
 export default function ProjectsPage() {
@@ -150,7 +151,7 @@ export default function ProjectsPage() {
     const created = payload.project as Project | undefined
     if (created?.id) {
       setProjects((prev) => [
-        created,
+        { ...created, job_count: created.job_count ?? 1 },
         ...prev.filter((p) => p.id !== created.id),
       ])
     } else {
@@ -376,14 +377,13 @@ export default function ProjectsPage() {
                 }`}
               >
                 {access.workerBlockedByStaffLimit ? (
-                  <div className="relative block p-4 flex-1 opacity-80 text-center">
-                    <ProjectActiveDurationBadge createdAt={p.created_at} />
-                    <p className="font-bold text-2xl text-brand-bright leading-snug line-clamp-2">
-                      {p.customer_name}
-                    </p>
-                    <p className="text-lg text-muted mt-2 line-clamp-3">
-                      {p.project_address}
-                    </p>
+                  <div className="relative flex flex-col flex-1 opacity-80">
+                    <ProjectListCardContent
+                      customerName={p.customer_name}
+                      projectAddress={p.project_address}
+                      createdAt={p.created_at}
+                      jobCount={p.job_count ?? 0}
+                    />
                   </div>
                 ) : editingProjects && access.canDeleteProject ? (
                   <button
@@ -391,15 +391,12 @@ export default function ProjectsPage() {
                     onClick={() => setEditingProject(p)}
                     className="relative flex flex-col flex-1 active:bg-surface hover:bg-surface transition-colors min-h-[140px]"
                   >
-                    <div className="relative p-4 flex-1 text-center">
-                      <ProjectActiveDurationBadge createdAt={p.created_at} />
-                      <p className="font-bold text-2xl text-brand-bright leading-snug line-clamp-2">
-                        {p.customer_name}
-                      </p>
-                      <p className="text-lg text-muted mt-2 line-clamp-3">
-                        {p.project_address}
-                      </p>
-                    </div>
+                    <ProjectListCardContent
+                      customerName={p.customer_name}
+                      projectAddress={p.project_address}
+                      createdAt={p.created_at}
+                      jobCount={p.job_count ?? 0}
+                    />
                     <p className="border-t border-border px-4 py-2.5 text-sm font-medium text-brand-bright text-center">
                       Click to edit
                     </p>
@@ -407,15 +404,14 @@ export default function ProjectsPage() {
                 ) : (
                   <Link
                     href={`/project/${p.id}`}
-                    className="relative block p-4 flex-1 active:bg-surface hover:bg-surface transition-colors text-center"
+                    className="relative flex flex-col flex-1 active:bg-surface hover:bg-surface transition-colors"
                   >
-                    <ProjectActiveDurationBadge createdAt={p.created_at} />
-                    <p className="font-bold text-2xl text-brand-bright leading-snug line-clamp-2">
-                      {p.customer_name}
-                    </p>
-                    <p className="text-lg text-muted mt-2 line-clamp-3">
-                      {p.project_address}
-                    </p>
+                    <ProjectListCardContent
+                      customerName={p.customer_name}
+                      projectAddress={p.project_address}
+                      createdAt={p.created_at}
+                      jobCount={p.job_count ?? 0}
+                    />
                   </Link>
                 )}
               </li>

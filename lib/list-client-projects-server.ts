@@ -1,8 +1,12 @@
 import 'server-only'
 
 import { createServiceClient } from '@/lib/supabase/service'
+import {
+  mapProjectListRow,
+  PROJECT_LIST_COLUMNS,
+} from '@/lib/project-job-count'
 
-const PROJECT_COLUMNS = 'id, customer_name, project_address, notes, created_at'
+const PROJECT_COLUMNS = PROJECT_LIST_COLUMNS
 
 /** Projects shared with a client (approved invite by user id or email). */
 export async function listClientProjectsServer(
@@ -40,5 +44,5 @@ export async function listClientProjectsServer(
     throw new Error(projectError.message)
   }
 
-  return projects || []
+  return (projects || []).map((row) => mapProjectListRow(row))
 }
