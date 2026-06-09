@@ -42,6 +42,9 @@ export function OrganizationSettingsPanel() {
   >({})
   const [loading, setLoading] = useState(true)
   const [savingWorkers, setSavingWorkers] = useState(false)
+  const [editingWorkerDefaults, setEditingWorkerDefaults] = useState(false)
+  const [workerDefaultsDraft, setWorkerDefaultsDraft] =
+    useState<WorkerPermissions>({ ...DEFAULT_WORKER_PERMISSIONS })
   const [savingProjectId, setSavingProjectId] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -66,6 +69,10 @@ export function OrganizationSettingsPanel() {
     setWorkerDefaults(
       parseDefaultWorkerPermissions(settingsPayload.default_worker_permissions)
     )
+    setWorkerDefaultsDraft(
+      parseDefaultWorkerPermissions(settingsPayload.default_worker_permissions)
+    )
+    setEditingWorkerDefaults(false)
 
     const rows = (projectsPayload.projects || []) as ProjectRow[]
     setProjects(rows)
@@ -87,8 +94,7 @@ export function OrganizationSettingsPanel() {
     void load()
   }, [load])
 
-  async function saveWorkerDefaults(e: React.FormEvent) {
-    e.preventDefault()
+  async function saveWorkerDefaults() {
     setSavingWorkers(true)
     setMessage(null)
     setError(null)
@@ -96,19 +102,33 @@ export function OrganizationSettingsPanel() {
     const res = await fetch('/api/org/settings', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ default_worker_permissions: workerDefaults }),
+      body: JSON.stringify({ default_worker_permissions: workerDefaultsDraft }),
     })
     const payload = await res.json().catch(() => ({}))
 
     if (!res.ok) {
       setError(payload.error || 'Could not save worker defaults')
     } else {
-      setWorkerDefaults(
-        payload.default_worker_permissions ?? workerDefaults
-      )
+      const saved =
+        payload.default_worker_permissions ?? workerDefaultsDraft
+      setWorkerDefaults(saved)
+      setWorkerDefaultsDraft(saved)
+      setEditingWorkerDefaults(false)
       setMessage('Default worker permissions saved.')
     }
     setSavingWorkers(false)
+  }
+
+  function startEditingWorkerDefaults() {
+    setWorkerDefaultsDraft({ ...workerDefaults })
+    setEditingWorkerDefaults(true)
+    setMessage(null)
+    setError(null)
+  }
+
+  function cancelEditingWorkerDefaults() {
+    setWorkerDefaultsDraft({ ...workerDefaults })
+    setEditingWorkerDefaults(false)
   }
 
   async function saveProjectName(projectId: string) {
@@ -154,77 +174,6 @@ export function OrganizationSettingsPanel() {
           {message}
         </p>
       )}
-
-      <section className="card p-4 space-y-3">
-        <h2 className="font-bold text-foreground">Data retention</h2>
-        <ul className="text-sm text-muted space-y-2 list-disc pl-5">
-          <li>
-            Completed projects (all jobs marked Completed) are deleted after{' '}
-            {COMPLETED_PROJECT_RETENTION_DAYS} days, including files and messages.
-          </li>
-          <li>
-            Inactive projects (not completed) with no activity for{' '}
-            {INACTIVE_PROJECT_RETENTION_MONTHS} months are deleted automatically.
-          </li>
-          <li>
-            Org backups (Backups settings) may be kept separately up to your plan
-            limit (5 Starter · 15 Professional · 30 Enterprise).
-          </li>
-        </ul>
-        <p className="text-sm text-muted">
-          To delete your entire account and organization data, email{' '}
-          <a
-            href={supportMailtoUrl('Account deletion request')}
-            className="text-brand-bright underline"
-          >
-            {LEGAL_CONTACT_EMAIL}
-          </a>
-          . We will verify ownership before processing.
-        </p>
-        <LegalNotice id="data-retention" showLegalLinks />
-      </section>
-
-      <form onSubmit={saveWorkerDefaults} className="card p-4 space-y-4">
-        <h2 className="font-bold text-foreground">Default worker access</h2>
-        <p className="text-sm text-muted">
-          Applied when you approve new workers. Adjust per project below.
-        </p>
-        <div className="space-y-3">
-          {PERM_KEYS.map((key) => (
-            <label
-              key={key}
-              className="flex items-start gap-3 text-sm cursor-pointer"
-            >
-              <input
-                type="checkbox"
-                checked={workerDefaults[key]}
-                onChange={(e) =>
-                  setWorkerDefaults((prev) => ({
-                    ...prev,
-                    [key]: e.target.checked,
-                  }))
-                }
-                className="mt-1"
-              />
-              <span>
-                <span className="font-medium text-foreground">
-                  {WORKER_PERMISSION_LABELS[key].label}
-                </span>
-                <span className="block text-muted text-xs">
-                  {WORKER_PERMISSION_LABELS[key].description}
-                </span>
-              </span>
-            </label>
-          ))}
-        </div>
-        <button
-          type="submit"
-          disabled={savingWorkers}
-          className="btn-primary px-4 py-2 text-sm min-h-[44px]"
-        >
-          {savingWorkers ? 'Saving…' : 'Save worker defaults'}
-        </button>
-      </form>
 
       <section className="card p-4 space-y-4">
         <h2 className="font-bold text-foreground">Projects</h2>
@@ -322,6 +271,115 @@ export function OrganizationSettingsPanel() {
             })}
           </ul>
         )}
+      </section>
+
+      <section className="card p-4 space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="font-bold text-foreground">Default worker access</h2>
+            <p className="text-sm text-muted mt-1">
+              Applied when you approve new workers. Adjust per project above.
+            </p>
+          </div>
+          {!editingWorkerDefaults && (
+            <button
+              type="button"
+              onClick={startEditingWorkerDefaults}
+              className="btn-secondary text-sm px-4 py-2 min-h-[40px] shrink-0"
+            >
+              Edit
+            </button>
+          )}
+        </div>
+
+        {editingWorkerDefaults ? (
+          <>
+            <div className="space-y-3">
+              {PERM_KEYS.map((key) => (
+                <label
+                  key={key}
+                  className="flex items-start gap-3 text-sm cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={workerDefaultsDraft[key]}
+                    onChange={(e) =>
+                      setWorkerDefaultsDraft((prev) => ({
+                        ...prev,
+                        [key]: e.target.checked,
+                      }))
+                    }
+                    className="mt-1"
+                  />
+                  <span>
+                    <span className="font-medium text-foreground">
+                      {WORKER_PERMISSION_LABELS[key].label}
+                    </span>
+                    <span className="block text-muted text-xs">
+                      {WORKER_PERMISSION_LABELS[key].description}
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={savingWorkers}
+                onClick={() => void saveWorkerDefaults()}
+                className="btn-primary px-4 py-2 text-sm min-h-[44px]"
+              >
+                {savingWorkers ? 'Saving…' : 'Save'}
+              </button>
+              <button
+                type="button"
+                disabled={savingWorkers}
+                onClick={cancelEditingWorkerDefaults}
+                className="btn-secondary px-4 py-2 text-sm min-h-[44px]"
+              >
+                Cancel
+              </button>
+            </div>
+          </>
+        ) : (
+          <ul className="text-sm text-muted space-y-1">
+            {PERM_KEYS.filter((key) => workerDefaults[key]).map((key) => (
+              <li key={key}>✓ {WORKER_PERMISSION_LABELS[key].label}</li>
+            ))}
+            {PERM_KEYS.every((key) => !workerDefaults[key]) && (
+              <li>No default permissions enabled.</li>
+            )}
+          </ul>
+        )}
+      </section>
+
+      <section className="card p-4 space-y-3">
+        <h2 className="font-bold text-foreground">Data retention</h2>
+        <ul className="text-sm text-muted space-y-2 list-disc pl-5">
+          <li>
+            Completed projects (all jobs marked Completed) are deleted after{' '}
+            {COMPLETED_PROJECT_RETENTION_DAYS} days, including files and messages.
+          </li>
+          <li>
+            Inactive projects (not completed) with no activity for{' '}
+            {INACTIVE_PROJECT_RETENTION_MONTHS} months are deleted automatically.
+          </li>
+          <li>
+            Org backups (Backups settings) may be kept separately up to your plan
+            limit (5 Starter · 15 Professional · 30 Enterprise).
+          </li>
+        </ul>
+        <p className="text-sm text-muted">
+          To delete your entire account and organization data, email{' '}
+          <a
+            href={supportMailtoUrl('Account deletion request')}
+            className="text-brand-bright underline"
+          >
+            {LEGAL_CONTACT_EMAIL}
+          </a>
+          . We will verify ownership before processing.
+        </p>
+        <LegalNotice id="data-retention" showLegalLinks />
       </section>
     </div>
   )
