@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AppFooter } from '@/components/app-footer'
-import { AppHeader } from '@/components/app-header'
-import { AppNav } from '@/components/app-nav'
+import { AppShell } from '@/components/app-shell'
 import { BackupSettingsPanel } from '@/components/backup-settings-panel'
 import { PlanUpgradeBanner } from '@/components/plan-upgrade-banner'
 import { loadUserAccess } from '@/lib/load-access'
@@ -49,27 +48,19 @@ export default function BackupsSettingsPage() {
   const canUseBackups = access.canArchiveProject
 
   return (
-    <div className="min-h-dvh flex flex-col">
-      <AppHeader
-        title="Backups"
-        subtitle="Scheduled ZIP copies of your projects"
-        backHref="/projects"
-        backLabel="Projects"
-        onSignOut={signOut}
-        signingOut={signingOut}
-      />
+    <AppShell
+      access={access}
+      onSignOut={signOut}
+      signingOut={signingOut}
+      mainClassName="flex-1 safe-x px-4 sm:px-6 lg:px-8 py-4 max-w-lg mx-auto w-full pb-8 safe-bottom space-y-6"
+    >
+      {!canUseBackups ? (
+        <PlanUpgradeBanner message="Automatic backups require Starter or higher (plans with PDF export). Upgrade in Billing to enable scheduled and on-completion backups." />
+      ) : (
+        <BackupSettingsPanel canManage />
+      )}
 
-      <main className="flex-1 safe-x px-4 py-4 max-w-lg mx-auto w-full pb-8 safe-bottom space-y-6">
-        <AppNav access={access} />
-
-        {!canUseBackups ? (
-          <PlanUpgradeBanner message="Automatic backups require Starter or higher (plans with PDF export). Upgrade in Billing to enable scheduled and on-completion backups." />
-        ) : (
-          <BackupSettingsPanel canManage />
-        )}
-
-        <AppFooter />
-      </main>
-    </div>
+      <AppFooter />
+    </AppShell>
   )
 }

@@ -4,10 +4,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { AppHeader } from '@/components/app-header'
+import { AppShell } from '@/components/app-shell'
 import { LedgerStackLoader } from '@/components/ledgerstack-loader'
 import { AppFooter } from '@/components/app-footer'
-import { AppNav } from '@/components/app-nav'
 import { PlanUpgradeBanner } from '@/components/plan-upgrade-banner'
 import { ClientSignatureBanner } from '@/components/client-signature-banner'
 import { AdminSignatureNotificationsBanner } from '@/components/admin-signature-notifications-banner'
@@ -200,68 +199,58 @@ export default function ProjectsPage() {
     return null
   }
 
-  const roleLabel =
-    access.role === 'admin'
-      ? 'Admin'
-      : access.role === 'worker'
-        ? 'Worker'
-        : 'Client'
-
   if (access.role === 'worker' && access.workerStatus === 'pending') {
     return (
-      <div className="min-h-dvh flex flex-col">
-        <AppHeader
-          title="Awaiting approval"
-          subtitle={`${access.organizationName || 'Organization'} — worker account`}
-          onSignOut={signOut}
-          signingOut={signingOut}
-        />
-        <main className="flex-1 safe-x px-4 py-8 max-w-lg mx-auto text-center space-y-4">
-          <p className="text-muted leading-relaxed">
-            Your admin must approve you <strong>one time</strong> before you
-            can view or add to projects. Ask them to open the app and tap
-            Approve on your request.
-          </p>
-          <button
-            type="button"
-            onClick={() =>
-              refreshAccess().then((a) => a && fetchProjects(a.role))
-            }
-            className="btn-primary text-[#052e16] px-6 py-3 rounded-xl font-medium min-h-[48px]"
-          >
-            Check again
-          </button>
-        </main>
-      </div>
+      <AppShell
+        access={access}
+        onSignOut={signOut}
+        signingOut={signingOut}
+        mainClassName="flex-1 safe-x px-4 sm:px-6 lg:px-8 py-8 max-w-lg mx-auto w-full pb-8 safe-bottom text-center space-y-4"
+      >
+        <h2 className="text-lg font-bold text-foreground">Awaiting approval</h2>
+        <p className="text-muted leading-relaxed">
+          Your admin must approve you <strong>one time</strong> before you
+          can view or add to projects. Ask them to open the app and tap
+          Approve on your request.
+        </p>
+        <button
+          type="button"
+          onClick={() =>
+            refreshAccess().then((a) => a && fetchProjects(a.role))
+          }
+          className="btn-primary text-[#052e16] px-6 py-3 rounded-xl font-medium min-h-[48px]"
+        >
+          Check again
+        </button>
+      </AppShell>
     )
   }
 
   if (access.role === 'worker' && access.workerStatus === 'none') {
     return (
-      <div className="min-h-dvh flex flex-col">
-        <AppHeader title="No organization" onSignOut={signOut} signingOut={signingOut} />
-        <main className="flex-1 safe-x px-4 py-8 max-w-lg mx-auto text-center space-y-4">
-          <p className="text-muted">
-            Sign up again with a valid organization invite code from your admin.
-          </p>
-        </main>
-      </div>
+      <AppShell
+        access={access}
+        onSignOut={signOut}
+        signingOut={signingOut}
+        mainClassName="flex-1 safe-x px-4 sm:px-6 lg:px-8 py-8 max-w-lg mx-auto w-full pb-8 safe-bottom text-center space-y-4"
+      >
+        <h2 className="text-lg font-bold text-foreground">No organization</h2>
+        <p className="text-muted">
+          Sign up again with a valid organization invite code from your admin.
+        </p>
+      </AppShell>
     )
   }
 
   return (
-    <div className="min-h-dvh flex flex-col">
-      <AppHeader
-        title="LedgerStack"
-        subtitle={`${roleLabel}${access.organizationName ? ` · ${access.organizationName}` : ''}`}
-        onSignOut={signOut}
-        signingOut={signingOut}
-      />
-
-      <main className="flex-1 safe-x px-4 sm:px-6 lg:px-8 py-4 w-full max-w-[1600px] mx-auto pb-28 safe-bottom space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <AppNav access={access} />
-          {access.canDeleteProject && (
+    <AppShell
+      access={access}
+      onSignOut={signOut}
+      signingOut={signingOut}
+      mainClassName="flex-1 safe-x px-4 sm:px-6 lg:px-8 py-4 w-full max-w-[1600px] mx-auto pb-28 safe-bottom space-y-5"
+    >
+        {access.canDeleteProject && (
+          <div className="flex flex-wrap items-center justify-end gap-3">
             <button
               type="button"
               onClick={() => {
@@ -278,8 +267,8 @@ export default function ProjectsPage() {
             >
               {editingProjects ? 'Stop editing projects' : 'Edit projects'}
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         <label className="block">
           <span className="sr-only">Search projects</span>
@@ -435,7 +424,6 @@ export default function ProjectsPage() {
         </section>
 
         <AppFooter showDataRetention={access.role === 'admin'} />
-      </main>
 
       {access.canDeleteProject && (
         <ProjectsEditPanel
@@ -533,6 +521,6 @@ export default function ProjectsPage() {
           </>,
           document.body
         )}
-    </div>
+    </AppShell>
   )
 }

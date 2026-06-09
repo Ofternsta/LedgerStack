@@ -374,6 +374,66 @@ button {
   border-color: var(--brand-bright);
 }
 
+.app-sidebar-link {
+  display: flex;
+  align-items: center;
+  width: calc(100% - 1rem);
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  min-height: 44px;
+  color: var(--foreground);
+  border: 1px solid transparent;
+  text-align: left;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.app-sidebar-link:hover {
+  background: color-mix(in srgb, var(--brand) 16%, transparent);
+  color: var(--brand-bright);
+  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
+  box-shadow: 0 0 14px var(--brand-glow);
+}
+
+.app-sidebar-link-active {
+  background: color-mix(in srgb, var(--brand) 20%, transparent);
+  color: var(--brand-bright);
+  border-color: var(--brand);
+  font-weight: 600;
+}
+
+.app-sidebar-link-active:hover {
+  background: color-mix(in srgb, var(--brand) 26%, transparent);
+  border-color: var(--brand-bright);
+}
+
+.app-sidebar-link-admin {
+  color: rgb(252 165 165);
+}
+
+.app-sidebar-link-admin:hover {
+  color: rgb(254 202 202);
+  border-color: rgb(239 68 68 / 0.45);
+  background: rgb(127 29 29 / 0.2);
+  box-shadow: 0 0 12px rgb(239 68 68 / 0.25);
+}
+
+.app-sidebar-sign-out {
+  margin-top: 0.5rem;
+  color: var(--muted);
+}
+
+.app-sidebar-sign-out:hover {
+  color: var(--foreground);
+}
+
 /* —— App-wide motion —— */
 @keyframes app-page-fade-in {
   from {

@@ -3,9 +3,8 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { AppHeader } from '@/components/app-header'
+import { AppShell } from '@/components/app-shell'
 import { AppFooter } from '@/components/app-footer'
-import { AppNav } from '@/components/app-nav'
 import { ProjectMonthCalendar } from '@/components/project-month-calendar'
 import { loadUserAccess } from '@/lib/load-access'
 import type { UserAccess } from '@/lib/roles'
@@ -114,22 +113,12 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col">
-      <AppHeader
-        title="Calendar"
-        subtitle={
-          selectedProject
-            ? selectedProject.customer_name
-            : access.organizationName || 'Select a project'
-        }
-        backHref="/projects"
-        backLabel="Projects"
-        onSignOut={signOut}
-        signingOut={signingOut}
-      />
-      <main className="flex-1 safe-x px-4 py-4 max-w-3xl mx-auto w-full pb-8 space-y-4">
-        <AppNav access={access} />
-
+    <AppShell
+      access={access}
+      onSignOut={signOut}
+      signingOut={signingOut}
+      mainClassName="flex-1 safe-x px-4 sm:px-6 lg:px-8 py-4 max-w-3xl mx-auto w-full pb-8 safe-bottom space-y-4"
+    >
         {!selectedProjectId ? (
           <section className="card-elevated p-5 space-y-4">
             <div>
@@ -204,7 +193,6 @@ export default function CalendarPage() {
         )}
 
         <AppFooter />
-      </main>
-    </div>
+    </AppShell>
   )
 }

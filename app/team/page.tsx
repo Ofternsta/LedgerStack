@@ -3,9 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AdminTeamPanel } from '@/components/admin-team-panel'
-import { AppHeader } from '@/components/app-header'
+import { AppShell } from '@/components/app-shell'
 import { AppFooter } from '@/components/app-footer'
-import { AppNav } from '@/components/app-nav'
 import { loadUserAccess } from '@/lib/load-access'
 import type { UserAccess } from '@/lib/roles'
 import { supabase } from '@/lib/supabase'
@@ -44,22 +43,14 @@ export default function TeamPage() {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col">
-      <AppHeader
-        title="Team"
-        subtitle={access.organizationName || 'Manage workers and permissions'}
-        backHref="/projects"
-        backLabel="Projects"
-        onSignOut={signOut}
-        signingOut={signingOut}
-      />
-
-      <main className="flex-1 safe-x px-4 py-4 max-w-lg mx-auto w-full pb-8 safe-bottom space-y-4">
-        <AppNav access={access} />
-        <AdminTeamPanel />
-      </main>
-
+    <AppShell
+      access={access}
+      onSignOut={signOut}
+      signingOut={signingOut}
+      mainClassName="flex-1 safe-x px-4 sm:px-6 lg:px-8 py-4 max-w-lg mx-auto w-full pb-8 safe-bottom space-y-4"
+    >
+      <AdminTeamPanel />
       <AppFooter />
-    </div>
+    </AppShell>
   )
 }

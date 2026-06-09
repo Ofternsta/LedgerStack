@@ -2,9 +2,8 @@
 
 import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { AppHeader } from '@/components/app-header'
+import { AppShell } from '@/components/app-shell'
 import { AppFooter } from '@/components/app-footer'
-import { AppNav } from '@/components/app-nav'
 import Link from 'next/link'
 import {
   PLAN_ENTITLEMENTS,
@@ -485,34 +484,27 @@ export default function BillingPage() {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col">
-      <AppHeader
-        title="Billing"
-        subtitle="Subscription plans for your organization"
-        backHref="/projects"
-        backLabel="Projects"
-        onSignOut={signOut}
-        signingOut={signingOut}
-      />
+    <AppShell
+      access={access}
+      onSignOut={signOut}
+      signingOut={signingOut}
+      mainClassName="flex-1 safe-x px-4 sm:px-6 lg:px-8 py-4 max-w-lg mx-auto w-full pb-8 safe-bottom space-y-6"
+    >
+      <Suspense fallback={<p className="text-muted">Loading billing…</p>}>
+        <BillingContent />
+      </Suspense>
 
-      <main className="flex-1 safe-x px-4 py-4 max-w-lg mx-auto w-full pb-8 safe-bottom space-y-6">
-        <AppNav access={access} />
-        <Suspense fallback={<p className="text-muted">Loading billing…</p>}>
-          <BillingContent />
-        </Suspense>
+      {access.canArchiveProject && (
+        <p className="text-sm text-muted">
+          Manage automatic backups on the{' '}
+          <Link href="/settings/backups" className="text-brand-bright font-medium">
+            Backups
+          </Link>{' '}
+          page.
+        </p>
+      )}
 
-        {access.canArchiveProject && (
-          <p className="text-sm text-muted">
-            Manage automatic backups on the{' '}
-            <Link href="/settings/backups" className="text-brand-bright font-medium">
-              Backups
-            </Link>{' '}
-            page.
-          </p>
-        )}
-
-        <AppFooter />
-      </main>
-    </div>
+      <AppFooter />
+    </AppShell>
   )
 }

@@ -4,10 +4,9 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { CountUp } from '@/components/count-up'
-import { AppHeader } from '@/components/app-header'
+import { AppShell } from '@/components/app-shell'
 import { LedgerStackLoader } from '@/components/ledgerstack-loader'
 import { AppFooter } from '@/components/app-footer'
-import { AppNav } from '@/components/app-nav'
 import { AdminSignatureNotificationsBanner } from '@/components/admin-signature-notifications-banner'
 import { loadUserAccess } from '@/lib/load-access'
 import type { UserAccess } from '@/lib/roles'
@@ -73,19 +72,12 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col">
-      <AppHeader
-        title="Dashboard"
-        subtitle={`${access.organizationName || 'Organization'} — analytics`}
-        backHref="/projects"
-        backLabel="Projects"
-        onSignOut={signOut}
-        signingOut={signingOut}
-      />
-
-      <main className="flex-1 safe-x px-4 py-4 max-w-3xl mx-auto w-full pb-8 safe-bottom space-y-6">
-        <AppNav access={access} />
-
+    <AppShell
+      access={access}
+      onSignOut={signOut}
+      signingOut={signingOut}
+      mainClassName="flex-1 safe-x px-4 sm:px-6 lg:px-8 py-4 max-w-3xl mx-auto w-full pb-8 safe-bottom space-y-6"
+    >
         {access.role === 'admin' && <AdminSignatureNotificationsBanner />}
 
         {error && (
@@ -183,7 +175,6 @@ export default function DashboardPage() {
         )}
 
         <AppFooter />
-      </main>
-    </div>
+    </AppShell>
   )
 }

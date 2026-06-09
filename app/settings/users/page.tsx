@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { AppHeader } from '@/components/app-header'
+import { AppShell } from '@/components/app-shell'
 import { AppFooter } from '@/components/app-footer'
 import { LegalNotice } from '@/components/legal-notice'
-import { AppNav } from '@/components/app-nav'
 import { loadUserAccess } from '@/lib/load-access'
 import type { UserAccess } from '@/lib/roles'
 import { supabase } from '@/lib/supabase'
@@ -103,19 +102,12 @@ export default function PlatformUsersPage() {
   if (allowed === false) return null
 
   return (
-    <div className="min-h-dvh flex flex-col">
-      <AppHeader
-        title="Account management"
-        subtitle="Platform owner — delete signed-up users"
-        backHref="/projects"
-        backLabel="Projects"
-        onSignOut={signOut}
-        signingOut={signingOut}
-      />
-
-      <main className="flex-1 safe-x px-4 py-4 max-w-lg mx-auto w-full pb-8 safe-bottom space-y-4">
-        <AppNav access={access} />
-
+    <AppShell
+      access={access}
+      onSignOut={signOut}
+      signingOut={signingOut}
+      mainClassName="flex-1 safe-x px-4 sm:px-6 lg:px-8 py-4 max-w-lg mx-auto w-full pb-8 safe-bottom space-y-4"
+    >
         <p className="text-sm alert-warning leading-relaxed">
           Only the email set in <code className="text-xs">PLATFORM_OWNER_EMAIL</code>{' '}
           can use this page. Deletions are permanent.
@@ -165,7 +157,6 @@ export default function PlatformUsersPage() {
         <LegalNotice id="data-retention" showLegalLinks />
 
         <AppFooter />
-      </main>
-    </div>
+    </AppShell>
   )
 }
