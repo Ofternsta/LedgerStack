@@ -780,7 +780,6 @@ export default function ProjectPageClient() {
               <InternalNotesPanel
                 projectId={id}
                 claimId={activeClaim.id}
-                currentUserId={userId}
                 canPost={access.canUpdateClaimInfo}
               />
             )}
@@ -806,7 +805,6 @@ export default function ProjectPageClient() {
                   variant="sidebar"
                   projectId={id}
                   claimId={activeClaim.id}
-                  currentUserId={userId}
                   canPost={access.canUpdateClaimInfo}
                 />
               </div>

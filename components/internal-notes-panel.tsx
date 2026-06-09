@@ -1,7 +1,7 @@
 'use client'
 
 import { LegalNotice } from '@/components/legal-notice'
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 
 type Note = {
   id: string
@@ -15,12 +15,9 @@ type Note = {
   mentioned_users: Array<{ id: string; name: string }>
 }
 
-type RosterMember = { id: string; label: string; role: string }
-
 type Props = {
   projectId: string
   claimId?: string | null
-  currentUserId: string | null
   canPost: boolean
   variant?: 'panel' | 'sidebar'
 }
@@ -63,19 +60,14 @@ function NoteBody({ body }: { body: string }) {
 export function InternalNotesPanel({
   projectId,
   claimId,
-  currentUserId,
   canPost,
   variant = 'panel',
 }: Props) {
   const [notes, setNotes] = useState<Note[]>([])
-  const [roster, setRoster] = useState<RosterMember[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
-  const [noteKind, setNoteKind] = useState<'note' | 'status_update'>('note')
-  const [mentionOpen, setMentionOpen] = useState(false)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -95,27 +87,7 @@ export function InternalNotesPanel({
 
   useEffect(() => {
     load()
-    fetch('/api/team/roster')
-      .then((r) => r.json())
-      .then((d) => setRoster(d.roster || []))
-      .catch(() => setRoster([]))
   }, [load])
-
-  function insertMention(member: RosterMember) {
-    const token = `@[${member.label}](${member.id}) `
-    const el = textareaRef.current
-    if (el) {
-      const start = el.selectionStart ?? draft.length
-      const end = el.selectionEnd ?? draft.length
-      const next = draft.slice(0, start) + token + draft.slice(end)
-      setDraft(next)
-      setMentionOpen(false)
-      setTimeout(() => el.focus(), 0)
-    } else {
-      setDraft((d) => d + token)
-      setMentionOpen(false)
-    }
-  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -129,7 +101,7 @@ export function InternalNotesPanel({
         project_id: projectId,
         claim_id: claimId || null,
         body: draft.trim(),
-        note_kind: noteKind,
+        note_kind: 'note',
       }),
     })
     const payload = await res.json().catch(() => ({}))
@@ -139,7 +111,6 @@ export function InternalNotesPanel({
       return
     }
     setDraft('')
-    setNoteKind('note')
     await load()
     setSaving(false)
   }
@@ -169,49 +140,10 @@ export function InternalNotesPanel({
           onSubmit={submit}
           className="space-y-2 border border-gray-100 rounded-xl p-3 bg-surface shrink-0"
         >
-          <div className="flex flex-wrap gap-2">
-            <select
-              value={noteKind}
-              onChange={(e) =>
-                setNoteKind(e.target.value as 'note' | 'status_update')
-              }
-              className="border border-border rounded-lg p-2 text-sm bg-surface-elevated"
-            >
-              <option value="note">Worker note</option>
-              <option value="status_update">Status update</option>
-            </select>
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setMentionOpen((v) => !v)}
-                className="border border-border rounded-lg px-3 py-2 text-sm font-medium min-h-[40px] bg-surface-elevated"
-              >
-                @ Mention
-              </button>
-              {mentionOpen && (
-                <ul className="absolute z-10 mt-1 w-48 bg-surface-elevated border border-border rounded-xl shadow-lg max-h-40 overflow-y-auto">
-                  {roster
-                    .filter((m) => m.id !== currentUserId)
-                    .map((m) => (
-                      <li key={m.id}>
-                        <button
-                          type="button"
-                          className="w-full text-left px-3 py-2 text-sm hover:bg-surface"
-                          onClick={() => insertMention(m)}
-                        >
-                          {m.label}
-                        </button>
-                      </li>
-                    ))}
-                </ul>
-              )}
-            </div>
-          </div>
           <textarea
-            ref={textareaRef}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="Add an internal note… Use @ Mention to notify a teammate."
+            placeholder="Add an internal note…"
             rows={3}
             className="w-full border border-border rounded-xl p-3 text-sm resize-none bg-surface-elevated"
           />
