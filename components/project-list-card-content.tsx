@@ -1,6 +1,7 @@
 'use client'
 
 import { ProjectActiveDurationBadge } from '@/components/project-active-duration-badge'
+import { AutoFitProjectCardText } from '@/components/auto-fit-project-card-text'
 
 type Props = {
   customerName: string
@@ -23,11 +24,11 @@ export function ProjectListCardContent({
       <ProjectActiveDurationBadge createdAt={createdAt} />
 
       <div className="flex min-w-0 items-center justify-center pr-1">
-        <div className="text-center min-w-0">
-          <p className="font-bold text-2xl text-brand-bright leading-snug line-clamp-2">
-            {customerName}
-          </p>
-          <p className="text-lg text-muted mt-2 line-clamp-3">{projectAddress}</p>
+        <div className="text-center min-w-0 w-full">
+          <AutoFitProjectCardText
+            customerName={customerName}
+            projectAddress={projectAddress}
+          />
         </div>
       </div>
 
