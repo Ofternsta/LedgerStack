@@ -40,7 +40,7 @@ export const GUIDE_PARTS: GuidePart[] = [
         ],
         bullets: [
           'Trial — 7 days, card required; 2 projects, 10 AI summaries + Project AI chat/month (shared), images/PDF only; no exports, workers, clients, calendar, or team chat.',
-          'Starter ($20/mo) — solo contractor; 10 projects, 25 AI summaries + Project AI chat/month (shared), standard PDF export, automatic backups (5 retained).',
+          'Starter ($20/mo) — solo contractor (admin only; no worker or client accounts); 10 projects, 25 AI summaries + Project AI chat/month (shared), standard PDF export, automatic backups (5 retained).',
           'Professional ($70/mo) — up to 15 workers, 25 projects, 50 AI summaries + Project AI chat/month (shared), client portal, SignWell e-signatures, calendar, internal notes, project messages, DM/group chat, job packet exports, analytics, backups (15).',
           'Enterprise ($150/mo) — unlimited staff and projects, unlimited AI summaries + Project AI chat, client portal, SignWell e-signatures, advanced analytics, backups (30).',
         ],

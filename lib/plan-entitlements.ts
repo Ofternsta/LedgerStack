@@ -45,7 +45,7 @@ export const PLAN_ENTITLEMENTS: Record<BillingPlanId, PlanEntitlements> = {
     maxOrganizationBackups: 5,
   },
   starter: {
-    tagline: 'Solo contractor — organized documentation for one-person shops',
+    tagline: 'Solo contractor — one admin account, no worker or client logins',
     maxStaffUsers: 1,
     maxActiveProjects: 10,
     aiSummariesPerMonth: 25,
@@ -125,6 +125,7 @@ export const PLAN_FEATURE_COPY: Record<
   },
   starter: {
     includes: [
+      'Admin account only — no worker or client accounts',
       '1 user · up to 10 active projects',
       'Automatic cloud backups — 5 retained per organization',
       '25 AI summaries & Project AI chat per month · full job workflow & timeline',
@@ -167,7 +168,7 @@ export const PLAN_STRIPE_DESCRIPTIONS: Record<
   string
 > = {
   starter:
-    'LedgerStack Starter ($20/mo) — For solo contractors: 1 user, up to 10 active projects, job timeline & workflow, 25 AI summaries and Project AI chat per month, standard PDF export, mobile field uploads, and automatic cloud backups (5 ZIPs retained per organization).',
+    'LedgerStack Starter ($20/mo) — For solo contractors: 1 admin user only (no worker or client accounts), up to 10 active projects, job timeline & workflow, 25 AI summaries and Project AI chat per month, standard PDF export, mobile field uploads, and automatic cloud backups (5 ZIPs retained per organization).',
   professional:
     'LedgerStack Professional ($70/mo) — Coordinate crew and clients: up to 15 workers, up to 25 active projects, client portal, SignWell e-signatures, project-scoped AI assistant, scheduling, internal notes, team messages, job packet exports, project archives, analytics dashboard, 50 AI summaries/month, and automatic cloud backups (15 ZIPs retained per organization).',
   enterprise:
