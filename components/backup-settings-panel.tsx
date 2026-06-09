@@ -248,16 +248,17 @@ export function BackupSettingsPanel({ canManage }: { canManage: boolean }) {
   }
 
   return (
-    <section className="border border-border rounded-xl p-4 bg-surface-elevated space-y-4">
-      <div>
-        <h2 className="font-bold text-lg">Automatic backups</h2>
-        <p className="text-sm text-muted mt-1 leading-relaxed">
-          ZIP copies of each project (jobs, documents, messages, exports) are
-          saved to secure cloud storage. Admins can download them anytime. Your plan
-          keeps the last {maxBackups} completed backups (older ones are removed
-          automatically).
-        </p>
-      </div>
+    <div className="space-y-6">
+      <section className="card p-4 sm:p-5 space-y-4">
+        <div>
+          <h2 className="font-bold text-lg">Automatic backups</h2>
+          <p className="text-sm text-muted mt-1 leading-relaxed">
+            ZIP copies of each project (jobs, documents, messages, exports) are
+            saved to secure cloud storage. Admins can download them anytime. Your
+            plan keeps the last {maxBackups} completed backups (older ones are
+            removed automatically).
+          </p>
+        </div>
       {error && (
         <p className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg p-2">
           {error}
@@ -461,37 +462,57 @@ export function BackupSettingsPanel({ canManage }: { canManage: boolean }) {
           )}
         </div>
       )}
+      </section>
 
-      <div className="pt-2 border-t border-border space-y-2">
-        <h3 className="text-sm font-semibold text-foreground">Recent backups</h3>
+      <section className="flex-1 min-h-0">
+        <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4">
+          <h2 className="font-bold text-lg">Your backups</h2>
+          {backups.length > 0 && (
+            <p className="text-sm text-muted">
+              {backups.length} backup{backups.length === 1 ? '' : 's'}
+            </p>
+          )}
+        </div>
+
         {backups.length === 0 ? (
-          <p className="text-sm text-muted-dim">No backups yet.</p>
+          <p className="text-muted-dim text-center py-12">
+            No backups yet. Enable automatic backups above or run a manual backup.
+          </p>
         ) : (
-          <ul className="space-y-2 max-h-[280px] overflow-y-auto">
+          <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {backups.map((b) => (
               <li
                 key={b.id}
-                className="border border-border rounded-lg p-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                className="border border-border rounded-xl bg-surface-elevated shadow-sm overflow-hidden flex flex-col min-h-[140px]"
               >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">{b.filename}</p>
-                  <p className="text-xs text-muted-dim">
-                    {typeLabel(b.backup_type)} ·{' '}
-                    {new Date(b.created_at).toLocaleString()} ·{' '}
+                <div className="p-4 flex-1 text-center">
+                  <p className="font-bold text-xl sm:text-2xl text-brand-bright leading-snug line-clamp-2 break-all">
+                    {b.filename}
+                  </p>
+                  <p className="text-sm text-muted mt-2 leading-snug">
+                    {typeLabel(b.backup_type)}
+                  </p>
+                  <p className="text-xs text-muted-dim mt-1">
+                    {new Date(b.created_at).toLocaleString(undefined, {
+                      dateStyle: 'medium',
+                      timeStyle: 'short',
+                    })}
+                  </p>
+                  <p className="text-xs text-muted-dim mt-0.5">
                     {formatBytes(b.byte_size)} · {b.status}
                   </p>
                   {b.error_message && (
-                    <p className="text-xs text-red-700 truncate">
+                    <p className="text-xs text-red-600 mt-2 line-clamp-2">
                       {b.error_message}
                     </p>
                   )}
                 </div>
-                <div className="flex flex-wrap gap-2 shrink-0">
+                <div className="border-t border-border px-4 py-2.5 flex flex-wrap items-center justify-center gap-3">
                   {b.status === 'completed' && (
                     <button
                       type="button"
                       onClick={() => downloadBackup(b.id, b.filename)}
-                      className="text-sm text-brand-bright font-medium min-h-[40px]"
+                      className="text-sm font-medium text-brand-bright min-h-[40px]"
                     >
                       Download
                     </button>
@@ -500,7 +521,7 @@ export function BackupSettingsPanel({ canManage }: { canManage: boolean }) {
                     type="button"
                     disabled={deletingId === b.id}
                     onClick={() => removeBackup(b.id, b.filename)}
-                    className="text-sm text-red-600 font-medium min-h-[40px] disabled:opacity-50"
+                    className="text-sm font-medium text-red-500 min-h-[40px] disabled:opacity-50"
                   >
                     {deletingId === b.id ? 'Removing…' : 'Remove'}
                   </button>
@@ -509,10 +530,10 @@ export function BackupSettingsPanel({ canManage }: { canManage: boolean }) {
             ))}
           </ul>
         )}
-      </div>
+      </section>
 
       <LegalNotice id="export-backup" />
       <LegalNotice id="data-retention" />
-    </section>
+    </div>
   )
 }

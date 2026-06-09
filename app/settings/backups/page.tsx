@@ -52,7 +52,7 @@ export default function BackupsSettingsPage() {
       access={access}
       onSignOut={signOut}
       signingOut={signingOut}
-      mainClassName="flex-1 safe-x px-4 sm:px-6 lg:px-8 py-4 max-w-lg mx-auto w-full pb-8 safe-bottom space-y-6"
+      mainClassName="flex-1 safe-x px-4 sm:px-6 lg:px-8 py-4 w-full max-w-[1600px] mx-auto pb-8 safe-bottom space-y-5"
     >
       {!canUseBackups ? (
         <PlanUpgradeBanner message="Automatic backups require Starter or higher (plans with PDF export). Upgrade in Billing to enable scheduled and on-completion backups." />

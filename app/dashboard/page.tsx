@@ -22,11 +22,6 @@ type Analytics = {
   approvedWorkers: number
   pendingWorkers: number
   subscription: { plan: string; status: string }
-  recentProjects: Array<{
-    id: string
-    customer_name: string
-    project_address: string
-  }>
 }
 
 export default function DashboardPage() {
@@ -150,23 +145,6 @@ export default function DashboardPage() {
                   <li key={type} className="flex justify-between">
                     <span>{type}</span>
                     <span className="font-medium">{count}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="font-bold mb-3">Recent projects</h2>
-              <ul className="space-y-2">
-                {stats.recentProjects.map((p) => (
-                  <li key={p.id}>
-                    <Link
-                      href={`/project/${p.id}`}
-                      className="block border rounded-xl p-3 active:bg-surface"
-                    >
-                      <p className="font-medium">{p.customer_name}</p>
-                      <p className="text-sm text-muted">{p.project_address}</p>
-                    </Link>
                   </li>
                 ))}
               </ul>
