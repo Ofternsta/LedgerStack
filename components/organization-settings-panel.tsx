@@ -11,6 +11,7 @@ import {
   INACTIVE_PROJECT_RETENTION_MONTHS,
 } from '@/lib/data-retention'
 import { LEGAL_CONTACT_EMAIL } from '@/lib/legal-meta'
+import { ORG_NAME_MAX_LENGTH } from '@/lib/organization-name'
 import { parseDefaultWorkerPermissions } from '@/lib/org-status-labels'
 import { supportMailtoUrl } from '@/lib/support'
 import {
@@ -31,7 +32,17 @@ const PERM_KEYS = Object.keys(
   WORKER_PERMISSION_LABELS
 ) as WorkerPermissionKey[]
 
-export function OrganizationSettingsPanel() {
+type OrganizationSettingsPanelProps = {
+  onOrganizationRenamed?: (name: string) => void
+}
+
+export function OrganizationSettingsPanel({
+  onOrganizationRenamed,
+}: OrganizationSettingsPanelProps = {}) {
+  const [organizationName, setOrganizationName] = useState('')
+  const [organizationNameDraft, setOrganizationNameDraft] = useState('')
+  const [editingOrganizationName, setEditingOrganizationName] = useState(false)
+  const [savingOrganizationName, setSavingOrganizationName] = useState(false)
   const [workerDefaults, setWorkerDefaults] = useState<WorkerPermissions>({
     ...DEFAULT_WORKER_PERMISSIONS,
   })
@@ -73,6 +84,11 @@ export function OrganizationSettingsPanel() {
       parseDefaultWorkerPermissions(settingsPayload.default_worker_permissions)
     )
     setEditingWorkerDefaults(false)
+
+    const loadedName = String(settingsPayload.name || '').trim()
+    setOrganizationName(loadedName)
+    setOrganizationNameDraft(loadedName)
+    setEditingOrganizationName(false)
 
     const rows = (projectsPayload.projects || []) as ProjectRow[]
     setProjects(rows)
@@ -129,6 +145,53 @@ export function OrganizationSettingsPanel() {
   function cancelEditingWorkerDefaults() {
     setWorkerDefaultsDraft({ ...workerDefaults })
     setEditingWorkerDefaults(false)
+  }
+
+  function startEditingOrganizationName() {
+    setOrganizationNameDraft(organizationName)
+    setEditingOrganizationName(true)
+    setMessage(null)
+    setError(null)
+  }
+
+  function cancelEditingOrganizationName() {
+    setOrganizationNameDraft(organizationName)
+    setEditingOrganizationName(false)
+  }
+
+  async function saveOrganizationName() {
+    const trimmed = organizationNameDraft.trim().replace(/\s+/g, ' ')
+    if (!trimmed || trimmed.length > ORG_NAME_MAX_LENGTH) {
+      setError(
+        `Organization name is required (max ${ORG_NAME_MAX_LENGTH} characters).`
+      )
+      return
+    }
+
+    setSavingOrganizationName(true)
+    setMessage(null)
+    setError(null)
+
+    const res = await fetch('/api/org/settings', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: trimmed }),
+    })
+    const payload = await res.json().catch(() => ({}))
+
+    if (!res.ok) {
+      setError(payload.error || 'Could not save organization name')
+      setSavingOrganizationName(false)
+      return
+    }
+
+    const saved = String(payload.name || trimmed).trim()
+    setOrganizationName(saved)
+    setOrganizationNameDraft(saved)
+    setEditingOrganizationName(false)
+    setMessage('Organization name saved.')
+    onOrganizationRenamed?.(saved)
+    setSavingOrganizationName(false)
   }
 
   async function saveProjectName(projectId: string) {
@@ -351,6 +414,65 @@ export function OrganizationSettingsPanel() {
               <li>No default permissions enabled.</li>
             )}
           </ul>
+        )}
+      </section>
+
+      <section className="card p-4 space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="font-bold text-foreground">Organization name</h2>
+            <p className="text-sm text-muted mt-1">
+              Shown in the app header, worker invites, and signature emails.
+            </p>
+          </div>
+          {!editingOrganizationName && (
+            <button
+              type="button"
+              onClick={startEditingOrganizationName}
+              className="btn-secondary text-sm px-4 py-2 min-h-[40px] shrink-0"
+            >
+              Edit
+            </button>
+          )}
+        </div>
+
+        {editingOrganizationName ? (
+          <>
+            <label className="block space-y-1">
+              <span className="text-sm text-muted">Company / organization name</span>
+              <input
+                type="text"
+                value={organizationNameDraft}
+                onChange={(e) => setOrganizationNameDraft(e.target.value)}
+                maxLength={ORG_NAME_MAX_LENGTH}
+                className="input w-full"
+                placeholder="Acme Contracting"
+                autoFocus
+              />
+            </label>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={savingOrganizationName}
+                onClick={() => void saveOrganizationName()}
+                className="btn-primary px-4 py-2 text-sm min-h-[44px]"
+              >
+                {savingOrganizationName ? 'Saving…' : 'Save'}
+              </button>
+              <button
+                type="button"
+                disabled={savingOrganizationName}
+                onClick={cancelEditingOrganizationName}
+                className="btn-secondary px-4 py-2 text-sm min-h-[44px]"
+              >
+                Cancel
+              </button>
+            </div>
+          </>
+        ) : (
+          <p className="text-sm font-medium text-foreground">
+            {organizationName || 'My Company'}
+          </p>
         )}
       </section>
 

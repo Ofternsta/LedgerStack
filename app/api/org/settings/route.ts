@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { sanitizeOrganizationName, ORG_NAME_MAX_LENGTH } from '@/lib/organization-name'
 import { parseDefaultWorkerPermissions } from '@/lib/org-status-labels'
 import { loadUserAccessServer } from '@/lib/load-access-server'
 import { requireAuth } from '@/lib/require-auth'
@@ -42,7 +43,7 @@ export async function GET() {
 
     const { data, error } = await supabase
       .from('organizations')
-      .select('default_worker_permissions')
+      .select('name, default_worker_permissions')
       .eq('id', access.organizationId)
       .maybeSingle()
 
@@ -51,6 +52,7 @@ export async function GET() {
     }
 
     return NextResponse.json({
+      name: data?.name ?? '',
       default_worker_permissions: parseDefaultWorkerPermissions(
         data?.default_worker_permissions
       ),
@@ -89,6 +91,19 @@ export async function PATCH(req: Request) {
       patch.default_worker_permissions = perms
     }
 
+    if (body.name !== undefined) {
+      const name = sanitizeOrganizationName(body.name)
+      if (!name) {
+        return NextResponse.json(
+          {
+            error: `Organization name is required (max ${ORG_NAME_MAX_LENGTH} characters).`,
+          },
+          { status: 400 }
+        )
+      }
+      patch.name = name
+    }
+
     if (!Object.keys(patch).length) {
       return NextResponse.json({ error: 'No changes provided' }, { status: 400 })
     }
@@ -97,7 +112,7 @@ export async function PATCH(req: Request) {
       .from('organizations')
       .update(patch)
       .eq('id', access.organizationId)
-      .select('default_worker_permissions')
+      .select('name, default_worker_permissions')
       .single()
 
     if (error) {
@@ -105,6 +120,7 @@ export async function PATCH(req: Request) {
     }
 
     return NextResponse.json({
+      name: data.name,
       default_worker_permissions:
         parseDefaultWorkerPermissions(data.default_worker_permissions) ??
         DEFAULT_WORKER_PERMISSIONS,
