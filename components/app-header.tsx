@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { BrandLogo } from '@/components/brand-logo'
 
 type AppHeaderProps = {
   title: string
@@ -19,21 +18,17 @@ export function AppHeader({
   signingOut,
 }: AppHeaderProps) {
   return (
-    <header className="border-b border-border bg-background safe-top shrink-0">
-      <div className="px-4 py-3 max-w-5xl mx-auto">
+    <header className="border-b border-border bg-background safe-top shrink-0 w-full">
+      <div className="safe-x px-4 sm:px-6 lg:px-8 py-3 w-full max-w-[1600px] mx-auto">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            {backHref ? (
+            {backHref && (
               <Link
                 href={backHref}
                 className="inline-flex items-center text-sm text-brand-bright font-medium mb-2 min-h-[44px]"
               >
                 ← {backLabel}
               </Link>
-            ) : (
-              <div className="mb-2">
-                <BrandLogo href="/projects" size="sm" />
-              </div>
             )}
             <h1 className="text-xl sm:text-2xl font-bold leading-tight text-[var(--header-title)]">
               {title}

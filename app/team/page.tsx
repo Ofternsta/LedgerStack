@@ -48,6 +48,8 @@ export default function TeamPage() {
       <AppHeader
         title="Team"
         subtitle={access.organizationName || 'Manage workers and permissions'}
+        backHref="/projects"
+        backLabel="Projects"
         onSignOut={signOut}
         signingOut={signingOut}
       />

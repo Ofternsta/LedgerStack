@@ -15,8 +15,8 @@ export function ProjectPageHeader({
   backLabel = 'Projects',
 }: ProjectPageHeaderProps) {
   return (
-    <header className="border-b border-border bg-background safe-top shrink-0">
-      <div className="px-4 py-3 max-w-5xl mx-auto w-full">
+    <header className="border-b border-border bg-background safe-top shrink-0 w-full">
+      <div className="safe-x px-4 sm:px-6 lg:px-8 py-3 w-full max-w-[1600px] mx-auto">
         {backHref && (
           <Link
             href={backHref}

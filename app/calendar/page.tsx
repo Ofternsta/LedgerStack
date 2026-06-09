@@ -122,6 +122,8 @@ export default function CalendarPage() {
             ? selectedProject.customer_name
             : access.organizationName || 'Select a project'
         }
+        backHref="/projects"
+        backLabel="Projects"
         onSignOut={signOut}
         signingOut={signingOut}
       />
