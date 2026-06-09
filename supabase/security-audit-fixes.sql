@@ -151,6 +151,18 @@ GRANT ALL ON public.job_ai_summaries TO service_role;
 -- ---------------------------------------------------------------------------
 -- Org admin profile role: prevent workers becoming admin via profile update
 -- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.profile_role_for_user(uid uuid)
+RETURNS text
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT role FROM public.profiles WHERE id = uid;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.profile_role_for_user(uuid) TO authenticated;
+
 DROP POLICY IF EXISTS "org admin update member profiles" ON public.profiles;
 CREATE POLICY "org admin update member profiles"
   ON public.profiles FOR UPDATE TO authenticated
@@ -164,7 +176,7 @@ CREATE POLICY "org admin update member profiles"
     )
   )
   WITH CHECK (
-    role = (SELECT p.role FROM public.profiles p WHERE p.id = profiles.id)
+    role IS NOT DISTINCT FROM public.profile_role_for_user(profiles.id)
     AND EXISTS (
       SELECT 1 FROM public.organization_members m
       JOIN public.organizations o ON o.id = m.organization_id

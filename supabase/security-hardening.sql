@@ -30,14 +30,27 @@ GRANT ALL ON public.subscriptions TO service_role;
 
 -- ---------------------------------------------------------------------------
 -- 2) Profiles: users cannot change their own role (prevents worker → admin hack)
+-- Use SECURITY DEFINER helpers — subqueries on profiles inside policies recurse.
 -- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.current_user_profile_role()
+RETURNS text
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT role FROM public.profiles WHERE id = auth.uid();
+$$;
+
+GRANT EXECUTE ON FUNCTION public.current_user_profile_role() TO authenticated;
+
 DROP POLICY IF EXISTS "users update own profile" ON public.profiles;
 CREATE POLICY "users update own profile"
   ON public.profiles FOR UPDATE TO authenticated
   USING (id = auth.uid())
   WITH CHECK (
     id = auth.uid()
-    AND role = (SELECT p.role FROM public.profiles p WHERE p.id = auth.uid())
+    AND role IS NOT DISTINCT FROM public.current_user_profile_role()
   );
 
 -- ---------------------------------------------------------------------------

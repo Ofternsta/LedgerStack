@@ -114,10 +114,17 @@ export function AccountSettingsPanel({
       setSavingName(false)
       return
     }
-    const { error } = await supabase
-      .from('profiles')
-      .update({ full_name: fullName.trim() || null })
-      .eq('id', user.id)
+    const { error } = await fetch('/api/account/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ full_name: fullName.trim() || '' }),
+    }).then(async (res) => {
+      const payload = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        return { error: { message: payload.error || 'Could not save name' } }
+      }
+      return { error: null }
+    })
     setSavingName(false)
     if (error) setNameMessage(error.message)
     else setNameMessage('Name updated.')
