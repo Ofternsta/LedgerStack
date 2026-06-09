@@ -163,7 +163,7 @@ export const GUIDE_PARTS: GuidePart[] = [
         id: 'ai-export',
         title: 'Job intelligence, AI & exports',
         paragraphs: [
-          'The job intelligence panel (staff only, not clients) can generate a categorized AI project summary (status, timeline, messages, notes, calendar, documents), refresh an AI-built timeline, and export a formatted PDF or HTML report. Exports start on Starter (PDF); full job packets and project archives are on Professional+.',
+          'The job intelligence panel (admins only) can generate a categorized AI project summary (status, timeline, messages, notes, calendar, documents), refresh an AI-built timeline, and export a formatted PDF or HTML report. Exports start on Starter (PDF); full job packets and project archives are on Professional+.',
           'The job timeline panel shows the latest update only, with Refresh timeline to regenerate and View full timeline for the complete history on a dedicated page.',
           'Monthly AI usage is capped by plan and shown on project pages. Uploads can be auto-categorized and summarized; admins can re-scan a file, edit its summary, rename its display name, or move it to another category from the expanded file detail view (Rename is next to Download).',
         ],
@@ -375,7 +375,7 @@ export const GUIDE_PARTS: GuidePart[] = [
           'Request client e-signatures — Admin on Professional+',
           'Sign documents — Client when admin requested signature',
           'View signature-request status — Admin on project (incomplete panel); Client on Projects and project Signatures panel',
-          'AI summary, timeline, export — Admin (plan limits); Worker if staff-capable; Client never',
+          'AI summary, timeline, export — Admin only (plan limits); Worker and Client never',
           'Project AI chat — Admin; Worker with AI chat permission; Client never',
           'Calendar add/delete events — Admin only (Calendar page)',
           'Mark calendar events complete — Admin; Worker with calendar permission on project preview',

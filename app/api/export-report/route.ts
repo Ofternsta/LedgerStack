@@ -9,7 +9,7 @@ import type { JobIntelligenceReport } from '@/lib/job-intelligence-types'
 import { loadJobAiSummary } from '@/lib/job-ai-summary-storage-server'
 import { consumeAiSummary, refundAiSummary } from '@/lib/plan-enforcement'
 import { getOrgPlanContext } from '@/lib/org-plan'
-import { assertStaffProjectAiAccess } from '@/lib/project-staff-ai-access'
+import { assertAdminProjectAiSummaryExportAccess } from '@/lib/project-staff-ai-access'
 import { requireAuthUser } from '@/lib/require-auth-user'
 
 export const maxDuration = 90
@@ -60,7 +60,11 @@ async function authorizeExport(
   projectId: string,
   claimId: string
 ) {
-  const access = await assertStaffProjectAiAccess(supabase, userId, projectId)
+  const access = await assertAdminProjectAiSummaryExportAccess(
+    supabase,
+    userId,
+    projectId
+  )
   if (!access.ok) {
     return { error: NextResponse.json({ error: access.error }, { status: access.status }) }
   }

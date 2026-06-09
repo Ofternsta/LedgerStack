@@ -41,6 +41,28 @@ export async function canStaffGenerateProjectAi(
   return perms.can_upload || perms.can_add_events || perms.can_view_files
 }
 
+/** AI summary & PDF/HTML export — organization admins only. */
+export async function assertAdminProjectAiSummaryExportAccess(
+  supabase: SupabaseClient,
+  userId: string,
+  projectId: string
+): Promise<{ ok: true } | { ok: false; error: string; status: number }> {
+  const organizationId = await getProjectOrgId(supabase, projectId)
+  if (!organizationId) {
+    return { ok: false, error: 'Project not found', status: 404 }
+  }
+
+  if (!(await isOrganizationAdmin(supabase, organizationId, userId))) {
+    return {
+      ok: false,
+      error: 'Only organization admins can use AI summary and export.',
+      status: 403,
+    }
+  }
+
+  return { ok: true }
+}
+
 export async function assertStaffProjectAiAccess(
   supabase: SupabaseClient,
   userId: string,

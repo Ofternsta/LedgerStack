@@ -29,7 +29,7 @@ export default function ProjectAiSummaryPage() {
     }
 
     loadUserAccess().then(async ({ access }) => {
-      if (!access || access.role === 'client') {
+      if (!access || access.role === 'client' || !access.canViewAiSummaryExport) {
         router.replace(`/project/${projectId}`)
         return
       }

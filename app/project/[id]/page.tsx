@@ -746,12 +746,12 @@ export default function ProjectPageClient() {
           </p>
         )}
 
-        {!isClientViewer && (
+        {access.canViewAiSummaryExport && (
           <ProjectAiExportSection
             claimId={activeClaim.id}
             projectId={id}
             jobLabel={activeClaim.client_name}
-            canGenerate={access.canUpdateClaimInfo}
+            canGenerate={access.canViewAiSummaryExport}
             canExportPdf={access.canExportPdf}
             canExportHtml={access.canExportHtml}
             aiSummariesLimit={access.aiSummariesLimit}

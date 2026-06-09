@@ -35,6 +35,8 @@ export type UserAccess = {
   canUpdateReportStatus: boolean
   /** Job timeline — organization admins only */
   canViewTimeline: boolean
+  /** AI summary & export — organization admins only */
+  canViewAiSummaryExport: boolean
   canViewInternalNotes: boolean
   canViewCalendar: boolean
   canManageSchedule: boolean
@@ -125,13 +127,12 @@ export function buildAccess(input: {
     isAdmin &&
     Boolean(ent?.analyticsDashboard || ent?.advancedAnalytics)
   const canUseTeamMessages = staffCapable && Boolean(ent?.teamMessages)
+  const canViewAiSummaryExport = isAdmin && hasPlan && !downgradeReadOnly
   const canExportPdf =
-    staffCapable &&
-    !downgradeReadOnly &&
+    canViewAiSummaryExport &&
     Boolean(ent?.standardPdfExport || ent?.claimPacketExport)
   const canExportHtml =
-    staffCapable &&
-    !downgradeReadOnly &&
+    canViewAiSummaryExport &&
     Boolean(ent?.standardPdfExport || ent?.claimPacketExport)
 
   let canCreateProject = isAdmin
@@ -184,6 +185,7 @@ export function buildAccess(input: {
       staffCapable && hasPlan && !workerBlockedByStaffLimit && !downgradeReadOnly,
     canUpdateReportStatus: isAdmin && hasPlan,
     canViewTimeline: isAdmin && hasPlan && !downgradeReadOnly,
+    canViewAiSummaryExport,
     canViewInternalNotes: canViewInternalNotes && !downgradeReadOnly,
     canViewCalendar:
       canViewCalendar && !workerBlockedByStaffLimit && !downgradeReadOnly,

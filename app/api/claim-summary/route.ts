@@ -6,7 +6,7 @@ import {
 import { saveJobAiSummary } from '@/lib/job-ai-summary-storage-server'
 import { consumeAiSummary } from '@/lib/plan-enforcement'
 import { getOrgPlanContext } from '@/lib/org-plan'
-import { assertStaffProjectAiAccess } from '@/lib/project-staff-ai-access'
+import { assertAdminProjectAiSummaryExportAccess } from '@/lib/project-staff-ai-access'
 import { requireAuthUser } from '@/lib/require-auth-user'
 
 export const maxDuration = 90
@@ -28,7 +28,7 @@ export async function GET(req: Request) {
       )
     }
 
-    const access = await assertStaffProjectAiAccess(
+    const access = await assertAdminProjectAiSummaryExportAccess(
       supabase,
       user.id,
       project_id
@@ -71,7 +71,7 @@ export async function POST(req: Request) {
       )
     }
 
-    const access = await assertStaffProjectAiAccess(
+    const access = await assertAdminProjectAiSummaryExportAccess(
       supabase,
       user.id,
       project_id
