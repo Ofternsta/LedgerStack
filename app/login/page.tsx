@@ -20,6 +20,7 @@ import {
 import { COMPLETED_PROJECT_RETENTION_DAYS } from '@/lib/data-retention'
 import { supabase } from '@/lib/supabase'
 import { BrandLogo } from '@/components/brand-logo'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import { SupportLink } from '@/components/support-link'
 import { SUPPORT_EMAIL } from '@/lib/support'
 import {
@@ -32,6 +33,8 @@ import {
   getAccountSetupStatus,
   resendVerificationEmail,
 } from './actions'
+
+const SIGNUP_STORAGE_ACK_KEY = 'ledgerstack:signup-storage-ack'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -57,6 +60,20 @@ export default function LoginPage() {
   const [mfaCode, setMfaCode] = useState('')
   const [mfaFactorId, setMfaFactorId] = useState<string | null>(null)
   const [verifyingMfa, setVerifyingMfa] = useState(false)
+  const [signupStorageAcknowledged, setSignupStorageAcknowledged] =
+    useState(false)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    setSignupStorageAcknowledged(
+      sessionStorage.getItem(SIGNUP_STORAGE_ACK_KEY) === '1'
+    )
+  }, [])
+
+  function acknowledgeSignupStoragePolicy() {
+    sessionStorage.setItem(SIGNUP_STORAGE_ACK_KEY, '1')
+    setSignupStorageAcknowledged(true)
+  }
 
   const completeLoginAfterAuth = useCallback(async () => {
     const setupRes = await fetch('/api/auth/complete-signup', {
@@ -523,8 +540,23 @@ export default function LoginPage() {
     setLoading(false)
   }
 
+  const signupStorageAckRequired =
+    mode === 'signup' && !signupStorageAcknowledged
+
   return (
     <div className="min-h-dvh flex flex-col safe-top safe-bottom">
+      <ConfirmDialog
+        open={signupStorageAckRequired}
+        title="Before you sign up"
+        description={`LedgerStack is for active jobs, not long-term file storage. Export or back up completed work — completed projects are deleted automatically after ${COMPLETED_PROJECT_RETENTION_DAYS} days.`}
+        confirmLabel="I acknowledge"
+        cancelLabel="Go back"
+        onConfirm={acknowledgeSignupStoragePolicy}
+        onCancel={() => {
+          setMode('signin')
+          setMessage(null)
+        }}
+      />
       <main className="flex-1 flex flex-col justify-center safe-x px-4 py-8 max-w-md mx-auto w-full">
         <div className="mb-8 text-center">
           <BrandLogo href="/" size="lg" className="mx-auto" />
@@ -535,7 +567,9 @@ export default function LoginPage() {
 
         <form
           onSubmit={handleSubmit}
-          className="card-elevated p-5 space-y-4"
+          className={`card-elevated p-5 space-y-4${
+            signupStorageAckRequired ? ' pointer-events-none' : ''
+          }`}
         >
           {mode === 'mfa' ? (
             <div className="space-y-2">
@@ -655,12 +689,6 @@ export default function LoginPage() {
                   <p className="text-xs text-muted-dim mt-2">
                     Next step: choose a subscription plan, then your account is
                     created.
-                  </p>
-                  <p className="text-xs text-muted mt-2 leading-relaxed">
-                    LedgerStack is for active jobs, not long-term file storage.
-                    Export or back up completed work — completed projects are
-                    deleted automatically after {COMPLETED_PROJECT_RETENTION_DAYS}{' '}
-                    days.
                   </p>
                 </div>
               )}
@@ -915,6 +943,7 @@ export default function LoginPage() {
                   (mode !== 'forgot' && !password) ||
                   (mode === 'signup' && !confirmPassword) ||
                   (mode === 'signup' && !acceptedLegal) ||
+                  (mode === 'signup' && !signupStorageAcknowledged) ||
                   (mode === 'signup' && role === 'worker' && !inviteValid))
             }
             className="w-full btn-primary py-4 font-semibold disabled:opacity-50 min-h-[52px]"
