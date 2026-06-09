@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { LegalNotice } from '@/components/legal-notice'
+import { saveBlobAsDownload } from '@/lib/download-blob-client'
 import type { JobIntelligenceReport } from '@/lib/job-intelligence-types'
 import { fetchSavedAiSummary } from '@/lib/ai-summary-storage'
 import { isUnlimited } from '@/lib/plan-entitlements'
@@ -98,19 +99,14 @@ export function ProjectAiExportSection({
       return
     }
     const blob = await res.blob()
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download =
+    const safeLabel = report.jobLabel.replace(/[^a-zA-Z0-9.-]/g, '_')
+    const filename =
       format === 'pdf'
-        ? `project-report-${report.jobLabel.replace(/[^a-zA-Z0-9.-]/g, '_')}.pdf`
-        : `project-report-${report.jobLabel.replace(/[^a-zA-Z0-9.-]/g, '_')}.html`
-    if (format === 'html') {
-      window.open(url, '_blank')
-      window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
-    } else {
-      a.click()
-      URL.revokeObjectURL(url)
+        ? `project-report-${safeLabel}.pdf`
+        : `project-report-${safeLabel}.html`
+    const result = await saveBlobAsDownload(blob, filename)
+    if (!result.ok) {
+      setError(result.error || 'Export failed')
     }
   }
 

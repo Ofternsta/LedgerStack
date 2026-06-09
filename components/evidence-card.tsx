@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { saveUrlAsDownload } from '@/lib/download-blob-client'
 import { moveEvidenceCategory } from '@/lib/move-evidence-category-client'
 import {
   defaultFileCategories,
@@ -185,20 +186,13 @@ export function EvidenceCard({
         project_id: projectId,
         file_name: doc.file_name,
       })
-      const res = await fetch(`/api/evidence/download?${params.toString()}`)
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}))
-        setError(payload.error || 'Could not download file')
-        return
+      const result = await saveUrlAsDownload(
+        `/api/evidence/download?${params.toString()}`,
+        doc.file_name
+      )
+      if (!result.ok) {
+        setError(result.error || 'Could not download file')
       }
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = doc.file_name
-      link.rel = 'noopener'
-      link.click()
-      URL.revokeObjectURL(url)
     } catch {
       setError('Could not download file')
     }

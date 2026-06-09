@@ -1,6 +1,7 @@
 'use client'
 
 import { LegalNotice } from '@/components/legal-notice'
+import { saveUrlAsDownload } from '@/lib/download-blob-client'
 import { useCallback, useEffect, useState } from 'react'
 
 type BackupSettings = {
@@ -226,19 +227,13 @@ export function BackupSettingsPanel({ canManage }: { canManage: boolean }) {
 
   async function downloadBackup(id: string, filename: string) {
     setError(null)
-    const res = await fetch(`/api/backups/${encodeURIComponent(id)}/download`)
-    if (!res.ok) {
-      const payload = await res.json().catch(() => ({}))
-      setError(payload.error || 'Download failed')
-      return
+    const result = await saveUrlAsDownload(
+      `/api/backups/${encodeURIComponent(id)}/download`,
+      filename
+    )
+    if (!result.ok) {
+      setError(result.error || 'Download failed')
     }
-    const blob = await res.blob()
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = filename
-    a.click()
-    URL.revokeObjectURL(url)
   }
 
   if (!canManage) return null

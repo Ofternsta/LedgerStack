@@ -1,4 +1,5 @@
 import JSZip from 'jszip'
+import { saveBlobAsDownload } from '@/lib/download-blob-client'
 import {
   clearArchiveFolderHandle,
   ensureFolderPermission,
@@ -33,13 +34,11 @@ export async function fetchProjectArchiveBlob(
   return { blob, filename }
 }
 
-export function downloadArchiveBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob)
-  const anchor = document.createElement('a')
-  anchor.href = url
-  anchor.download = filename
-  anchor.click()
-  URL.revokeObjectURL(url)
+export async function downloadArchiveBlob(blob: Blob, filename: string) {
+  const result = await saveBlobAsDownload(blob, filename)
+  if (!result.ok) {
+    throw new Error(result.error)
+  }
 }
 
 async function writeZipEntryToFolder(
@@ -139,5 +138,5 @@ export async function saveProjectArchiveToFolder(
 
 export async function downloadProjectArchive(projectId: string) {
   const { blob, filename } = await fetchProjectArchiveBlob(projectId)
-  downloadArchiveBlob(blob, filename)
+  await downloadArchiveBlob(blob, filename)
 }
