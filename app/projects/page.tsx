@@ -250,30 +250,32 @@ export default function ProjectsPage() {
       signingOut={signingOut}
       mainClassName="flex-1 safe-x px-4 sm:px-6 lg:px-8 py-4 w-full max-w-[1600px] mx-auto pb-28 safe-bottom space-y-5"
     >
-        {access.canDeleteProject && (
-          <div className="flex flex-wrap items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                setEditingProjects((on) => {
-                  if (on) setEditingProject(null)
-                  return !on
-                })
-              }}
-              className={`text-sm border px-4 py-2 rounded-xl font-medium min-h-[40px] shrink-0 ${
-                editingProjects
-                  ? 'border-brand bg-surface-elevated text-brand-bright'
-                  : 'border-border hover:border-brand-dim/50'
-              }`}
-            >
-              {editingProjects ? 'Stop editing projects' : 'Edit projects'}
-            </button>
+        <div className="flex items-center gap-2 min-h-[40px]">
+          <div className="flex-1 min-w-0" aria-hidden />
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground text-center shrink-0 px-1">
+            Organization Projects
+          </h1>
+          <div className="flex-1 min-w-0 flex justify-end">
+            {access.canDeleteProject && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingProjects((on) => {
+                    if (on) setEditingProject(null)
+                    return !on
+                  })
+                }}
+                className={`text-sm border px-4 py-2 rounded-xl font-medium min-h-[40px] shrink-0 ${
+                  editingProjects
+                    ? 'border-brand bg-surface-elevated text-brand-bright'
+                    : 'border-border hover:border-brand-dim/50'
+                }`}
+              >
+                {editingProjects ? 'Stop editing projects' : 'Edit projects'}
+              </button>
+            )}
           </div>
-        )}
-
-        <h1 className="text-xl sm:text-2xl font-bold text-foreground text-center">
-          Organization Projects
-        </h1>
+        </div>
 
         <label className="block">
           <span className="sr-only">Search projects</span>
