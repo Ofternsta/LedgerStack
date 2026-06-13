@@ -271,6 +271,10 @@ export default function ProjectsPage() {
           </div>
         )}
 
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground text-center">
+          Organization Projects
+        </h1>
+
         <label className="block">
           <span className="sr-only">Search projects</span>
           <input
