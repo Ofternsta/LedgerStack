@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
+import { Analytics } from '@vercel/analytics/next'
 import { AppMessagingRoot } from '@/components/app-messaging-root'
 import { PageTransition } from '@/components/page-transition'
 import { ThemeProvider } from '@/components/theme-provider'
@@ -83,6 +84,7 @@ export default function RootLayout({
           <AppMessagingRoot />
           <PageTransition>{children}</PageTransition>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   )
