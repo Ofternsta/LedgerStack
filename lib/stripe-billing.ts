@@ -115,6 +115,54 @@ export async function upsertSubscriptionFromStripe(input: {
   if (error) throw new Error(error.message)
 }
 
+async function billingOrganizationExists(organizationId: string): Promise<boolean> {
+  const supabase = createServiceClient()
+  const { data } = await supabase
+    .from('organizations')
+    .select('id')
+    .eq('id', organizationId)
+    .maybeSingle()
+
+  return Boolean(data?.id)
+}
+
+/** Mark canceled in Supabase; skip orphan Stripe subs whose org was removed. */
+export async function handleStripeSubscriptionDeleted(
+  subscription: StripeTypes.Subscription
+) {
+  const customerId =
+    typeof subscription.customer === 'string'
+      ? subscription.customer
+      : subscription.customer.id
+
+  const organizationId = subscription.metadata?.organization_id as
+    | string
+    | undefined
+
+  if (organizationId) {
+    if (!(await billingOrganizationExists(organizationId))) {
+      console.warn(
+        'Stripe subscription deleted: organization not found, skipping',
+        organizationId,
+        subscription.id
+      )
+      return
+    }
+
+    await upsertSubscriptionFromStripe({
+      organizationId,
+      plan:
+        (subscription.metadata?.plan as BillingPlanId | undefined) || 'trial',
+      status: 'canceled',
+      stripeCustomerId: customerId,
+      stripeSubscriptionId: null,
+    })
+    return
+  }
+
+  await syncStripeSubscription(subscription)
+}
+
 export async function syncStripeSubscription(subscription: StripeTypes.Subscription) {
   const customerId =
     typeof subscription.customer === 'string'
@@ -136,6 +184,15 @@ export async function syncStripeSubscription(subscription: StripeTypes.Subscript
     console.warn(
       'Stripe subscription update: no organization for customer',
       customerId
+    )
+    return
+  }
+
+  if (!(await billingOrganizationExists(organizationId))) {
+    console.warn(
+      'Stripe subscription update: organization not found, skipping',
+      organizationId,
+      subscription.id
     )
     return
   }

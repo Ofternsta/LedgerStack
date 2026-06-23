@@ -2,10 +2,9 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import {
   handleCheckoutSessionCompleted,
+  handleStripeSubscriptionDeleted,
   syncStripeSubscription,
-  upsertSubscriptionFromStripe,
 } from '@/lib/stripe-billing'
-import type { BillingPlanId } from '@/lib/stripe-config'
 
 export const runtime = 'nodejs'
 
@@ -59,26 +58,11 @@ export async function POST(req: Request) {
       case 'customer.subscription.updated':
         await syncStripeSubscription(event.data.object as Stripe.Subscription)
         break
-      case 'customer.subscription.deleted': {
-        const sub = event.data.object as Stripe.Subscription
-        const organizationId = sub.metadata?.organization_id
-        const customerId =
-          typeof sub.customer === 'string' ? sub.customer : sub.customer.id
-
-        if (organizationId) {
-          await upsertSubscriptionFromStripe({
-            organizationId,
-            plan:
-              (sub.metadata?.plan as BillingPlanId | undefined) || 'trial',
-            status: 'canceled',
-            stripeCustomerId: customerId,
-            stripeSubscriptionId: null,
-          })
-        } else {
-          await syncStripeSubscription(sub)
-        }
+      case 'customer.subscription.deleted':
+        await handleStripeSubscriptionDeleted(
+          event.data.object as Stripe.Subscription
+        )
         break
-      }
     }
 
     return NextResponse.json({ received: true })
